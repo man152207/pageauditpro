@@ -2,8 +2,7 @@ name: Deploy pagelyzer.io via FTP
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 concurrency:
   group: deploy-ftp
@@ -13,20 +12,26 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: FTP Deploy to cPanel
+      # Quick network test (port reachability)
+      - name: Test FTP port
+        run: |
+          echo "Testing ${{ secrets.FTP_SERVER }}:21"
+          timeout 10 bash -lc 'cat < /dev/null > /dev/tcp/${{ secrets.FTP_SERVER }}/21' \
+            && echo "Port 21 reachable" || (echo "Port 21 NOT reachable" && exit 1)
+
+      - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          username: ${{ secrets.FTP_USERNAME }}   # go@pagelyzer.io
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
+          timeout: 120000
           local-dir: ./
-          server-dir: /pagelyzer.io/
-          dangerous-clean-slate: false
+          server-dir: /
           exclude: |
             **/.git*
             **/.github/**
