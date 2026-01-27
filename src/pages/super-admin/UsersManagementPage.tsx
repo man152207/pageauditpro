@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -55,7 +55,10 @@ import {
   Edit,
   Loader2,
   Copy,
-  CheckCircle2
+  CheckCircle2,
+  Search,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -82,14 +85,19 @@ export default function UsersManagementPage() {
   const [editingUser, setEditingUser] = useState<UserWithRoles | null>(null);
   const [selectedRole, setSelectedRole] = useState<AppRole>('user');
   const [deletingUser, setDeletingUser] = useState<UserWithRoles | null>(null);
+  const [permanentDelete, setPermanentDelete] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [creatingAccounts, setCreatingAccounts] = useState(false);
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   // Fetch all users with their roles
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      // Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -97,14 +105,12 @@ export default function UsersManagementPage() {
 
       if (profilesError) throw profilesError;
 
-      // Fetch all roles
       const { data: allRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('*');
 
       if (rolesError) throw rolesError;
 
-      // Map roles to users
       const usersWithRoles: UserWithRoles[] = (profiles || []).map(profile => ({
         id: profile.id,
         user_id: profile.user_id,
@@ -120,10 +126,30 @@ export default function UsersManagementPage() {
     },
   });
 
+  // Filtered users based on search and filters
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+
+    return users.filter(user => {
+      // Search filter
+      const matchesSearch = searchQuery === '' || 
+        (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      // Role filter
+      const matchesRole = roleFilter === 'all' || user.roles.includes(roleFilter);
+
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'active' && user.is_active) ||
+        (statusFilter === 'inactive' && !user.is_active);
+
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, searchQuery, roleFilter, statusFilter]);
+
   // Update user role mutation
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: AppRole }) => {
-      // First, delete existing roles for this user
       const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
@@ -131,7 +157,6 @@ export default function UsersManagementPage() {
 
       if (deleteError) throw deleteError;
 
-      // Then insert the new role
       const { error: insertError } = await supabase
         .from('user_roles')
         .insert({ user_id: userId, role: newRole });
@@ -155,8 +180,8 @@ export default function UsersManagementPage() {
     },
   });
 
-  // Delete user mutation (deactivate)
-  const deleteUserMutation = useMutation({
+  // Deactivate user mutation
+  const deactivateUserMutation = useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase
         .from('profiles')
@@ -172,6 +197,47 @@ export default function UsersManagementPage() {
         description: 'User has been deactivated successfully.',
       });
       setDeletingUser(null);
+      setPermanentDelete(false);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Permanent delete user mutation
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      // Delete user roles first
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesError) throw rolesError;
+
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (profileError) throw profileError;
+
+      // Note: We cannot delete from auth.users directly via client
+      // The user record in auth.users will remain but be orphaned
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast({
+        title: 'User Permanently Deleted',
+        description: 'User data has been permanently removed.',
+      });
+      setDeletingUser(null);
+      setPermanentDelete(false);
     },
     onError: (error) => {
       toast({
@@ -188,7 +254,6 @@ export default function UsersManagementPage() {
     
     for (const account of TEST_ACCOUNTS) {
       try {
-        // Sign up the user
         const { data, error } = await supabase.auth.signUp({
           email: account.email,
           password: account.password,
@@ -212,12 +277,9 @@ export default function UsersManagementPage() {
           continue;
         }
 
-        // If user was created, update their role
         if (data.user) {
-          // Wait a bit for the trigger to create the profile and default role
           await new Promise(resolve => setTimeout(resolve, 1000));
 
-          // Delete default role and add the correct one
           await supabase
             .from('user_roles')
             .delete()
@@ -251,6 +313,14 @@ export default function UsersManagementPage() {
     setTimeout(() => setCopiedEmail(null), 2000);
   };
 
+  const clearFilters = () => {
+    setSearchQuery('');
+    setRoleFilter('all');
+    setStatusFilter('all');
+  };
+
+  const hasActiveFilters = searchQuery !== '' || roleFilter !== 'all' || statusFilter !== 'all';
+
   const getRoleBadge = (role: AppRole) => {
     switch (role) {
       case 'super_admin':
@@ -276,6 +346,18 @@ export default function UsersManagementPage() {
         );
     }
   };
+
+  const handleDeleteUser = () => {
+    if (!deletingUser) return;
+    
+    if (permanentDelete) {
+      permanentDeleteMutation.mutate(deletingUser.user_id);
+    } else {
+      deactivateUserMutation.mutate(deletingUser.user_id);
+    }
+  };
+
+  const isDeleting = deactivateUserMutation.isPending || permanentDeleteMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -319,7 +401,7 @@ export default function UsersManagementPage() {
                   onClick={() => copyToClipboard(`${account.email}\n${account.password}`, account.email)}
                 >
                   {copiedEmail === account.email ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}
@@ -350,17 +432,60 @@ export default function UsersManagementPage() {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <CardDescription>
-            View and manage all registered users
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>All Users</CardTitle>
+              <CardDescription>
+                View and manage all registered users ({filteredUsers.length} of {users?.length || 0})
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as AppRole | 'all')}>
+              <SelectTrigger className="w-full sm:w-[150px]">
+                <SelectValue placeholder="Filter by role" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border">
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'inactive')}>
+              <SelectTrigger className="w-full sm:w-[150px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="icon" onClick={clearFilters}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : users && users.length > 0 ? (
+          ) : filteredUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -372,7 +497,7 @@ export default function UsersManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                       {user.full_name || 'Unnamed User'}
@@ -415,8 +540,10 @@ export default function UsersManagementPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setDeletingUser(user)}
-                          disabled={!user.is_active}
+                          onClick={() => {
+                            setDeletingUser(user);
+                            setPermanentDelete(false);
+                          }}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -429,8 +556,19 @@ export default function UsersManagementPage() {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No users found</p>
-              <p className="text-sm">Create test accounts above to get started</p>
+              {users && users.length > 0 ? (
+                <>
+                  <p>No users match your filters</p>
+                  <Button variant="link" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p>No users found</p>
+                  <p className="text-sm">Create test accounts above to get started</p>
+                </>
+              )}
             </div>
           )}
         </CardContent>
@@ -438,7 +576,7 @@ export default function UsersManagementPage() {
 
       {/* Edit Role Dialog */}
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-        <DialogContent>
+        <DialogContent className="bg-background">
           <DialogHeader>
             <DialogTitle>Edit User Role</DialogTitle>
             <DialogDescription>
@@ -452,7 +590,7 @@ export default function UsersManagementPage() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border">
                   <SelectItem value="user">User</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="super_admin">Super Admin</SelectItem>
@@ -486,27 +624,46 @@ export default function UsersManagementPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
-        <AlertDialogContent>
+      <AlertDialog open={!!deletingUser} onOpenChange={() => { setDeletingUser(null); setPermanentDelete(false); }}>
+        <AlertDialogContent className="bg-background">
           <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {permanentDelete && <AlertTriangle className="h-5 w-5 text-destructive" />}
+              {permanentDelete ? 'Permanently Delete User' : 'Delete User'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate {deletingUser?.full_name || 'this user'}?
-              They will no longer be able to access the platform.
+              {permanentDelete ? (
+                <span className="text-destructive">
+                  This action cannot be undone. All user data including profile and roles will be permanently deleted.
+                </span>
+              ) : (
+                `Are you sure you want to deactivate ${deletingUser?.full_name || 'this user'}? They will no longer be able to access the platform.`
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex items-center gap-2 py-2">
+            <input
+              type="checkbox"
+              id="permanent-delete"
+              checked={permanentDelete}
+              onChange={(e) => setPermanentDelete(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            <Label htmlFor="permanent-delete" className="text-sm cursor-pointer">
+              Permanently delete (cannot be undone)
+            </Label>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deletingUser) {
-                  deleteUserMutation.mutate(deletingUser.user_id);
-                }
-              }}
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
             >
-              {deleteUserMutation.isPending ? (
+              {isDeleting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : permanentDelete ? (
+                'Delete Permanently'
               ) : (
                 'Deactivate'
               )}
