@@ -137,21 +137,21 @@ serve(async (req) => {
     seeded.push(
       await ensureUser({
         email: "superadmin@test.com",
-        full_name: "Super Admin Test",
+        full_name: "Pagelyzer Super Admin",
         role: "super_admin",
       }),
     );
     seeded.push(
       await ensureUser({
         email: "admin@test.com",
-        full_name: "Admin Test",
+        full_name: "Pagelyzer Admin",
         role: "admin",
       }),
     );
     seeded.push(
       await ensureUser({
         email: "user@test.com",
-        full_name: "User Test",
+        full_name: "Pagelyzer User",
         role: "user",
       }),
     );
