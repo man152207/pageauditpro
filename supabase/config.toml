@@ -1,1 +1,22 @@
 project_id = "wrjqheztddmazlifbzbi"
+
+[functions.sitemap]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.seed-test-users]
+verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false
+
+[functions.facebook-oauth]
+verify_jwt = false
+
+[functions.generate-pdf-report]
+verify_jwt = false

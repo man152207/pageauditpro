@@ -12,12 +12,26 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
 
-  if (!stripeSecretKey) {
+  // Try to get stripe keys from settings table first
+  const { data: stripeKeyData } = await supabaseAdmin
+    .from("settings")
+    .select("key, value_encrypted")
+    .eq("scope", "global")
+    .in("key", ["stripe_secret_key", "stripe_webhook_secret"]);
+
+  const settingsMap = new Map(stripeKeyData?.map(s => [s.key, s.value_encrypted]) || []);
+  
+  const stripeSecretKey = settingsMap.get("stripe_secret_key") || Deno.env.get("STRIPE_SECRET_KEY");
+  const webhookSecret = settingsMap.get("stripe_webhook_secret") || Deno.env.get("STRIPE_WEBHOOK_SECRET");
+
+  if (!stripeSecretKey || stripeSecretKey === "••••••••") {
     console.error("STRIPE_SECRET_KEY not configured");
-    return new Response("Webhook Error: Missing configuration", { status: 500 });
+    return new Response("Webhook Error: Missing Stripe configuration", { status: 500 });
   }
 
   const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-08-27.basil" });
@@ -27,23 +41,19 @@ serve(async (req) => {
   let event: Stripe.Event;
 
   try {
-    if (webhookSecret && signature) {
+    if (webhookSecret && webhookSecret !== "••••••••" && signature) {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      console.log("Webhook signature verified successfully");
     } else {
       // For development without webhook secret
       event = JSON.parse(body) as Stripe.Event;
-      console.log("Warning: Webhook signature verification skipped");
+      console.log("Warning: Webhook signature verification skipped - configure webhook secret for production");
     }
   } catch (err: unknown) {
     console.error("Webhook signature verification failed:", err);
     const errMessage = err instanceof Error ? err.message : "Unknown error";
     return new Response(`Webhook Error: ${errMessage}`, { status: 400 });
   }
-
-  const supabaseAdmin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
 
   console.log("Processing webhook event:", event.type);
 
