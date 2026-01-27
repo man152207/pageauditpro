@@ -19,6 +19,7 @@ import NotFound from "@/pages/NotFound";
 // Dashboard Pages
 import UserDashboard from "@/pages/dashboard/UserDashboard";
 import ManualAuditPage from "@/pages/dashboard/ManualAuditPage";
+import BillingPage from "@/pages/dashboard/BillingPage";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -26,6 +27,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 // Super Admin Pages
 import SuperAdminDashboard from "@/pages/super-admin/SuperAdminDashboard";
 import SuperAdminSettingsPage from "@/pages/super-admin/SuperAdminSettingsPage";
+import PlansManagementPage from "@/pages/super-admin/PlansManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -70,7 +72,7 @@ const App = () => (
               <Route path="audit" element={<ManualAuditPage />} />
               <Route path="reports" element={<UserDashboard />} />
               <Route path="history" element={<UserDashboard />} />
-              <Route path="billing" element={<UserDashboard />} />
+              <Route path="billing" element={<BillingPage />} />
               <Route path="profile" element={<UserDashboard />} />
               <Route path="settings" element={<UserDashboard />} />
             </Route>
@@ -100,10 +102,11 @@ const App = () => (
               }
             >
               <Route index element={<SuperAdminDashboard />} />
-              <Route path="plans" element={<SuperAdminDashboard />} />
+              <Route path="plans" element={<PlansManagementPage />} />
               <Route path="integrations" element={<SuperAdminSettingsPage />} />
               <Route path="security" element={<SuperAdminSettingsPage />} />
               <Route path="settings" element={<SuperAdminSettingsPage />} />
+              <Route path="logs" element={<SuperAdminDashboard />} />
             </Route>
 
             {/* 404 */}
