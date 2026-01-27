@@ -11,19 +11,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH key
+      - name: Setup SSH
+        shell: bash
         run: |
+          set -e
           mkdir -p ~/.ssh
-          echo "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/id_rsa
+
+          # Write private key (preserve newlines)
+          printf '%s\n' "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p ${{ secrets.CPANEL_PORT }} ${{ secrets.CPANEL_HOST }} >> ~/.ssh/known_hosts
+
+          # Add known_hosts
+          ssh-keyscan -p "${{ secrets.CPANEL_PORT }}" "${{ secrets.CPANEL_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Test SSH login
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/id_rsa \
+            -p "${{ secrets.CPANEL_PORT }}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}" \
+            "whoami && pwd"
 
       - name: Deploy via rsync
+        shell: bash
         run: |
           rsync -az --delete \
             --exclude ".git/" \
             --exclude ".github/" \
             --exclude "node_modules/" \
             --exclude ".env" \
-            -e "ssh -p ${{ secrets.CPANEL_PORT }}" \
-            ./ ${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:${{ secrets.CPANEL_PATH }}
+            -e "ssh -i ~/.ssh/id_rsa -p ${{ secrets.CPANEL_PORT }} -o BatchMode=yes -o IdentitiesOnly=yes" \
+            ./ "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:${{ secrets.CPANEL_PATH }}"
