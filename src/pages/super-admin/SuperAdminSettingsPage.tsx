@@ -8,11 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertTriangle,
+  BarChart3,
   CheckCircle2,
   CreditCard,
   Eye,
   EyeOff,
   Facebook,
+  FileText,
   Globe,
   Key,
   Loader2,
@@ -51,11 +53,28 @@ export default function SuperAdminSettingsPage() {
     stripe_publishable_key: '',
     stripe_webhook_secret: '',
     
-    // SEO
+    // SEO - Basic
     seo_title: 'Pagelyzer - Smart Facebook Page Audit Platform',
     seo_description: 'Get instant page health scores, engagement analysis, and AI-powered recommendations.',
+    seo_keywords: '',
     og_image_url: '',
     favicon_url: '',
+    canonical_url: 'https://pagelyzer.io',
+    
+    // SEO - Search Console Verification
+    google_verification: '',
+    bing_verification: '',
+    yandex_verification: '',
+    pinterest_verification: '',
+    
+    // SEO - Analytics & Tracking
+    google_analytics_id: '',
+    google_tag_manager_id: '',
+    facebook_pixel_id: '',
+    
+    // SEO - Sitemap & Robots
+    sitemap_url: 'https://pagelyzer.io/sitemap.xml',
+    robots_txt_content: '',
     
     // Security
     require_2fa_admins: true,
@@ -174,10 +193,25 @@ export default function SuperAdminSettingsPage() {
 
   const handleSaveSeo = () => {
     saveSettings([
+      // Basic SEO
       { key: 'seo_title', value: settings.seo_title, is_sensitive: false },
       { key: 'seo_description', value: settings.seo_description, is_sensitive: false },
+      { key: 'seo_keywords', value: settings.seo_keywords, is_sensitive: false },
       { key: 'og_image_url', value: settings.og_image_url, is_sensitive: false },
       { key: 'favicon_url', value: settings.favicon_url, is_sensitive: false },
+      { key: 'canonical_url', value: settings.canonical_url, is_sensitive: false },
+      // Search Console Verification
+      { key: 'google_verification', value: settings.google_verification, is_sensitive: false },
+      { key: 'bing_verification', value: settings.bing_verification, is_sensitive: false },
+      { key: 'yandex_verification', value: settings.yandex_verification, is_sensitive: false },
+      { key: 'pinterest_verification', value: settings.pinterest_verification, is_sensitive: false },
+      // Analytics & Tracking
+      { key: 'google_analytics_id', value: settings.google_analytics_id, is_sensitive: false },
+      { key: 'google_tag_manager_id', value: settings.google_tag_manager_id, is_sensitive: false },
+      { key: 'facebook_pixel_id', value: settings.facebook_pixel_id, is_sensitive: false },
+      // Sitemap & Robots
+      { key: 'sitemap_url', value: settings.sitemap_url, is_sensitive: false },
+      { key: 'robots_txt_content', value: settings.robots_txt_content, is_sensitive: false },
     ]);
   };
 
@@ -459,52 +493,238 @@ export default function SuperAdminSettingsPage() {
 
         {/* SEO Settings */}
         <TabsContent value="seo">
-          <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            <h2 className="font-semibold flex items-center gap-2">
-              <Globe className="h-5 w-5 text-primary" />
-              SEO & OpenGraph Settings
-            </h2>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="seoTitle">Default Title</Label>
-                <Input 
-                  id="seoTitle" 
-                  value={settings.seo_title}
-                  onChange={(e) => updateSetting('seo_title', e.target.value)}
-                />
+          <div className="space-y-6">
+            {/* Basic SEO & OpenGraph */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Globe className="h-5 w-5 text-primary" />
+                Basic SEO & OpenGraph
+              </h2>
+              
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="seoTitle">Default Title</Label>
+                  <Input 
+                    id="seoTitle" 
+                    placeholder="Pagelyzer - Smart Facebook Page Audit Platform"
+                    value={settings.seo_title}
+                    onChange={(e) => updateSetting('seo_title', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Max 60 characters recommended</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="canonicalUrl">Canonical URL</Label>
+                  <Input 
+                    id="canonicalUrl" 
+                    placeholder="https://pagelyzer.io"
+                    value={settings.canonical_url}
+                    onChange={(e) => updateSetting('canonical_url', e.target.value)}
+                  />
+                </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="seoDescription">Meta Description</Label>
                 <Input 
                   id="seoDescription" 
+                  placeholder="Get instant page health scores, engagement analysis, and AI-powered recommendations."
                   value={settings.seo_description}
                   onChange={(e) => updateSetting('seo_description', e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">Max 160 characters recommended</p>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="ogImage">OG Image URL</Label>
+                <Label htmlFor="seoKeywords">Meta Keywords</Label>
                 <Input 
-                  id="ogImage" 
-                  placeholder="https://..." 
-                  value={settings.og_image_url}
-                  onChange={(e) => updateSetting('og_image_url', e.target.value)}
+                  id="seoKeywords" 
+                  placeholder="facebook audit, page analysis, social media, engagement"
+                  value={settings.seo_keywords}
+                  onChange={(e) => updateSetting('seo_keywords', e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">Comma-separated keywords</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="favicon">Favicon URL</Label>
-                <Input 
-                  id="favicon" 
-                  placeholder="https://..." 
-                  value={settings.favicon_url}
-                  onChange={(e) => updateSetting('favicon_url', e.target.value)}
-                />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="ogImage">OG Image URL</Label>
+                  <Input 
+                    id="ogImage" 
+                    placeholder="https://pagelyzer.io/og-image.png" 
+                    value={settings.og_image_url}
+                    onChange={(e) => updateSetting('og_image_url', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">1200x630px recommended</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="favicon">Favicon URL</Label>
+                  <Input 
+                    id="favicon" 
+                    placeholder="https://pagelyzer.io/favicon.ico" 
+                    value={settings.favicon_url}
+                    onChange={(e) => updateSetting('favicon_url', e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
-            <Button onClick={handleSaveSeo} disabled={saving}>
+            {/* Search Console Verification */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Search Console Verification
+              </h2>
+              
+              <div className="p-3 rounded-lg bg-muted/50 text-sm">
+                <p className="text-muted-foreground">
+                  Add verification codes from search engines to verify site ownership. These will be added as meta tags in the HTML head.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="googleVerification">Google Search Console</Label>
+                  <Input 
+                    id="googleVerification" 
+                    placeholder="google-site-verification=..."
+                    value={settings.google_verification}
+                    onChange={(e) => updateSetting('google_verification', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Get from Google Search Console
+                    </a>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bingVerification">Bing Webmaster</Label>
+                  <Input 
+                    id="bingVerification" 
+                    placeholder="MSVALIDATE.01=..."
+                    value={settings.bing_verification}
+                    onChange={(e) => updateSetting('bing_verification', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Get from Bing Webmaster Tools
+                    </a>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="yandexVerification">Yandex Webmaster</Label>
+                  <Input 
+                    id="yandexVerification" 
+                    placeholder="yandex-verification=..."
+                    value={settings.yandex_verification}
+                    onChange={(e) => updateSetting('yandex_verification', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    <a href="https://webmaster.yandex.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Get from Yandex Webmaster
+                    </a>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pinterestVerification">Pinterest</Label>
+                  <Input 
+                    id="pinterestVerification" 
+                    placeholder="p:domain_verify=..."
+                    value={settings.pinterest_verification}
+                    onChange={(e) => updateSetting('pinterest_verification', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    <a href="https://business.pinterest.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Get from Pinterest Business
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Analytics & Tracking */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+              <h2 className="font-semibold flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Analytics & Tracking
+              </h2>
+              
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="googleAnalytics">Google Analytics ID</Label>
+                  <Input 
+                    id="googleAnalytics" 
+                    placeholder="G-XXXXXXXXXX"
+                    value={settings.google_analytics_id}
+                    onChange={(e) => updateSetting('google_analytics_id', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">GA4 Measurement ID</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gtmId">Google Tag Manager ID</Label>
+                  <Input 
+                    id="gtmId" 
+                    placeholder="GTM-XXXXXXX"
+                    value={settings.google_tag_manager_id}
+                    onChange={(e) => updateSetting('google_tag_manager_id', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fbPixel">Facebook Pixel ID</Label>
+                  <Input 
+                    id="fbPixel" 
+                    placeholder="XXXXXXXXXXXXXXXX"
+                    value={settings.facebook_pixel_id}
+                    onChange={(e) => updateSetting('facebook_pixel_id', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sitemap & Robots */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+              <h2 className="font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Sitemap & Robots
+              </h2>
+              
+              <div className="space-y-2">
+                <Label htmlFor="sitemapUrl">Sitemap URL</Label>
+                <Input 
+                  id="sitemapUrl" 
+                  placeholder="https://pagelyzer.io/sitemap.xml"
+                  value={settings.sitemap_url}
+                  onChange={(e) => updateSetting('sitemap_url', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  The sitemap will be auto-generated and available at this URL
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="robotsTxt">robots.txt Content</Label>
+                <textarea 
+                  id="robotsTxt"
+                  className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                  placeholder={`User-agent: *\nAllow: /\n\nSitemap: https://pagelyzer.io/sitemap.xml`}
+                  value={settings.robots_txt_content}
+                  onChange={(e) => updateSetting('robots_txt_content', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Custom robots.txt content. Leave empty to use default.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
+                <p className="font-medium mb-1">Current Sitemap Location:</p>
+                <code className="text-xs break-all">
+                  {settings.sitemap_url || 'https://pagelyzer.io/sitemap.xml'}
+                </code>
+              </div>
+            </div>
+
+            <Button onClick={handleSaveSeo} disabled={saving} size="lg">
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save SEO Settings
+              Save All SEO Settings
             </Button>
           </div>
         </TabsContent>
