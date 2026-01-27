@@ -54,6 +54,7 @@ const adminNavItems: NavItem[] = [
 
 const superAdminNavItems: NavItem[] = [
   { href: '/super-admin', label: 'System', icon: LayoutDashboard, roles: ['super_admin'] },
+  { href: '/super-admin/users', label: 'Users', icon: Users, roles: ['super_admin'] },
   { href: '/super-admin/plans', label: 'Plans', icon: CreditCard, roles: ['super_admin'] },
   { href: '/super-admin/integrations', label: 'Integrations', icon: Settings, roles: ['super_admin'] },
   { href: '/super-admin/security', label: 'Security', icon: Shield, roles: ['super_admin'] },
