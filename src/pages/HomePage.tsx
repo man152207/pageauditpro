@@ -219,7 +219,7 @@ export default function HomePage() {
               Ready to Grow Your Facebook Page?
             </h2>
             <p className="text-lg opacity-90 mb-8">
-              Join thousands of page owners who use PageAudit Pro to optimize their 
+              Join thousands of page owners who use Pagelyzer to optimize their 
               content strategy and grow their audience.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

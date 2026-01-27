@@ -25,7 +25,7 @@ export function MarketingLayout() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <BarChart3 className="h-5 w-5" />
             </div>
-            <span className="hidden sm:inline">PageAudit Pro</span>
+            <span className="hidden sm:inline">Pagelyzer</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -103,7 +103,7 @@ export function MarketingLayout() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <BarChart3 className="h-4 w-4" />
                 </div>
-                PageAudit Pro
+                Pagelyzer
               </Link>
               <p className="text-sm text-muted-foreground">
                 Smart Facebook Page audit platform with AI-powered recommendations.
@@ -138,7 +138,7 @@ export function MarketingLayout() {
           </div>
 
           <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} PageAudit Pro. All rights reserved.
+            © {new Date().getFullYear()} Pagelyzer. All rights reserved.
           </div>
         </div>
       </footer>

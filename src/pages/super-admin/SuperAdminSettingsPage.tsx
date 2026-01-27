@@ -38,8 +38,8 @@ export default function SuperAdminSettingsPage() {
   // Settings state
   const [settings, setSettings] = useState({
     // General
-    app_name: 'PageAudit Pro',
-    support_email: 'support@pageaudit.pro',
+    app_name: 'Pagelyzer',
+    support_email: 'support@pagelyzer.io',
     logo_url: '',
     
     // Facebook
@@ -52,7 +52,7 @@ export default function SuperAdminSettingsPage() {
     stripe_webhook_secret: '',
     
     // SEO
-    seo_title: 'PageAudit Pro - Smart Facebook Page Audit Platform',
+    seo_title: 'Pagelyzer - Smart Facebook Page Audit Platform',
     seo_description: 'Get instant page health scores, engagement analysis, and AI-powered recommendations.',
     og_image_url: '',
     favicon_url: '',
