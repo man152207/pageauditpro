@@ -28,6 +28,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import SuperAdminDashboard from "@/pages/super-admin/SuperAdminDashboard";
 import SuperAdminSettingsPage from "@/pages/super-admin/SuperAdminSettingsPage";
 import PlansManagementPage from "@/pages/super-admin/PlansManagementPage";
+import UsersManagementPage from "@/pages/super-admin/UsersManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,7 @@ const App = () => (
               }
             >
               <Route index element={<SuperAdminDashboard />} />
+              <Route path="users" element={<UsersManagementPage />} />
               <Route path="plans" element={<PlansManagementPage />} />
               <Route path="integrations" element={<SuperAdminSettingsPage />} />
               <Route path="security" element={<SuperAdminSettingsPage />} />
