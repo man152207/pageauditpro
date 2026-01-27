@@ -30,24 +30,34 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Supabase configuration missing");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Verify user
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify user using getUser instead of getClaims
     const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: authError } = await supabase.auth.getClaims(token);
-    if (authError || !claims?.claims) {
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !userData?.user) {
+      console.error("Auth error:", authError);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const userId = claims.claims.sub;
-    const userEmail = claims.claims.email;
+    const userId = userData.user.id;
+    const userEmail = userData.user.email;
 
     const { plan_id, success_url, cancel_url } = await req.json();
 
@@ -101,6 +111,9 @@ serve(async (req) => {
     // Determine checkout mode
     const isSubscription = plan.billing_type === "monthly" || plan.billing_type === "yearly";
 
+    // Use origin from request or fallback to a safe default
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, '') || "https://pagelyzer.io";
+
     // Create checkout session
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
@@ -124,8 +137,8 @@ serve(async (req) => {
         },
       ],
       mode: isSubscription ? "subscription" : "payment",
-      success_url: success_url || `${req.headers.get("origin")}/dashboard?payment=success`,
-      cancel_url: cancel_url || `${req.headers.get("origin")}/pricing?payment=cancelled`,
+      success_url: success_url || `${origin}/dashboard?payment=success`,
+      cancel_url: cancel_url || `${origin}/pricing?payment=cancelled`,
       metadata: {
         supabase_user_id: userId,
         plan_id: plan_id,
@@ -135,7 +148,7 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    console.log("Checkout session created:", session.id);
+    console.log("Checkout session created:", session.id, "URL:", session.url);
 
     return new Response(
       JSON.stringify({ 
