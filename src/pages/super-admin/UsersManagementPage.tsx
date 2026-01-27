@@ -54,8 +54,6 @@ import {
   Trash2, 
   Edit,
   Loader2,
-  Copy,
-  CheckCircle2,
   Search,
   X,
   AlertTriangle
@@ -68,16 +66,11 @@ interface UserWithRoles {
   id: string;
   user_id: string;
   full_name: string | null;
+  email: string | null;
   is_active: boolean;
   created_at: string;
   roles: AppRole[];
 }
-
-const TEST_ACCOUNTS = [
-  { email: 'superadmin@test.com', password: 'Test@123456', role: 'super_admin' as AppRole, label: 'Super Admin' },
-  { email: 'admin@test.com', password: 'Test@123456', role: 'admin' as AppRole, label: 'Admin' },
-  { email: 'user@test.com', password: 'Test@123456', role: 'user' as AppRole, label: 'User' },
-];
 
 export default function UsersManagementPage() {
   const { toast } = useToast();
@@ -86,8 +79,6 @@ export default function UsersManagementPage() {
   const [selectedRole, setSelectedRole] = useState<AppRole>('user');
   const [deletingUser, setDeletingUser] = useState<UserWithRoles | null>(null);
   const [permanentDelete, setPermanentDelete] = useState(false);
-  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
-  const [creatingAccounts, setCreatingAccounts] = useState(false);
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,6 +106,7 @@ export default function UsersManagementPage() {
         id: profile.id,
         user_id: profile.user_id,
         full_name: profile.full_name,
+        email: profile.email,
         is_active: profile.is_active,
         created_at: profile.created_at,
         roles: allRoles
@@ -131,9 +123,11 @@ export default function UsersManagementPage() {
     if (!users) return [];
 
     return users.filter(user => {
-      // Search filter
+      // Search filter - search in name AND email
+      const searchLower = searchQuery.toLowerCase();
       const matchesSearch = searchQuery === '' || 
-        (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()));
+        (user.full_name?.toLowerCase().includes(searchLower)) ||
+        (user.email?.toLowerCase().includes(searchLower));
 
       // Role filter
       const matchesRole = roleFilter === 'all' || user.roles.includes(roleFilter);
@@ -211,7 +205,6 @@ export default function UsersManagementPage() {
   // Permanent delete user mutation
   const permanentDeleteMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // Delete user roles first
       const { error: rolesError } = await supabase
         .from('user_roles')
         .delete()
@@ -219,16 +212,12 @@ export default function UsersManagementPage() {
 
       if (rolesError) throw rolesError;
 
-      // Delete profile
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('user_id', userId);
 
       if (profileError) throw profileError;
-
-      // Note: We cannot delete from auth.users directly via client
-      // The user record in auth.users will remain but be orphaned
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -247,71 +236,6 @@ export default function UsersManagementPage() {
       });
     },
   });
-
-  // Create test accounts
-  const createTestAccounts = async () => {
-    setCreatingAccounts(true);
-    
-    for (const account of TEST_ACCOUNTS) {
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email: account.email,
-          password: account.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              full_name: account.label + ' Test',
-            },
-          },
-        });
-
-        if (error) {
-          if (error.message.includes('already registered')) {
-            toast({
-              title: `${account.label} Already Exists`,
-              description: `${account.email} is already registered.`,
-            });
-          } else {
-            throw error;
-          }
-          continue;
-        }
-
-        if (data.user) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          await supabase
-            .from('user_roles')
-            .delete()
-            .eq('user_id', data.user.id);
-
-          await supabase
-            .from('user_roles')
-            .insert({ user_id: data.user.id, role: account.role });
-
-          toast({
-            title: `${account.label} Created`,
-            description: `${account.email} has been created with ${account.role} role.`,
-          });
-        }
-      } catch (error: any) {
-        toast({
-          title: 'Error Creating Account',
-          description: error.message,
-          variant: 'destructive',
-        });
-      }
-    }
-
-    setCreatingAccounts(false);
-    queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-  };
-
-  const copyToClipboard = (text: string, email: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedEmail(email);
-    setTimeout(() => setCopiedEmail(null), 2000);
-  };
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -368,67 +292,6 @@ export default function UsersManagementPage() {
         </p>
       </div>
 
-      {/* Test Accounts Card */}
-      <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Test Accounts
-          </CardTitle>
-          <CardDescription>
-            Create dummy accounts for testing. You can change or delete them later.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3">
-            {TEST_ACCOUNTS.map((account) => (
-              <div
-                key={account.email}
-                className="flex items-center justify-between p-3 rounded-lg bg-background border"
-              >
-                <div className="flex items-center gap-4">
-                  {getRoleBadge(account.role)}
-                  <div>
-                    <p className="font-medium">{account.email}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Password: {account.password}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(`${account.email}\n${account.password}`, account.email)}
-                >
-                  {copiedEmail === account.email ? (
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            ))}
-          </div>
-          <Button 
-            onClick={createTestAccounts} 
-            disabled={creatingAccounts}
-            className="w-full"
-          >
-            {creatingAccounts ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Accounts...
-              </>
-            ) : (
-              <>
-                <Users className="mr-2 h-4 w-4" />
-                Create All Test Accounts
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* Users Table */}
       <Card>
         <CardHeader>
@@ -447,7 +310,7 @@ export default function UsersManagementPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name..."
+                placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -490,6 +353,7 @@ export default function UsersManagementPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Roles</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
@@ -501,6 +365,9 @@ export default function UsersManagementPage() {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                       {user.full_name || 'Unnamed User'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user.email || '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
@@ -564,10 +431,7 @@ export default function UsersManagementPage() {
                   </Button>
                 </>
               ) : (
-                <>
-                  <p>No users found</p>
-                  <p className="text-sm">Create test accounts above to get started</p>
-                </>
+                <p>No users found</p>
               )}
             </div>
           )}
@@ -580,7 +444,7 @@ export default function UsersManagementPage() {
           <DialogHeader>
             <DialogTitle>Edit User Role</DialogTitle>
             <DialogDescription>
-              Change the role for {editingUser?.full_name || 'this user'}
+              Change the role for {editingUser?.full_name || editingUser?.email || 'this user'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -637,7 +501,7 @@ export default function UsersManagementPage() {
                   This action cannot be undone. All user data including profile and roles will be permanently deleted.
                 </span>
               ) : (
-                `Are you sure you want to deactivate ${deletingUser?.full_name || 'this user'}? They will no longer be able to access the platform.`
+                `Are you sure you want to deactivate ${deletingUser?.full_name || deletingUser?.email || 'this user'}? They will no longer be able to access the platform.`
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
