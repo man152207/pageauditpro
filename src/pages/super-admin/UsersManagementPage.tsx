@@ -59,6 +59,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { SeedTestUsersButton } from '@/features/super-admin/users/SeedTestUsersButton';
 
 type AppRole = Database['public']['Enums']['app_role'];
 
@@ -205,19 +206,12 @@ export default function UsersManagementPage() {
   // Permanent delete user mutation
   const permanentDeleteMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error: rolesError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { user_id: userId },
+      });
 
-      if (rolesError) throw rolesError;
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -302,6 +296,9 @@ export default function UsersManagementPage() {
                 View and manage all registered users ({filteredUsers.length} of {users?.length || 0})
               </CardDescription>
             </div>
+            <SeedTestUsersButton
+              onSeeded={() => queryClient.invalidateQueries({ queryKey: ['admin-users'] })}
+            />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
