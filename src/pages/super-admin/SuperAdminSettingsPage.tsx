@@ -687,16 +687,34 @@ export default function SuperAdminSettingsPage() {
                 Sitemap & Robots
               </h2>
               
+              <div className="p-4 rounded-lg bg-success/10 border border-success/20 flex gap-3">
+                <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium">Dynamic Sitemap Active</p>
+                  <p className="text-muted-foreground">
+                    Your sitemap is automatically generated and updated with all pages and public reports.
+                  </p>
+                  <a 
+                    href={`https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap`}
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-primary hover:underline text-xs mt-1 inline-block"
+                  >
+                    View Live Sitemap →
+                  </a>
+                </div>
+              </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="sitemapUrl">Sitemap URL</Label>
+                <Label htmlFor="sitemapUrl">Sitemap URL (for Search Consoles)</Label>
                 <Input 
                   id="sitemapUrl" 
-                  placeholder="https://pagelyzer.io/sitemap.xml"
-                  value={settings.sitemap_url}
-                  onChange={(e) => updateSetting('sitemap_url', e.target.value)}
+                  value={`https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap`}
+                  readOnly
+                  className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  The sitemap will be auto-generated and available at this URL
+                  Submit this URL to Google Search Console and other search engines
                 </p>
               </div>
 
