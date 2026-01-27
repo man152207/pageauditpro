@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ProBadge } from '@/components/ui/pro-badge';
 import { CheckCircle2, Crown, Sparkles, Zap } from 'lucide-react';
@@ -87,6 +88,14 @@ const plans: Plan[] = [
 ];
 
 export default function PricingPage() {
+  const { user } = useAuth();
+
+  // For paid plans, redirect to billing if logged in, otherwise to auth
+  const getPlanLink = (plan: Plan) => {
+    if (plan.price === 0) return '/audit';
+    return user ? '/dashboard/billing' : '/auth?mode=signup';
+  };
+
   return (
     <div className="py-20">
       <div className="container">
@@ -147,7 +156,7 @@ export default function PricingPage() {
                 variant={plan.popular ? 'default' : 'outline'}
                 asChild
               >
-                <Link to={plan.price === 0 ? '/audit' : '/auth?mode=signup'}>
+                <Link to={getPlanLink(plan)}>
                   {plan.price === 0 ? (
                     <>
                       <Zap className="mr-2 h-4 w-4" />
