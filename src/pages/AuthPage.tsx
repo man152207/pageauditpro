@@ -276,7 +276,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Decorative with animations */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
+      <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden bg-primary">
         {/* Animated background shapes */}
         <div className="absolute top-20 left-20 w-32 h-32 rounded-full bg-white/10 animate-float" />
         <div className="absolute bottom-32 right-20 w-24 h-24 rounded-2xl bg-white/10 animate-float stagger-2" />
