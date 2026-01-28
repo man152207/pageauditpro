@@ -56,9 +56,7 @@ const superAdminNavItems: NavItem[] = [
   { href: '/super-admin', label: 'System', icon: LayoutDashboard, roles: ['super_admin'] },
   { href: '/super-admin/users', label: 'Users', icon: Users, roles: ['super_admin'] },
   { href: '/super-admin/plans', label: 'Plans', icon: CreditCard, roles: ['super_admin'] },
-  { href: '/super-admin/integrations', label: 'Integrations', icon: Settings, roles: ['super_admin'] },
-  { href: '/super-admin/security', label: 'Security', icon: Shield, roles: ['super_admin'] },
-  { href: '/super-admin/settings', label: 'Settings', icon: Settings, roles: ['super_admin'] },
+  { href: '/super-admin/settings/general', label: 'Settings', icon: Settings, roles: ['super_admin'] },
 ];
 
 export function DashboardLayout() {
@@ -78,8 +76,12 @@ export function DashboardLayout() {
   };
 
   const isActive = (href: string) => {
+    // Special handling for settings - any settings sub-route should highlight the settings nav item
+    if (href === '/super-admin/settings/general' && location.pathname.startsWith('/super-admin/settings')) {
+      return true;
+    }
     return location.pathname === href || 
-      (href !== '/dashboard' && href !== '/admin' && href !== '/super-admin' && location.pathname.startsWith(href));
+      (href !== '/dashboard' && href !== '/admin' && href !== '/super-admin' && !href.includes('/settings/') && location.pathname.startsWith(href));
   };
 
   const renderNavItems = (items: NavItem[]) => {

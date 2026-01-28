@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { RoleGuard } from "@/components/guards/RoleGuard";
@@ -16,6 +16,9 @@ import PricingPage from "@/pages/PricingPage";
 import FeaturesPage from "@/pages/FeaturesPage";
 import SampleReportPage from "@/pages/SampleReportPage";
 import FAQPage from "@/pages/FAQPage";
+import ContactPage from "@/pages/ContactPage";
+import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
+import TermsOfServicePage from "@/pages/TermsOfServicePage";
 import NotFound from "@/pages/NotFound";
 import SitemapPage from "@/pages/SitemapPage";
 
@@ -30,9 +33,16 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 
 // Super Admin Pages
 import SuperAdminDashboard from "@/pages/super-admin/SuperAdminDashboard";
-import SuperAdminSettingsPage from "@/pages/super-admin/SuperAdminSettingsPage";
 import PlansManagementPage from "@/pages/super-admin/PlansManagementPage";
 import UsersManagementPage from "@/pages/super-admin/UsersManagementPage";
+
+// Super Admin Settings (with nested routes)
+import SettingsLayout from "@/pages/super-admin/settings/SettingsLayout";
+import GeneralSettings from "@/pages/super-admin/settings/GeneralSettings";
+import IntegrationsSettings from "@/pages/super-admin/settings/IntegrationsSettings";
+import WebhooksSettings from "@/pages/super-admin/settings/WebhooksSettings";
+import SEOSettings from "@/pages/super-admin/settings/SEOSettings";
+import SecuritySettings from "@/pages/super-admin/settings/SecuritySettings";
 
 const queryClient = new QueryClient();
 
@@ -57,9 +67,12 @@ const App = () => (
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/sample-report" element={<SampleReportPage />} />
               <Route path="/faq" element={<FAQPage />} />
-              <Route path="/contact" element={<HomePage />} />
-              <Route path="/privacy" element={<HomePage />} />
-              <Route path="/terms" element={<HomePage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+              {/* Legacy routes - redirect to new paths */}
+              <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
+              <Route path="/terms" element={<Navigate to="/terms-of-service" replace />} />
             </Route>
 
             {/* Dashboard Routes (Auth Required) */}
@@ -108,10 +121,19 @@ const App = () => (
               <Route index element={<SuperAdminDashboard />} />
               <Route path="users" element={<UsersManagementPage />} />
               <Route path="plans" element={<PlansManagementPage />} />
-              <Route path="integrations" element={<SuperAdminSettingsPage />} />
-              <Route path="security" element={<SuperAdminSettingsPage />} />
-              <Route path="settings" element={<SuperAdminSettingsPage />} />
+              <Route path="integrations" element={<Navigate to="/super-admin/settings/integrations" replace />} />
+              <Route path="security" element={<Navigate to="/super-admin/settings/security" replace />} />
               <Route path="logs" element={<SuperAdminDashboard />} />
+              
+              {/* Settings with nested routes */}
+              <Route path="settings" element={<SettingsLayout />}>
+                <Route index element={<Navigate to="/super-admin/settings/general" replace />} />
+                <Route path="general" element={<GeneralSettings />} />
+                <Route path="integrations" element={<IntegrationsSettings />} />
+                <Route path="webhooks" element={<WebhooksSettings />} />
+                <Route path="seo" element={<SEOSettings />} />
+                <Route path="security" element={<SecuritySettings />} />
+              </Route>
             </Route>
 
             {/* 404 */}
