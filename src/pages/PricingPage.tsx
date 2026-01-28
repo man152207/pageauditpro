@@ -6,7 +6,6 @@ import { ProBadge } from '@/components/ui/pro-badge';
 import { CheckCircle2, Crown, Sparkles, Zap, Loader2, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface DbPlan {
   id: string;
@@ -71,8 +70,6 @@ const planCTA: Record<string, string> = {
 export default function PricingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [plans, setPlans] = useState<DbPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -112,56 +109,20 @@ export default function PricingPage() {
     }
   };
 
-  const handlePlanClick = async (plan: DbPlan) => {
+  const handlePlanClick = (plan: DbPlan) => {
     if (plan.price === 0) {
       navigate('/audit');
       return;
     }
 
     if (!user) {
-      navigate('/auth?mode=signup');
+      // Store intended plan, redirect to login then billing
+      navigate(`/auth?mode=signup&redirect=/dashboard/billing&plan=${plan.id}`);
       return;
     }
 
-    // For paid plans, initiate checkout
-    setLoadingPlan(plan.id);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          plan_id: plan.id,
-          success_url: `${window.location.origin}/dashboard/billing?payment=success&gateway=stripe`,
-          cancel_url: `${window.location.origin}/pricing?payment=cancelled`,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw data;
-      
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
-      }
-    } catch (error: any) {
-      console.error('Checkout error:', error);
-      
-      // Handle integration errors
-      if (error.error?.is_config_issue) {
-        toast({
-          title: error.error.human_message || 'Payment service unavailable',
-          description: error.error.fix_steps?.[0] || 'Please contact support.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Checkout failed',
-          description: error.message || 'Unable to start checkout. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } finally {
-      setLoadingPlan(null);
-    }
+    // Logged in users go to billing with plan pre-selected
+    navigate(`/dashboard/billing?plan=${plan.id}`);
   };
 
   const isPlanPopular = (plan: DbPlan) => plan.name === 'Pro Monthly';
@@ -253,14 +214,8 @@ export default function PricingPage() {
                   variant={isPopular ? 'default' : 'outline'}
                   size="lg"
                   onClick={() => handlePlanClick(plan)}
-                  disabled={loadingPlan === plan.id}
                 >
-                  {loadingPlan === plan.id ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : plan.price === 0 ? (
+                  {plan.price === 0 ? (
                     <>
                       <Zap className="mr-2 h-4 w-4" />
                       {cta}

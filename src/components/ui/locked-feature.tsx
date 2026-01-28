@@ -44,7 +44,7 @@ export function LockedFeature({
         </p>
         
         <Button asChild size="lg" className="shadow-glow">
-          <Link to="/pricing">
+          <Link to="/dashboard/billing">
             <Sparkles className="mr-2 h-4 w-4" />
             Upgrade to Pro
           </Link>

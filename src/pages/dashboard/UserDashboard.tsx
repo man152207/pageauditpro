@@ -258,7 +258,7 @@ export default function UserDashboard() {
               and export professional PDF reports.
             </p>
             <Button size="xl" variant="secondary" asChild className="shadow-lg">
-              <Link to="/pricing">
+              <Link to="/dashboard/billing">
                 <Sparkles className="mr-2 h-5 w-5" />
                 Upgrade to Pro
               </Link>

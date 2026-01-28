@@ -115,7 +115,7 @@ export default function AuditReportPage() {
               </>
             ) : (
               <Button asChild>
-                <Link to="/pricing">
+                <Link to="/dashboard/billing">
                   <Sparkles className="mr-2 h-4 w-4" />
                   Upgrade for Full Report
                 </Link>
@@ -199,7 +199,7 @@ export default function AuditReportPage() {
                 +{recommendations.length - 2} more recommendations available with Pro
               </p>
               <Button asChild variant="outline">
-                <Link to="/pricing">
+                <Link to="/dashboard/billing">
                   <Sparkles className="mr-2 h-4 w-4" />
                   Unlock All Recommendations
                 </Link>
@@ -347,7 +347,7 @@ export default function AuditReportPage() {
               and export your report as a professional PDF.
             </p>
             <Button size="lg" variant="secondary" asChild>
-              <Link to="/pricing">
+              <Link to="/dashboard/billing">
                 <Sparkles className="mr-2 h-5 w-5" />
                 Upgrade to Pro
               </Link>
