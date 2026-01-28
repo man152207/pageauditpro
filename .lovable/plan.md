@@ -1,90 +1,161 @@
 
+# Add Payment Method Selection to All Upgrade Paths
 
-# Fix PayPal Sandbox "Something went wrong" Error
+## Problem Identified
 
-## Root Cause Identified
-The PayPal order creation is working perfectly (logs show successful order IDs). The error "Sorry, something went wrong" appears on **PayPal's checkout page** because:
+Currently, users can only select their preferred payment method (Stripe, PayPal, or eSewa) from the `/dashboard/billing` page. However, most "Upgrade" buttons throughout the app redirect to the `/pricing` page, which **only supports Stripe checkout** and has no payment method selector.
 
-1. **Domain Mismatch**: The `return_url` uses the Lovable preview domain (`40febc51-8966-4181-a674-0cb4cbe114ee.lovableproject.com`), but PayPal Sandbox may be rejecting it because:
-   - The domain is not added to the PayPal app's "Return URLs" allowlist
-   - PayPal Sandbox has strict validation for return URLs
+This creates a confusing user experience where:
+- Clicking "Upgrade to Pro" from locked features → Goes to `/pricing` → Stripe only
+- Clicking upgrade buttons from dashboard → Goes to `/pricing` → Stripe only  
+- Only `/dashboard/billing` offers PayPal and eSewa options
 
-2. **PayPal Sandbox Limitation**: PayPal's Sandbox environment requires the return URL domain to be registered in the PayPal Developer Dashboard under your app settings.
-
----
-
-## Solution: Two-Part Fix
-
-### Part 1: PayPal Developer Dashboard Configuration (Required)
-You must add your domains to PayPal's allowed return URLs:
-
-1. Go to [developer.paypal.com](https://developer.paypal.com)
-2. Navigate to **Apps & Credentials** > Select your Sandbox app
-3. Under **"Return URL"** (or **"Redirect URIs"**), add:
-   - `https://40febc51-8966-4181-a674-0cb4cbe114ee.lovableproject.com` (preview domain)
-   - `https://pagelyzer.io` (production domain)
-   - `https://pageauditpro.lovable.app` (published domain)
-
-### Part 2: Code Enhancement for Production Stability
-Update the edge function to use the production domain as the default origin instead of relying on the request origin header. This ensures consistent behavior across environments.
-
-**File: `supabase/functions/paypal-checkout/index.ts`**
-
-```text
-Current code (line 165):
-  const origin = req.headers.get("origin") || "https://pagelyzer.io";
-
-Enhanced code:
-  // For PayPal, always use a consistent production domain that's registered in PayPal
-  // This avoids issues with dynamic preview domains not being whitelisted
-  const PAYPAL_REDIRECT_DOMAIN = "https://pagelyzer.io";
-  
-  // Use the provided success_url directly if it matches a known domain,
-  // otherwise fall back to production domain
-  const origin = success_url?.startsWith("https://pagelyzer.io") 
-    ? "https://pagelyzer.io"
-    : success_url?.startsWith("https://pageauditpro.lovable.app")
-    ? "https://pageauditpro.lovable.app"
-    : PAYPAL_REDIRECT_DOMAIN;
-```
-
-However, the **primary fix** is adding the domains to PayPal's dashboard.
+Additionally, session issues occur when users switch between domains (preview vs published), causing "Session expired" errors during checkout.
 
 ---
 
-## Alternative Quick Fix: Use Production Domain
+## Solution Overview
 
-If you want to test immediately without modifying PayPal dashboard settings:
+### Option A: Redirect All Upgrade Buttons to Billing Page (Recommended)
+Change all "Upgrade" buttons throughout the app to redirect to `/dashboard/billing` instead of `/pricing`. This ensures users always see the payment method selector.
 
-1. Test from your **published domain** (`https://pageauditpro.lovable.app/dashboard/billing`)
-2. Or modify the BillingPage to always send the production return URL
+**Pros:**
+- Simple change (update link destinations)
+- Billing page already has full functionality
+- Logged-in users get the full experience
+
+**Cons:**
+- Requires login first (redirects unauthenticated users to login, then billing)
+
+### Option B: Add Payment Method Selector to Pricing Page
+Add the same payment method selector (Stripe/PayPal/eSewa) to the Pricing page itself.
+
+**Pros:**
+- Users can see pricing without login
+- More flexible for browsing
+
+**Cons:**
+- More code duplication
+- Need to handle authentication state for checkout
+
+---
+
+## Implementation Plan (Using Option A)
+
+### 1. Update All Upgrade Button Links
+
+| File | Current Link | New Link |
+|------|-------------|----------|
+| `src/pages/PricingPage.tsx` | Calls `create-checkout` directly | Redirect to `/dashboard/billing` |
+| `src/components/ui/locked-feature.tsx` | `/pricing` | `/dashboard/billing` |
+| `src/components/report/LockedSection.tsx` | `/pricing` | `/dashboard/billing` |
+| `src/pages/dashboard/AuditReportPage.tsx` | `/pricing` (3 places) | `/dashboard/billing` |
+| `src/pages/dashboard/UserDashboard.tsx` | `/pricing` | `/dashboard/billing` |
+
+### 2. Update PricingPage.tsx Behavior
+
+Instead of directly initiating Stripe checkout, the plan buttons on the Pricing page will:
+- For **free plan**: Navigate to `/audit` (start auditing)
+- For **paid plans**: Navigate to `/dashboard/billing?plan={plan_id}` to select payment method
+
+This preserves the Pricing page as an informational page while routing checkout through the Billing page.
+
+### 3. Enhance Billing Page to Accept Plan Parameter
+
+Update `BillingPage.tsx` to:
+- Read `?plan={plan_id}` from URL
+- If a plan is specified, auto-scroll to that plan or highlight it
+- Show a clear message like "Complete your upgrade to {Plan Name}"
+
+### 4. Fix Session Issues Across Domains
+
+The auth logs show `refresh_token_not_found` errors when users access from different domains. This happens because:
+- Preview domain: `40febc51-xxx.lovableproject.com`
+- Published domain: `pageauditpro.lovable.app`
+- Each domain has separate localStorage for auth tokens
+
+To mitigate:
+- Ensure consistent domain usage in return URLs
+- Add better error handling to redirect to login on session expiration
 
 ---
 
 ## Files to Modify
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `supabase/functions/paypal-checkout/index.ts` | **Modify** | Use passed-in `success_url` directly without rebuilding it from origin |
-
-The current code reconstructs the URL from origin:
-```typescript
-return_url: success_url || `${origin}/dashboard?payment=success&gateway=paypal`
-```
-
-This should use the `success_url` passed from the frontend directly (which it already does), but we need to ensure the frontend passes a valid PayPal-whitelisted domain.
+| File | Change |
+|------|--------|
+| `src/pages/PricingPage.tsx` | Change plan click to redirect to billing page |
+| `src/components/ui/locked-feature.tsx` | Update link from `/pricing` to `/dashboard/billing` |
+| `src/components/report/LockedSection.tsx` | Update link from `/pricing` to `/dashboard/billing` |
+| `src/pages/dashboard/AuditReportPage.tsx` | Update 3 links from `/pricing` to `/dashboard/billing` |
+| `src/pages/dashboard/UserDashboard.tsx` | Update link from `/pricing` to `/dashboard/billing` |
+| `src/pages/dashboard/BillingPage.tsx` | Read `?plan=` param and highlight selected plan |
 
 ---
 
-## Recommended Testing Steps
+## User Flow After Implementation
 
-1. **Immediate Fix**: Test from your published URL: `https://pageauditpro.lovable.app/dashboard/billing`
-2. **Permanent Fix**: Add all domains to PayPal Developer Dashboard
-3. **Code Enhancement**: Optionally hardcode production domain for PayPal redirects
+```text
+User Journey for Upgrade:
+
+1. User sees locked feature OR visits pricing page
+2. Clicks "Upgrade to Pro"
+3. If not logged in → Redirected to login → After login, goes to Billing
+4. If logged in → Goes directly to Billing page
+5. On Billing page:
+   - Sees payment method selector (Credit Card / PayPal / eSewa)
+   - Selects preferred method
+   - Clicks upgrade button
+   - Redirected to chosen payment gateway
+```
+
+---
+
+## Technical Details
+
+### PricingPage.tsx Changes
+
+```typescript
+// Current: Directly calls create-checkout (Stripe only)
+const handlePlanClick = async (plan: DbPlan) => {
+  // ... stripe checkout logic
+};
+
+// New: Redirect to billing with payment options
+const handlePlanClick = (plan: DbPlan) => {
+  if (plan.price === 0) {
+    navigate('/audit');
+    return;
+  }
+  
+  if (!user) {
+    // Store intended plan, redirect to login
+    navigate('/auth?mode=signup&redirect=/dashboard/billing&plan=' + plan.id);
+    return;
+  }
+  
+  // Logged in users go to billing with plan pre-selected
+  navigate('/dashboard/billing?plan=' + plan.id);
+};
+```
+
+### BillingPage.tsx Enhancement
+
+```typescript
+// Read plan from URL params
+const planId = searchParams.get('plan');
+
+// If plan specified, scroll to plans section and show message
+useEffect(() => {
+  if (planId) {
+    // Auto-scroll to plans section
+    document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' });
+  }
+}, [planId]);
+```
 
 ---
 
 ## Summary
 
-The code implementation is correct. The issue is a **PayPal Sandbox configuration** requirement - you must whitelist your return URL domains in the PayPal Developer Portal. This is a standard PayPal security measure that applies to all sandbox apps.
-
+This plan ensures that **every upgrade path** in the application routes through the Billing page, where users can choose between Stripe, PayPal, or eSewa. The Pricing page becomes purely informational, and the Billing page becomes the single source of truth for payment method selection.
