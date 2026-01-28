@@ -10,10 +10,10 @@ import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
+  Copy,
   CreditCard,
   Eye,
   EyeOff,
-  Facebook,
   FileText,
   Globe,
   Key,
@@ -24,6 +24,10 @@ import {
   Webhook,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { IntegrationSettings } from '@/components/settings/IntegrationSettings';
+
+const SUPABASE_FUNCTIONS_URL = 'https://wrjqheztddmazlifbzbi.supabase.co/functions/v1';
+const PRODUCTION_DOMAIN = 'https://pagelyzer.io';
 
 interface SettingValue {
   key: string;
@@ -38,7 +42,7 @@ export default function SuperAdminSettingsPage() {
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
   // Settings state
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<Record<string, string>>({
     // General
     app_name: 'Pagelyzer',
     support_email: 'support@pagelyzer.io',
@@ -47,11 +51,26 @@ export default function SuperAdminSettingsPage() {
     // Facebook
     facebook_app_id: '',
     facebook_app_secret: '',
-    facebook_redirect_url: '',
     
     // Stripe
+    stripe_secret_key: '',
     stripe_publishable_key: '',
     stripe_webhook_secret: '',
+    
+    // PayPal
+    paypal_client_id: '',
+    paypal_client_secret: '',
+    paypal_sandbox_mode: 'true',
+    
+    // eSewa
+    esewa_merchant_id: '',
+    esewa_secret_key: '',
+    esewa_sandbox_mode: 'true',
+    
+    // Email (Resend)
+    resend_api_key: '',
+    email_from_address: '',
+    email_from_name: '',
     
     // SEO - Basic
     seo_title: 'Pagelyzer - Smart Facebook Page Audit Platform',
@@ -73,14 +92,14 @@ export default function SuperAdminSettingsPage() {
     facebook_pixel_id: '',
     
     // SEO - Sitemap & Robots
-    sitemap_url: 'https://pagelyzer.io/sitemap.xml',
+    sitemap_url: `${SUPABASE_FUNCTIONS_URL}/sitemap`,
     robots_txt_content: '',
     
     // Security
-    require_2fa_admins: true,
-    session_timeout_minutes: 30,
-    rate_limit_per_minute: 60,
-    enable_audit_logs: true,
+    require_2fa_admins: 'true',
+    session_timeout_minutes: '30',
+    rate_limit_per_minute: '60',
+    enable_audit_logs: 'true',
   });
 
   useEffect(() => {
@@ -103,9 +122,9 @@ export default function SuperAdminSettingsPage() {
           if (key in newSettings) {
             // For sensitive values, show placeholder if exists
             if (item.is_sensitive && item.value_encrypted) {
-              (newSettings[key] as any) = '••••••••';
+              newSettings[key] = '••••••••';
             } else {
-              (newSettings[key] as any) = item.value_encrypted || '';
+              newSettings[key] = item.value_encrypted || '';
             }
           }
         });
@@ -122,8 +141,13 @@ export default function SuperAdminSettingsPage() {
     setShowSecrets((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const updateSetting = (key: keyof typeof settings, value: string | boolean | number) => {
+  const updateSetting = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied to clipboard' });
   };
 
   const saveSettings = async (settingsToSave: { key: string; value: string; is_sensitive: boolean }[]) => {
@@ -142,7 +166,7 @@ export default function SuperAdminSettingsPage() {
             scope: 'global',
             scope_id: null,
             key: setting.key,
-            value_encrypted: setting.value, // In production, encrypt this!
+            value_encrypted: setting.value,
             is_sensitive: setting.is_sensitive,
             updated_at: new Date().toISOString(),
           }, {
@@ -176,21 +200,6 @@ export default function SuperAdminSettingsPage() {
     ]);
   };
 
-  const handleSaveIntegrations = () => {
-    saveSettings([
-      { key: 'facebook_app_id', value: settings.facebook_app_id, is_sensitive: false },
-      { key: 'facebook_app_secret', value: settings.facebook_app_secret, is_sensitive: true },
-      { key: 'facebook_redirect_url', value: settings.facebook_redirect_url, is_sensitive: false },
-    ]);
-  };
-
-  const handleSavePayment = () => {
-    saveSettings([
-      { key: 'stripe_publishable_key', value: settings.stripe_publishable_key, is_sensitive: false },
-      { key: 'stripe_webhook_secret', value: settings.stripe_webhook_secret, is_sensitive: true },
-    ]);
-  };
-
   const handleSaveSeo = () => {
     saveSettings([
       // Basic SEO
@@ -217,12 +226,46 @@ export default function SuperAdminSettingsPage() {
 
   const handleSaveSecurity = () => {
     saveSettings([
-      { key: 'require_2fa_admins', value: String(settings.require_2fa_admins), is_sensitive: false },
-      { key: 'session_timeout_minutes', value: String(settings.session_timeout_minutes), is_sensitive: false },
-      { key: 'rate_limit_per_minute', value: String(settings.rate_limit_per_minute), is_sensitive: false },
-      { key: 'enable_audit_logs', value: String(settings.enable_audit_logs), is_sensitive: false },
+      { key: 'require_2fa_admins', value: settings.require_2fa_admins, is_sensitive: false },
+      { key: 'session_timeout_minutes', value: settings.session_timeout_minutes, is_sensitive: false },
+      { key: 'rate_limit_per_minute', value: settings.rate_limit_per_minute, is_sensitive: false },
+      { key: 'enable_audit_logs', value: settings.enable_audit_logs, is_sensitive: false },
     ]);
   };
+
+  // Webhook URLs for display
+  const webhookUrls = [
+    {
+      name: 'Stripe Webhook',
+      url: `${SUPABASE_FUNCTIONS_URL}/stripe-webhook`,
+      description: 'Add this URL in Stripe Dashboard → Developers → Webhooks',
+    },
+    {
+      name: 'Facebook OAuth Callback (Page Connect)',
+      url: `${SUPABASE_FUNCTIONS_URL}/facebook-oauth?action=callback`,
+      description: 'Use this for Facebook Page connection OAuth flow',
+    },
+    {
+      name: 'Facebook Login Callback',
+      url: `${SUPABASE_FUNCTIONS_URL}/facebook-auth-login?action=callback`,
+      description: 'Add this to Facebook App → Facebook Login → Valid OAuth Redirect URIs',
+    },
+    {
+      name: 'PayPal Return URL',
+      url: `${PRODUCTION_DOMAIN}/dashboard?payment=success&gateway=paypal`,
+      description: 'Users are redirected here after PayPal payment',
+    },
+    {
+      name: 'eSewa Success Callback',
+      url: `${SUPABASE_FUNCTIONS_URL}/esewa-checkout?action=success`,
+      description: 'Configure in eSewa merchant dashboard',
+    },
+    {
+      name: 'Sitemap',
+      url: `${SUPABASE_FUNCTIONS_URL}/sitemap`,
+      description: 'Submit this to search engines',
+    },
+  ];
 
   if (loading) {
     return (
@@ -251,9 +294,9 @@ export default function SuperAdminSettingsPage() {
             <Key className="h-4 w-4" />
             <span className="hidden sm:inline">Integrations</span>
           </TabsTrigger>
-          <TabsTrigger value="payment" className="gap-2">
-            <CreditCard className="h-4 w-4" />
-            <span className="hidden sm:inline">Payment</span>
+          <TabsTrigger value="webhooks" className="gap-2">
+            <Webhook className="h-4 w-4" />
+            <span className="hidden sm:inline">Webhooks</span>
           </TabsTrigger>
           <TabsTrigger value="seo" className="gap-2">
             <Globe className="h-4 w-4" />
@@ -310,148 +353,76 @@ export default function SuperAdminSettingsPage() {
           </div>
         </TabsContent>
 
-        {/* Integrations */}
+        {/* Integrations - Using IntegrationSettings Component */}
         <TabsContent value="integrations">
-          <div className="space-y-6">
-            {/* Facebook API */}
-            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Facebook className="h-5 w-5 text-[#1877F2]" />
-                  Facebook API
-                </h3>
-                <Badge variant="outline" className={settings.facebook_app_id ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}>
-                  {settings.facebook_app_id ? 'Configured' : 'Not Configured'}
-                </Badge>
-              </div>
-              
-              <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                <p className="text-muted-foreground">
-                  To enable Facebook OAuth, create an app at{' '}
-                  <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    developers.facebook.com
-                  </a>
-                </p>
-              </div>
-              
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="fbAppId">App ID</Label>
-                  <Input 
-                    id="fbAppId" 
-                    placeholder="Enter Facebook App ID" 
-                    value={settings.facebook_app_id}
-                    onChange={(e) => updateSetting('facebook_app_id', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fbAppSecret">App Secret</Label>
-                  <div className="relative">
-                    <Input
-                      id="fbAppSecret"
-                      type={showSecrets.fbSecret ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={settings.facebook_app_secret}
-                      onChange={(e) => updateSetting('facebook_app_secret', e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0"
-                      onClick={() => toggleSecret('fbSecret')}
-                    >
-                      {showSecrets.fbSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fbRedirectUrl">OAuth Redirect URL</Label>
-                <Input 
-                  id="fbRedirectUrl" 
-                  placeholder="https://yourapp.com/auth/facebook/callback" 
-                  value={settings.facebook_redirect_url}
-                  onChange={(e) => updateSetting('facebook_redirect_url', e.target.value)}
-                />
-              </div>
-
-              <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                <p className="font-medium mb-1">Required Scopes:</p>
-                <code className="text-xs">pages_show_list, pages_read_engagement, pages_read_user_content, read_insights</code>
-              </div>
-            </div>
-
-            {/* Webhooks Info */}
-            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Webhook className="h-5 w-5 text-primary" />
-                Webhook Endpoints
-              </h3>
-              
-              <div className="space-y-3 text-sm">
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="font-medium mb-1">Stripe Webhook URL:</p>
-                  <code className="text-xs break-all">
-                    {window.location.origin.replace('preview', 'api')}/functions/v1/stripe-webhook
-                  </code>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="font-medium mb-1">Facebook OAuth Callback:</p>
-                  <code className="text-xs break-all">
-                    {window.location.origin.replace('preview', 'api')}/functions/v1/facebook-oauth?action=callback
-                  </code>
-                </div>
-              </div>
-            </div>
-
-            <Button onClick={handleSaveIntegrations} disabled={saving}>
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Integration Settings
-            </Button>
-          </div>
+          <IntegrationSettings
+            settings={settings}
+            updateSetting={updateSetting}
+            saveSettings={saveSettings}
+            saving={saving}
+          />
         </TabsContent>
 
-        {/* Payment Settings */}
-        <TabsContent value="payment">
-          <div className="rounded-xl border border-border bg-card p-6 space-y-6">
-            <div className="flex items-center justify-between">
+        {/* Webhooks & Callback URLs */}
+        <TabsContent value="webhooks">
+          <div className="space-y-6">
+            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
               <h2 className="font-semibold flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
-                Payment Gateway (Stripe)
+                <Webhook className="h-5 w-5 text-primary" />
+                Webhook & Callback URLs
               </h2>
-              <Badge variant="outline" className="bg-success/10 text-success">
-                <CheckCircle2 className="mr-1 h-3 w-3" />
-                Connected via Lovable
-              </Badge>
-            </div>
-
-            <div className="p-4 rounded-lg bg-success/10 border border-success/20 flex gap-3">
-              <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium">Stripe is Connected</p>
+              
+              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 text-sm">
+                <p className="font-medium mb-1">Production Domain</p>
                 <p className="text-muted-foreground">
-                  Your Stripe Secret Key is already configured through Lovable's secure integration.
-                  You only need to add the webhook secret below.
+                  All webhooks use your Supabase project URL. Your app domain is <strong>{PRODUCTION_DOMAIN}</strong>
                 </p>
               </div>
-            </div>
-            
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="stripePublic">Publishable Key (Optional)</Label>
-                <Input 
-                  id="stripePublic" 
-                  placeholder="pk_live_..." 
-                  value={settings.stripe_publishable_key}
-                  onChange={(e) => updateSetting('stripe_publishable_key', e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">For client-side Stripe.js (optional)</p>
+
+              <div className="space-y-4">
+                {webhookUrls.map((webhook) => (
+                  <div key={webhook.name} className="p-4 rounded-lg bg-muted/50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm">{webhook.name}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(webhook.url)}
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy
+                      </Button>
+                    </div>
+                    <code className="text-xs break-all block bg-background p-2 rounded border">
+                      {webhook.url}
+                    </code>
+                    <p className="text-xs text-muted-foreground">{webhook.description}</p>
+                  </div>
+                ))}
               </div>
+            </div>
+
+            {/* Stripe Webhook Setup */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                Stripe Webhook Configuration
+              </h3>
+              
+              <div className="p-4 rounded-lg bg-warning/10 border border-warning/20 flex gap-3">
+                <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium">Webhook Setup Required</p>
+                  <p className="text-muted-foreground">
+                    Add a webhook endpoint in Stripe Dashboard → Developers → Webhooks pointing to the URL above.
+                    Select events: <code className="text-xs">checkout.session.completed</code>, <code className="text-xs">customer.subscription.*</code>, <code className="text-xs">invoice.payment_failed</code>
+                  </p>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="stripeWebhook">Webhook Signing Secret</Label>
-                <div className="relative">
+                <div className="relative flex gap-1">
                   <Input
                     id="stripeWebhook"
                     type={showSecrets.stripeWebhook ? 'text' : 'password'}
@@ -463,31 +434,24 @@ export default function SuperAdminSettingsPage() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-0 top-0"
                     onClick={() => toggleSecret('stripeWebhook')}
                   >
                     {showSecrets.stripeWebhook ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Get this from Stripe Dashboard → Webhooks</p>
+                <p className="text-xs text-muted-foreground">Get this from Stripe Dashboard → Webhooks after creating the endpoint</p>
               </div>
-            </div>
 
-            <div className="p-4 rounded-lg bg-warning/10 border border-warning/20 flex gap-3">
-              <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium">Webhook Setup Required</p>
-                <p className="text-muted-foreground">
-                  Add a webhook endpoint in Stripe Dashboard pointing to your webhook URL above.
-                  Select events: checkout.session.completed, customer.subscription.*, invoice.payment_failed
-                </p>
-              </div>
+              <Button 
+                onClick={() => saveSettings([
+                  { key: 'stripe_webhook_secret', value: settings.stripe_webhook_secret, is_sensitive: true },
+                ])} 
+                disabled={saving}
+              >
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Webhook Secret
+              </Button>
             </div>
-
-            <Button onClick={handleSavePayment} disabled={saving}>
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Payment Settings
-            </Button>
           </div>
         </TabsContent>
 
@@ -695,7 +659,7 @@ export default function SuperAdminSettingsPage() {
                     Your sitemap is automatically generated and updated with all pages and public reports.
                   </p>
                   <a 
-                    href={`https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap`}
+                    href={`${SUPABASE_FUNCTIONS_URL}/sitemap`}
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="text-primary hover:underline text-xs mt-1 inline-block"
@@ -707,12 +671,17 @@ export default function SuperAdminSettingsPage() {
               
               <div className="space-y-2">
                 <Label htmlFor="sitemapUrl">Sitemap URL (for Search Consoles)</Label>
-                <Input 
-                  id="sitemapUrl" 
-                  value={`https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap`}
-                  readOnly
-                  className="bg-muted"
-                />
+                <div className="flex gap-2">
+                  <Input 
+                    id="sitemapUrl" 
+                    value={`${SUPABASE_FUNCTIONS_URL}/sitemap`}
+                    readOnly
+                    className="bg-muted"
+                  />
+                  <Button variant="outline" size="icon" onClick={() => copyToClipboard(`${SUPABASE_FUNCTIONS_URL}/sitemap`)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Submit this URL to Google Search Console and other search engines
                 </p>
@@ -723,20 +692,13 @@ export default function SuperAdminSettingsPage() {
                 <textarea 
                   id="robotsTxt"
                   className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-                  placeholder={`User-agent: *\nAllow: /\n\nSitemap: https://pagelyzer.io/sitemap.xml`}
+                  placeholder={`User-agent: *\nAllow: /\n\nSitemap: ${SUPABASE_FUNCTIONS_URL}/sitemap`}
                   value={settings.robots_txt_content}
                   onChange={(e) => updateSetting('robots_txt_content', e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
                   Custom robots.txt content. Leave empty to use default.
                 </p>
-              </div>
-
-              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
-                <p className="font-medium mb-1">Current Sitemap Location:</p>
-                <code className="text-xs break-all">
-                  {settings.sitemap_url || 'https://pagelyzer.io/sitemap.xml'}
-                </code>
               </div>
             </div>
 
@@ -764,8 +726,8 @@ export default function SuperAdminSettingsPage() {
                   </p>
                 </div>
                 <Switch 
-                  checked={settings.require_2fa_admins}
-                  onCheckedChange={(v) => updateSetting('require_2fa_admins', v)}
+                  checked={settings.require_2fa_admins === 'true'}
+                  onCheckedChange={(v) => updateSetting('require_2fa_admins', String(v))}
                 />
               </div>
 
@@ -779,7 +741,7 @@ export default function SuperAdminSettingsPage() {
                 <Input 
                   type="number" 
                   value={settings.session_timeout_minutes}
-                  onChange={(e) => updateSetting('session_timeout_minutes', parseInt(e.target.value) || 30)}
+                  onChange={(e) => updateSetting('session_timeout_minutes', e.target.value)}
                   className="w-24" 
                 />
               </div>
@@ -794,7 +756,7 @@ export default function SuperAdminSettingsPage() {
                 <Input 
                   type="number" 
                   value={settings.rate_limit_per_minute}
-                  onChange={(e) => updateSetting('rate_limit_per_minute', parseInt(e.target.value) || 60)}
+                  onChange={(e) => updateSetting('rate_limit_per_minute', e.target.value)}
                   className="w-24" 
                 />
               </div>
@@ -807,8 +769,8 @@ export default function SuperAdminSettingsPage() {
                   </p>
                 </div>
                 <Switch 
-                  checked={settings.enable_audit_logs}
-                  onCheckedChange={(v) => updateSetting('enable_audit_logs', v)}
+                  checked={settings.enable_audit_logs === 'true'}
+                  onCheckedChange={(v) => updateSetting('enable_audit_logs', String(v))}
                 />
               </div>
             </div>

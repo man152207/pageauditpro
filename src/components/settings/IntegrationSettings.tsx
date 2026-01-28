@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   CheckCircle2,
   Copy,
+  CreditCard,
   Eye,
   EyeOff,
   Facebook,
@@ -117,19 +118,32 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
     setTesting((prev) => ({ ...prev, [type]: true }));
     try {
       let endpoint = '';
-      if (type === 'facebook') endpoint = 'facebook-auth-login?action=get-login-url';
-      else if (type === 'paypal') endpoint = 'paypal-checkout?action=test';
-      else if (type === 'esewa') endpoint = 'esewa-checkout?action=test';
-      else if (type === 'email') endpoint = 'send-audit-email';
+      let body: Record<string, unknown> = { type: 'test' };
+      
+      if (type === 'facebook') {
+        endpoint = 'facebook-auth-login';
+        body = { action: 'test' };
+      } else if (type === 'paypal') {
+        endpoint = 'paypal-checkout';
+        body = { action: 'test' };
+      } else if (type === 'esewa') {
+        endpoint = 'esewa-checkout';
+        body = { action: 'test' };
+      } else if (type === 'email') {
+        endpoint = 'send-audit-email';
+        body = { action: 'test' };
+      } else if (type === 'stripe') {
+        endpoint = 'check-subscription';
+        body = {};
+      }
 
-      const { data, error } = await supabase.functions.invoke(endpoint.split('?')[0], {
-        body: { type: 'test' },
-      });
+      const { data, error } = await supabase.functions.invoke(endpoint, { body });
 
       if (error || data?.error) {
+        const errorData = data?.error || {};
         toast({
           title: 'Connection Failed',
-          description: data?.error?.human_message || 'Could not connect. Check your configuration.',
+          description: errorData.human_message || 'Could not connect. Check your configuration.',
           variant: 'destructive',
         });
       } else {
@@ -142,13 +156,60 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
     }
   };
 
+  const isConfigured = (key: string) => {
+    const val = settings[key];
+    return !!val && val !== '' && val !== '••••••••';
+  };
+
   return (
     <div className="space-y-6">
+      {/* Stripe */}
+      <IntegrationCard
+        title="Stripe (Payments)"
+        icon={<CreditCard className="h-5 w-5 text-[#635BFF]" />}
+        isConfigured={isConfigured('stripe_secret_key')}
+        onSave={() => saveSettings([
+          { key: 'stripe_secret_key', value: settings.stripe_secret_key || '', is_sensitive: true },
+          { key: 'stripe_publishable_key', value: settings.stripe_publishable_key || '', is_sensitive: false },
+        ])}
+        saving={saving}
+        onTest={() => testConnection('stripe')}
+        testing={testing.stripe}
+      >
+        <div className="p-3 rounded-lg bg-muted/50 text-sm mb-4">
+          <p className="text-muted-foreground">
+            Get your API keys from{' '}
+            <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Stripe Dashboard → API Keys
+            </a>
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SecretInput 
+            id="stripe-secret" 
+            label="Secret Key" 
+            value={settings.stripe_secret_key || ''} 
+            onChange={(v) => updateSetting('stripe_secret_key', v)} 
+            placeholder="sk_live_..."
+            helpText="Starts with sk_live_ or sk_test_" 
+          />
+          <div className="space-y-2">
+            <Label>Publishable Key</Label>
+            <Input 
+              value={settings.stripe_publishable_key || ''} 
+              onChange={(e) => updateSetting('stripe_publishable_key', e.target.value)} 
+              placeholder="pk_live_..." 
+            />
+            <p className="text-xs text-muted-foreground">For client-side Stripe.js (optional)</p>
+          </div>
+        </div>
+      </IntegrationCard>
+
       {/* Facebook */}
       <IntegrationCard
         title="Facebook API"
         icon={<Facebook className="h-5 w-5 text-[#1877F2]" />}
-        isConfigured={!!settings.facebook_app_id && settings.facebook_app_id !== '••••••••'}
+        isConfigured={isConfigured('facebook_app_id')}
         onSave={() => saveSettings([
           { key: 'facebook_app_id', value: settings.facebook_app_id || '', is_sensitive: false },
           { key: 'facebook_app_secret', value: settings.facebook_app_secret || '', is_sensitive: true },
@@ -157,6 +218,14 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
         onTest={() => testConnection('facebook')}
         testing={testing.facebook}
       >
+        <div className="p-3 rounded-lg bg-muted/50 text-sm mb-4">
+          <p className="text-muted-foreground">
+            Create an app at{' '}
+            <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              developers.facebook.com
+            </a>
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>App ID</Label>
@@ -164,20 +233,34 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
           </div>
           <SecretInput id="fb-secret" label="App Secret" value={settings.facebook_app_secret || ''} onChange={(v) => updateSetting('facebook_app_secret', v)} helpText="From developers.facebook.com" />
         </div>
+        <div className="p-3 rounded-lg bg-muted/50 text-sm mt-4">
+          <p className="font-medium mb-1">Required Scopes:</p>
+          <code className="text-xs">pages_show_list, pages_read_engagement, pages_read_user_content, read_insights, email, public_profile</code>
+        </div>
       </IntegrationCard>
 
       {/* PayPal */}
       <IntegrationCard
         title="PayPal"
         icon={<Wallet className="h-5 w-5 text-[#003087]" />}
-        isConfigured={!!settings.paypal_client_id && settings.paypal_client_id !== '••••••••'}
+        isConfigured={isConfigured('paypal_client_id')}
         onSave={() => saveSettings([
           { key: 'paypal_client_id', value: settings.paypal_client_id || '', is_sensitive: false },
           { key: 'paypal_client_secret', value: settings.paypal_client_secret || '', is_sensitive: true },
           { key: 'paypal_sandbox_mode', value: settings.paypal_sandbox_mode || 'true', is_sensitive: false },
         ])}
         saving={saving}
+        onTest={() => testConnection('paypal')}
+        testing={testing.paypal}
       >
+        <div className="p-3 rounded-lg bg-muted/50 text-sm mb-4">
+          <p className="text-muted-foreground">
+            Get credentials from{' '}
+            <a href="https://developer.paypal.com/dashboard/applications" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              PayPal Developer Dashboard
+            </a>
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Client ID</Label>
@@ -195,14 +278,24 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
       <IntegrationCard
         title="eSewa (Nepal)"
         icon={<Wallet className="h-5 w-5 text-[#60BB46]" />}
-        isConfigured={!!settings.esewa_merchant_id && settings.esewa_merchant_id !== '••••••••'}
+        isConfigured={isConfigured('esewa_merchant_id')}
         onSave={() => saveSettings([
           { key: 'esewa_merchant_id', value: settings.esewa_merchant_id || '', is_sensitive: false },
           { key: 'esewa_secret_key', value: settings.esewa_secret_key || '', is_sensitive: true },
           { key: 'esewa_sandbox_mode', value: settings.esewa_sandbox_mode || 'true', is_sensitive: false },
         ])}
         saving={saving}
+        onTest={() => testConnection('esewa')}
+        testing={testing.esewa}
       >
+        <div className="p-3 rounded-lg bg-muted/50 text-sm mb-4">
+          <p className="text-muted-foreground">
+            Get credentials from{' '}
+            <a href="https://merchant.esewa.com.np" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              eSewa Merchant Portal
+            </a>
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Merchant ID</Label>
@@ -220,15 +313,26 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
       <IntegrationCard
         title="Email Provider (Resend)"
         icon={<Mail className="h-5 w-5 text-primary" />}
-        isConfigured={!!settings.resend_api_key && settings.resend_api_key !== '••••••••'}
+        isConfigured={isConfigured('resend_api_key')}
         onSave={() => saveSettings([
           { key: 'resend_api_key', value: settings.resend_api_key || '', is_sensitive: true },
           { key: 'email_from_address', value: settings.email_from_address || '', is_sensitive: false },
           { key: 'email_from_name', value: settings.email_from_name || '', is_sensitive: false },
         ])}
         saving={saving}
+        onTest={() => testConnection('email')}
+        testing={testing.email}
       >
-        <SecretInput id="resend-key" label="Resend API Key" value={settings.resend_api_key || ''} onChange={(v) => updateSetting('resend_api_key', v)} helpText="From resend.com/api-keys" />
+        <div className="p-3 rounded-lg bg-muted/50 text-sm mb-4">
+          <p className="text-muted-foreground">
+            Get your API key from{' '}
+            <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Resend Dashboard
+            </a>
+            . Don't forget to verify your domain!
+          </p>
+        </div>
+        <SecretInput id="resend-key" label="Resend API Key" value={settings.resend_api_key || ''} onChange={(v) => updateSetting('resend_api_key', v)} placeholder="re_..." helpText="From resend.com/api-keys" />
         <div className="grid gap-4 sm:grid-cols-2 pt-2">
           <div className="space-y-2">
             <Label>From Email</Label>
