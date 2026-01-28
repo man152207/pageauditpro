@@ -1,40 +1,36 @@
-name: Deploy pagelyzer.io via FTP
+name: Deploy to cPanel via FTP
 
-on:
+on: 
   push:
-    branches: [ "main" ]
-
-concurrency:
-  group: deploy-ftp
-  cancel-in-progress: true
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Quick network test (port reachability)
-      - name: Test FTP port
-        run: |
-          echo "Testing ${{ secrets.FTP_SERVER }}:21"
-          timeout 10 bash -lc 'cat < /dev/null > /dev/tcp/${{ secrets.FTP_SERVER }}/21' \
-            && echo "Port 21 reachable" || (echo "Port 21 NOT reachable" && exit 1)
-
-      - name: FTP Deploy
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}   # go@pagelyzer.io
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: 192.250.235.126
+          username: go@pagelyzer.io
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
-          port: 21
-          timeout: 120000
-          local-dir: ./
-          server-dir: /
-          exclude: |
-            **/.git*
-            **/.github/**
-            **/node_modules/**
-            **/.env
-            **/.DS_Store
+          local-dir: dist/             # ✔ MUST end with slash
+          server-dir: /  # ✔ server folder
+          dangerous-clean-slate: false
