@@ -1,92 +1,97 @@
 
-Goal
-- Fix pagelyzer.io/pricing (and all other React routes) returning “LiteSpeed 404” only on hard reload (Ctrl+Shift+R), while normal in-app navigation works.
+# Fix Plan: Complete All Remaining Configuration Issues
 
-Root cause (why it happens)
-- Your app is a React SPA (Vite + react-router-dom).
-- When you click links, routing happens in the browser (client-side), so it “works”.
-- On a hard reload, the browser forces a fresh request to the server for /pricing.
-- LiteSpeed tries to find a real file/folder at /pricing. It doesn’t exist, so LiteSpeed returns its own server 404 page.
-- A normal refresh may still show the page because the browser can reuse cached index.html/assets; Ctrl+Shift+R bypasses cache, exposing the server misconfiguration.
+## Summary
+After thorough analysis, I've identified the remaining issues that need to be fixed to ensure all features work correctly.
 
-Production-ready fix (LiteSpeed / cPanel)
-- Configure “History API Fallback” on the server: rewrite any non-file request to /index.html.
-- On LiteSpeed/Apache hosting, the standard, reliable way is a root .htaccess rewrite (or equivalent vhost rules).
+---
 
-What I will implement in the codebase (so it ships with every deploy)
-1) Add a SPA rewrite .htaccess into the build output
-   - Create: public/.htaccess
-   - This file will be copied into dist/.htaccess during `vite build` (public directory is copied to dist).
-   - Contents (robust SPA fallback; preserves real files like assets, favicon, robots.txt):
-     - Enable RewriteEngine
-     - If the request matches an existing file (-f) or directory (-d), serve it normally
-     - Otherwise rewrite everything to /index.html
+## Issues Found
 
-   Proposed .htaccess rules:
-   ```apache
-   <IfModule mod_rewrite.c>
-     RewriteEngine On
-     RewriteBase /
+### 1. Database Issues
+- **Duplicate settings entries**: There are duplicate rows for `stripe_publishable_key` and `stripe_secret_key` in the settings table
+- **SEO settings not saved**: The default SEO values are used but never saved to database
 
-     # If requesting an actual existing file or directory, serve it
-     RewriteCond %{REQUEST_FILENAME} -f [OR]
-     RewriteCond %{REQUEST_FILENAME} -d
-     RewriteRule ^ - [L]
+### 2. Missing Webhook Secret
+- **Stripe Webhook Secret** (`whsec_...`) is not configured
+- This causes errors when Stripe sends webhook events (as seen in logs: "Unexpected end of JSON input")
 
-     # SPA fallback: everything else goes to index.html
-     RewriteRule . /index.html [L]
-   </IfModule>
+### 3. Code Improvements Needed
+- The IntegrationsSettings component saves settings one by one but doesn't handle duplicates
+- Need to clean up duplicate settings entries
 
-   # Optional safety: if rewrites are disabled for some reason, still fallback
-   ErrorDocument 404 /index.html
-   ```
+---
 
-   Notes:
-   - This will make /pricing reload-safe (including Ctrl+Shift+R), and also /features, /faq, /dashboard/*, /super-admin/*, etc.
-   - Intentionally missing routes will still show your React NotFound page (because React router will render 404 UI inside the SPA), but the server will return index.html (HTTP status may still be 200 unless you implement SSR; for SPA that’s normal).
+## Implementation Plan
 
-2) Add a CI verification so we never “forget” the rewrite file again
-   - Update: .github/workflows/deploy-ftp.yml
-   - After build, verify dist/.htaccess exists:
-     - `test -f dist/.htaccess || (echo ".htaccess missing in dist" && exit 1)`
-   - This ensures future deployments can’t break hard reload.
+### Step 1: Clean Up Duplicate Database Entries
+Create a SQL migration to remove duplicate settings entries:
+```sql
+-- Remove duplicate settings keeping only the most recent
+DELETE FROM settings a
+USING settings b
+WHERE a.id < b.id
+AND a.key = b.key
+AND a.scope = b.scope
+AND a.scope_id IS NOT DISTINCT FROM b.scope_id;
+```
 
-3) Deployment/hosting considerations (to avoid surprises)
-   - Confirm your deployment target directory is the actual web root (often public_html). Your workflow uploads dist/ to server-dir: /. If that maps correctly in your hosting, fine. If not, adjust server-dir to the correct path (commonly /public_html/).
-   - Ensure .htaccess is allowed by the host (AllowOverride enabled). On most cPanel + LiteSpeed setups it is.
-   - If LiteSpeed cache is enabled, purge cache after deployment (hard reload behavior can be confusing otherwise).
+### Step 2: Fix IntegrationsSettings Save Logic
+Update `src/components/settings/IntegrationSettings.tsx` to:
+- Use proper upsert logic that prevents duplicates
+- Add better error handling
+- Show loading states per-section
 
-Testing checklist (what you should test after this ships)
-1) Hard reload tests (Ctrl+Shift+R / Ctrl+F5)
-   - https://pagelyzer.io/pricing
-   - https://pagelyzer.io/features
-   - https://pagelyzer.io/faq
-   - https://pagelyzer.io/contact
-   - https://pagelyzer.io/privacy-policy
-   - https://pagelyzer.io/terms-of-service
-   - https://pagelyzer.io/super-admin/settings/webhooks (after login)
+### Step 3: Add Missing SEO Default Values to Database
+The SEO settings need to be auto-saved on first load or explicitly saved. Add a one-time initialization that saves default SEO values if they don't exist.
 
-2) Direct paste tests (new incognito window)
-   - Paste each URL directly (no prior navigation) and confirm it loads.
+### Step 4: Improve Webhook Settings UX
+Update `WebhooksSettings.tsx` to:
+- Show clearer status indicators (Configured vs Not Configured)
+- Add test webhook button for Stripe
 
-3) Static assets still served correctly
-   - https://pagelyzer.io/robots.txt should still load as a plain text file
-   - favicon and JS/CSS assets should load normally (Network tab shows 200 for assets)
+### Step 5: Add "Test Connection" Functionality
+For each integration (Stripe, PayPal, eSewa, Facebook):
+- Add a "Test Connection" button
+- Validate credentials and show success/failure
+- Provide actionable error messages
 
-Edge cases / risks and how we handle them
-- Existing .htaccess on the server (WordPress, other rules):
-  - If your server already has a .htaccess, we must merge rules rather than overwrite.
-  - Because your deploy uploads dist/ to server root, it may overwrite the existing .htaccess. If you rely on existing rules, we should coordinate the final merged .htaccess content.
-- If AllowOverride is disabled:
-  - .htaccess won’t work; then the fix must be done in the server’s vhost config. (Still solvable, but requires hosting control panel / admin access.)
-- Some hosts block ErrorDocument 404 /index.html with rewrites:
-  - The RewriteRule solution alone is usually sufficient.
+---
 
-Deliverables
-- public/.htaccess (new)
-- .github/workflows/deploy-ftp.yml updated to verify dist/.htaccess exists
-- Post-deploy verification steps documented (above)
+## Files to Modify
 
-Result
-- /pricing (and all other React routes) will no longer produce a LiteSpeed “404 Not Found” on Ctrl+Shift+R.
-- The SPA will be reload-safe in production, as required.
+| File | Changes |
+|------|---------|
+| `src/components/settings/IntegrationSettings.tsx` | Fix upsert logic, add test connection buttons |
+| `src/pages/super-admin/settings/SEOSettings.tsx` | Add auto-save for defaults, improve UX |
+| `src/pages/super-admin/settings/WebhooksSettings.tsx` | Add status indicators, test webhook button |
+| `src/pages/super-admin/settings/IntegrationsSettings.tsx` | Minor improvements |
+
+---
+
+## Database Migration
+Remove duplicate entries from settings table to prevent future issues.
+
+---
+
+## User Actions Required (cannot be automated)
+
+1. **Stripe Webhook Secret**: 
+   - Go to Stripe Dashboard → Developers → Webhooks
+   - Create endpoint pointing to: `https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/stripe-webhook`
+   - Copy the `whsec_...` signing secret
+   - Paste in Super Admin → Settings → Webhooks
+
+2. **Test Payment Flow**:
+   - Go to Billing page
+   - Try checkout with Pro plan
+   - Verify it redirects to Stripe
+
+---
+
+## Expected Outcome
+- All settings save without creating duplicates
+- Stripe webhook processes events correctly (with signing secret)
+- SEO defaults are saved to database
+- Test connection buttons provide immediate feedback
+- Clear status indicators show what's configured vs missing
