@@ -27,6 +27,7 @@ import UserDashboard from "@/pages/dashboard/UserDashboard";
 import ManualAuditPage from "@/pages/dashboard/ManualAuditPage";
 import AuditReportPage from "@/pages/dashboard/AuditReportPage";
 import BillingPage from "@/pages/dashboard/BillingPage";
+import PayPalCallback from "@/pages/dashboard/PayPalCallback";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -90,6 +91,7 @@ const App = () => (
               <Route path="reports/:auditId" element={<AuditReportPage />} />
               <Route path="history" element={<UserDashboard />} />
               <Route path="billing" element={<BillingPage />} />
+              <Route path="paypal-callback" element={<PayPalCallback />} />
               <Route path="profile" element={<UserDashboard />} />
               <Route path="settings" element={<UserDashboard />} />
             </Route>
