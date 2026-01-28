@@ -4,27 +4,34 @@ import { cn } from '@/lib/utils';
 interface ProBadgeProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  glow?: boolean;
 }
 
-export function ProBadge({ className, size = 'sm' }: ProBadgeProps) {
+export function ProBadge({ className, size = 'sm', glow = false }: ProBadgeProps) {
   return (
     <span
       className={cn(
-        'pro-badge',
+        'pro-badge relative overflow-hidden',
         {
           'text-xs px-2 py-0.5': size === 'sm',
           'text-sm px-2.5 py-1': size === 'md',
           'text-base px-3 py-1.5': size === 'lg',
         },
+        glow && 'animate-pulse-glow',
         className
       )}
     >
-      <Crown className={cn({
+      {/* Shimmer effect */}
+      <span className="absolute inset-0 overflow-hidden">
+        <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      </span>
+      
+      <Crown className={cn('relative z-10', {
         'h-3 w-3': size === 'sm',
         'h-4 w-4': size === 'md',
         'h-5 w-5': size === 'lg',
       })} />
-      PRO
+      <span className="relative z-10">PRO</span>
     </span>
   );
 }
