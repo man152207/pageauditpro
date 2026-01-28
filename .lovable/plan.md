@@ -1,135 +1,177 @@
-# Pagelyzer Implementation Status
 
-## ✅ Completed Implementation
+# Pagelyzer Domain & Integration Fixes
 
-### Phase 1: Subscription Infrastructure ✅
-- **check-subscription Edge Function** - Verifies user subscription, returns plan features, limits, and usage stats
-- **AuthContext Updated** - Added `subscription`, `isPro`, `isSubscriptionLoading`, `refreshSubscription()`
-- **useSubscription Hook** - Convenient access to subscription features and limits
+## Issues Identified
 
-### Phase 2: Secure Freemium Report API ✅
-- **get-audit-report Edge Function** - Returns gated data based on subscription:
-  - Free: Overall score, basic breakdown, 2 recommendations only
-  - Pro: Full metrics, all recommendations, post analysis, demographics
-- **run-audit Edge Function** - Fetches Facebook data, calculates scores, stores audit
-  - Enforces monthly audit limits for free users
-  - Stores detailed metrics in audit_metrics table for Pro users only
+### 1. Webhook URL Issues
+The current webhook URLs use incorrect domain patterns. Need to update to use the correct Supabase project domain:
+- **Current Wrong Pattern**: `https://40febc51-8966-4181-a674-0cb4cbe114ee.lovableproject.com/functions/v1/...`
+- **Correct Pattern**: `https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/...`
 
-### Phase 3: New Audit Flow ✅
-- **AuditFlow Component** - Connect → Select Page → Running → Complete flow
-- **ManualAuditPage Refactored** - Now uses AuditFlow, no manual input
-- **Auto-audit on connect** - Audit runs automatically after page connection
+The production domain is **pagelyzer.io**
 
-### Phase 4: Freemium Report Page ✅
-- **AuditReportPage** - Fetches report via secure API, shows gated content
-- **ReportFilters** - Category/priority filtering for recommendations
-- **ReportSection** - Reusable section component
-- **LockedSection** - Shows placeholder content (never real Pro data)
-- **Placeholder generators** - Safe mock content for locked sections
+### 2. Missing Implementations
 
-### Phase 5: Dashboard Real Data ✅
-- **useAudits Hook** - `useRecentAudits()`, `useAuditStats()`, `useAudit()`, `useRunAudit()`
-- **UserDashboard** - Now uses real data from hooks
-- **Shows actual usage limits** - Audits remaining, last audit date
-
-### Phase 6: Configuration ✅
-- **supabase/config.toml** - Added new edge functions
-- **App.tsx** - Added `/dashboard/reports/:auditId` route
+| Feature | Status | Required Action |
+|---------|--------|-----------------|
+| Stripe Integration | Working | Update webhook URL display |
+| PayPal Integration | Backend Done | Add UI payment option in BillingPage |
+| eSewa Integration | Backend Done | Add UI payment option in BillingPage |
+| Facebook OAuth Login | Backend Done | Needs complete-login flow integration |
+| Email Reports | Backend Done | Add cron/scheduling for recurring emails |
+| SEO Settings | Done | No changes needed |
+| Error Handling Framework | Done | Already implemented |
+| IntegrationSettings Component | Created | Not integrated into SuperAdminSettingsPage |
 
 ---
 
-## Security Implementation
+## Implementation Plan
 
-### Backend Enforcement
-| Data Type | Free Users | Pro Users | Enforcement |
-|-----------|------------|-----------|-------------|
-| Overall Score | ✅ Yes | ✅ Yes | get-audit-report |
-| Basic Breakdown | ✅ Yes | ✅ Yes | get-audit-report |
-| 2 Recommendations | ✅ Yes | ✅ Yes | get-audit-report |
-| Full Recommendations | ❌ No | ✅ Yes | get-audit-report |
-| Detailed Metrics | ❌ No | ✅ Yes | get-audit-report |
-| Post Analysis | ❌ No | ✅ Yes | get-audit-report |
-| Demographics | ❌ No | ✅ Yes | get-audit-report |
-| AI Insights | ❌ No | ✅ Yes | get-audit-report |
-| PDF Export | ❌ No | ✅ Yes | generate-pdf-report |
-| Share Link | ❌ No | ✅ Yes | reports table |
+### Phase 1: Fix Webhook URL Display in Super Admin Settings
 
-### No Inspect Element Bypass
-- Pro-only data is **NEVER** sent to the client for Free users
-- `get-audit-report` checks subscription status on every request
-- Frontend `LockedSection` only renders placeholder/mock content
-- Real Pro data is never in the DOM for Free users
+Update `SuperAdminSettingsPage.tsx` to show correct webhook URLs:
+
+```text
+Stripe Webhook URL:
+https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/stripe-webhook
+
+Facebook OAuth Callback:
+https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-oauth?action=callback
+
+Facebook Login Callback:
+https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-auth-login?action=callback
+
+PayPal Return URL:
+https://pagelyzer.io/dashboard?payment=success&gateway=paypal
+
+eSewa Success Callback:
+https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/esewa-checkout?action=success
+```
+
+### Phase 2: Integrate IntegrationSettings Component
+
+Add the already-created `IntegrationSettings` component to SuperAdminSettingsPage Integrations tab. This provides:
+- PayPal key management (Client ID, Secret, Sandbox toggle)
+- eSewa key management (Merchant ID, Secret Key, Sandbox toggle)
+- Email provider (Resend) key management
+- Facebook API key management
+- Test Connection buttons for each integration
+
+### Phase 3: Add Multiple Payment Gateway Options to BillingPage
+
+Update `BillingPage.tsx` to offer payment method selection:
+- Stripe (default)
+- PayPal (for international users)
+- eSewa (for Nepal users - shows NPR pricing)
+
+Add a payment gateway selector before checkout.
+
+### Phase 4: Complete Facebook Login Integration
+
+Update `AuthPage.tsx` to properly handle the Facebook login callback and complete the authentication flow using the `complete-login` action.
+
+### Phase 5: Add Stripe Key Management to Settings
+
+Currently Stripe uses env-only key. Update:
+1. `create-checkout` edge function to fetch `stripe_secret_key` from settings first
+2. Add Stripe key fields to IntegrationSettings component
+3. Keep env fallback for backward compatibility
+
+### Phase 6: Add Recurring Email Scheduling
+
+Create a scheduled function endpoint that Super Admin can trigger or set up as a cron job for weekly email summaries.
 
 ---
 
-## User Flows
-
-### Free User Flow
-1. Sign up / Login
-2. Navigate to `/dashboard/audit`
-3. Connect Facebook page via OAuth
-4. Audit runs automatically
-5. View report at `/dashboard/reports/:id`:
-   - Overall score visible
-   - Basic breakdown visible
-   - 2 recommendations visible
-   - Pro sections show locked placeholders
-6. Click "Upgrade" → Pricing page
-
-### Pro User Flow
-1. Login (subscription verified via check-subscription)
-2. Navigate to `/dashboard/audit`
-3. Connect/Select Facebook page
-4. Audit runs automatically
-5. View FULL report:
-   - All scores and metrics
-   - All recommendations
-   - Post analysis
-   - Demographics (when available)
-6. Filter recommendations
-7. Export PDF / Share (coming soon)
-
----
-
-## Files Created/Modified
-
-### New Edge Functions
-- `supabase/functions/check-subscription/index.ts`
-- `supabase/functions/run-audit/index.ts`
-- `supabase/functions/get-audit-report/index.ts`
-
-### New Hooks
-- `src/hooks/useSubscription.ts`
-- `src/hooks/useAudits.ts`
-
-### New Components
-- `src/components/audit/AuditFlow.tsx`
-- `src/components/report/ReportFilters.tsx`
-- `src/components/report/ReportSection.tsx`
-- `src/components/report/LockedSection.tsx`
-
-### New Pages
-- `src/pages/dashboard/AuditReportPage.tsx`
+## File Changes Summary
 
 ### Modified Files
-- `src/contexts/AuthContext.tsx` - Added subscription state
-- `src/pages/dashboard/ManualAuditPage.tsx` - Refactored to use AuditFlow
-- `src/pages/dashboard/UserDashboard.tsx` - Uses real data hooks
-- `src/App.tsx` - Added report route
-- `supabase/config.toml` - Added new functions
+
+| File | Changes |
+|------|---------|
+| `src/pages/super-admin/SuperAdminSettingsPage.tsx` | Replace Integrations tab with IntegrationSettings component, fix webhook URLs |
+| `src/pages/dashboard/BillingPage.tsx` | Add multi-gateway payment selector (Stripe, PayPal, eSewa) |
+| `src/pages/AuthPage.tsx` | Complete Facebook login flow with complete-login action |
+| `src/components/settings/IntegrationSettings.tsx` | Add Stripe key management section |
+| `supabase/functions/create-checkout/index.ts` | Fetch stripe_secret_key from settings table first |
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/weekly-email-cron/index.ts` | Scheduled function to send weekly summary emails |
 
 ---
 
-## Remaining/Future Work
+## Technical Details
 
-### Required for Production
-- [ ] Configure `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET` secrets
-- [ ] Ensure `STRIPE_WEBHOOK_SECRET` is set
-- [ ] Create Stripe products/prices in dashboard
+### Correct Supabase Edge Function URLs
 
-### Nice to Have
-- [ ] PDF export implementation in generate-pdf-report
-- [ ] Share link generation with public report view
-- [ ] Demographics chart visualization
-- [ ] AI-powered insights using Lovable AI Gateway
-- [ ] Admin dashboards with real aggregate data
+```text
+Base URL: https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/
+
+Endpoints:
+- /stripe-webhook (POST, no JWT)
+- /facebook-oauth?action=callback (GET, no JWT)
+- /facebook-auth-login?action=callback (GET, no JWT)
+- /paypal-checkout?action=capture-order (POST)
+- /esewa-checkout?action=success (GET)
+- /create-checkout (POST, requires auth)
+- /run-audit (POST, requires auth)
+- /get-audit-report (POST, requires auth)
+- /send-audit-email (POST)
+- /check-subscription (POST, requires auth)
+```
+
+### Payment Gateway Integration in BillingPage
+
+```tsx
+// Payment method selector
+const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal' | 'esewa'>('stripe');
+
+// Handle checkout based on selected gateway
+const handleCheckout = async (plan: Plan) => {
+  switch (paymentMethod) {
+    case 'stripe':
+      // Existing Stripe flow
+      break;
+    case 'paypal':
+      // Call paypal-checkout?action=create-order
+      // Redirect to PayPal approval URL
+      break;
+    case 'esewa':
+      // Call esewa-checkout?action=initiate
+      // Submit form to eSewa payment page
+      break;
+  }
+};
+```
+
+### Settings-Driven Stripe Key Fetch
+
+```typescript
+// In create-checkout edge function
+const { data: stripeKeyData } = await supabaseAdmin
+  .from("settings")
+  .select("key, value_encrypted")
+  .eq("scope", "global")
+  .eq("key", "stripe_secret_key");
+
+const stripeSecretKey = stripeKeyData?.[0]?.value_encrypted || 
+  Deno.env.get("STRIPE_SECRET_KEY");
+```
+
+---
+
+## Production URLs Summary
+
+| Purpose | URL |
+|---------|-----|
+| Main Domain | https://pagelyzer.io |
+| Supabase Functions | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/ |
+| Stripe Webhook | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/stripe-webhook |
+| FB OAuth Callback | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-oauth?action=callback |
+| FB Login Callback | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-auth-login?action=callback |
+| PayPal Success | https://pagelyzer.io/dashboard?payment=success&gateway=paypal |
+| eSewa Success | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/esewa-checkout?action=success |
+| Sitemap | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap |
