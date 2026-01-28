@@ -65,7 +65,7 @@ export function LockedSection({
             Unlock detailed insights, AI recommendations, and more with Pro
           </p>
           <Button asChild>
-            <Link to="/pricing">
+            <Link to="/dashboard/billing">
               <Sparkles className="mr-2 h-4 w-4" />
               Upgrade to Pro
             </Link>

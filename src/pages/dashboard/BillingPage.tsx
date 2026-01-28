@@ -58,6 +58,7 @@ export default function BillingPage() {
     // Show success/cancel message
     const payment = searchParams.get('payment');
     const gateway = searchParams.get('gateway');
+    const planId = searchParams.get('plan');
     
     if (payment === 'success') {
       toast({
@@ -79,6 +80,13 @@ export default function BillingPage() {
     }
 
     fetchData();
+
+    // Auto-scroll to plans section if plan parameter is present
+    if (planId) {
+      setTimeout(() => {
+        document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    }
   }, [searchParams]);
 
   const fetchData = async () => {
@@ -265,7 +273,9 @@ export default function BillingPage() {
       <div>
         <h1 className="text-2xl font-bold mb-2">Billing & Subscription</h1>
         <p className="text-muted-foreground">
-          Manage your subscription and view payment history.
+          {searchParams.get('plan') 
+            ? 'Complete your upgrade by selecting a payment method below.'
+            : 'Manage your subscription and view payment history.'}
         </p>
       </div>
 

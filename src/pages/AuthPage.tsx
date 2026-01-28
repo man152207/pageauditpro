@@ -35,9 +35,19 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard', { replace: true });
+      // Check for redirect URL in search params
+      const redirectUrl = searchParams.get('redirect');
+      const planId = searchParams.get('plan');
+      
+      if (redirectUrl) {
+        // Append plan param if present
+        const finalUrl = planId ? `${redirectUrl}?plan=${planId}` : redirectUrl;
+        navigate(finalUrl, { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
-  }, [user, navigate]);
+  }, [user, navigate, searchParams]);
 
   if (user) {
     return (
@@ -99,7 +109,7 @@ export default function AuthPage() {
           title: 'Welcome!',
           description: 'Your account has been created successfully.',
         });
-        navigate('/dashboard');
+        // Redirect handled by useEffect above
       } else {
         const { error } = await signIn(email, password);
         if (error) {
@@ -116,7 +126,7 @@ export default function AuthPage() {
           title: 'Welcome back!',
           description: 'You have logged in successfully.',
         });
-        navigate('/dashboard');
+        // Redirect handled by useEffect above
       }
     } finally {
       setIsLoading(false);
