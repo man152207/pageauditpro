@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BarChart3, Eye, EyeOff, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
+import { BarChart3, Eye, EyeOff, Loader2, CheckCircle2, Sparkles, Facebook } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFacebookLoading, setIsFacebookLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [shake, setShake] = useState(false);
 
@@ -118,6 +120,132 @@ export default function AuthPage() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFacebookLogin = async () => {
+    setIsFacebookLoading(true);
+    try {
+      // Get the Facebook login URL from edge function
+      const { data, error } = await supabase.functions.invoke('facebook-auth-login', {
+        body: {},
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      // Check for configuration error
+      if (error || data?.error) {
+        const errorData = data?.error || {};
+        toast({
+          title: errorData.human_message || 'Facebook login unavailable',
+          description: errorData.fix_steps?.[0] || 'Please contact support or use email login.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Open popup for Facebook OAuth
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-auth-login?action=get-login-url`
+      );
+      const urlData = await response.json();
+
+      if (urlData.error) {
+        toast({
+          title: urlData.error.human_message || 'Facebook login error',
+          description: urlData.error.fix_steps?.[0] || 'Please try again later.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Open popup
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        urlData.authUrl,
+        'facebook-login',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      // Listen for message from popup
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data?.type === 'fb-login-success') {
+          window.removeEventListener('message', handleMessage);
+          popup?.close();
+
+          // Complete login with the received user data
+          const { data: loginResult, error: loginError } = await supabase.functions.invoke('facebook-auth-login', {
+            body: { ...event.data.userData },
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (loginError || !loginResult?.success) {
+            toast({
+              title: 'Login failed',
+              description: loginResult?.error?.human_message || 'Could not complete Facebook login.',
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          // Sign in using magic link token
+          if (loginResult.properties?.hashed_token) {
+            const { error: verifyError } = await supabase.auth.verifyOtp({
+              token_hash: loginResult.properties.hashed_token,
+              type: 'magiclink',
+            });
+
+            if (verifyError) {
+              toast({
+                title: 'Login failed',
+                description: 'Could not verify login. Please try again.',
+                variant: 'destructive',
+              });
+              return;
+            }
+          }
+
+          toast({
+            title: loginResult.isNewUser ? 'Welcome!' : 'Welcome back!',
+            description: loginResult.isNewUser 
+              ? 'Your account has been created with Facebook.' 
+              : 'Logged in successfully with Facebook.',
+          });
+          navigate('/dashboard');
+        } else if (event.data?.type === 'fb-login-error') {
+          window.removeEventListener('message', handleMessage);
+          popup?.close();
+          toast({
+            title: 'Facebook login failed',
+            description: event.data.error || 'Please try again.',
+            variant: 'destructive',
+          });
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      // Cleanup listener if popup is closed manually
+      const checkPopup = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkPopup);
+          window.removeEventListener('message', handleMessage);
+          setIsFacebookLoading(false);
+        }
+      }, 500);
+
+    } catch (error) {
+      console.error('Facebook login error:', error);
+      toast({
+        title: 'Facebook login failed',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsFacebookLoading(false);
     }
   };
 
@@ -234,7 +362,7 @@ export default function AuthPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+            <Button type="submit" className="w-full" size="lg" disabled={isLoading || isFacebookLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -245,6 +373,33 @@ export default function AuthPage() {
               )}
             </Button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Facebook Login Button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full gap-2"
+            onClick={handleFacebookLogin}
+            disabled={isLoading || isFacebookLoading}
+          >
+            {isFacebookLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Facebook className="h-4 w-4 text-[#1877F2]" />
+            )}
+            Continue with Facebook
+          </Button>
 
           {/* Toggle mode */}
           <div className="mt-6 text-center text-sm">

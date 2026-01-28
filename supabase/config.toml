@@ -29,3 +29,15 @@ verify_jwt = false
 
 [functions.get-audit-report]
 verify_jwt = false
+
+[functions.facebook-auth-login]
+verify_jwt = false
+
+[functions.paypal-checkout]
+verify_jwt = false
+
+[functions.esewa-checkout]
+verify_jwt = false
+
+[functions.send-audit-email]
+verify_jwt = false
