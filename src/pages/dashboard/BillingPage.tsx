@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ProBadge } from '@/components/ui/pro-badge';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import {
   CheckCircle2,
   CreditCard,
   Crown,
-  Download,
-  ExternalLink,
   Loader2,
   Sparkles,
+  Wallet,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -37,6 +38,11 @@ interface Subscription {
   plans: Plan;
 }
 
+type PaymentGateway = 'stripe' | 'paypal' | 'esewa';
+
+// NPR conversion rate (approximate)
+const NPR_RATE = 133;
+
 export default function BillingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -45,19 +51,29 @@ export default function BillingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('stripe');
+  const esewaFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     // Show success/cancel message
     const payment = searchParams.get('payment');
+    const gateway = searchParams.get('gateway');
+    
     if (payment === 'success') {
       toast({
         title: '🎉 Payment Successful!',
-        description: 'Your Pro features are now unlocked.',
+        description: `Your Pro features are now unlocked${gateway ? ` via ${gateway}` : ''}.`,
       });
     } else if (payment === 'cancelled') {
       toast({
         title: 'Payment Cancelled',
         description: 'No charges were made.',
+        variant: 'destructive',
+      });
+    } else if (payment === 'failed') {
+      toast({
+        title: 'Payment Failed',
+        description: 'There was an issue processing your payment. Please try again.',
         variant: 'destructive',
       });
     }
@@ -122,31 +138,118 @@ export default function BillingPage() {
     setCheckoutLoading(plan.id);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          plan_id: plan.id,
-          success_url: `${window.location.origin}/dashboard/billing?payment=success`,
-          cancel_url: `${window.location.origin}/dashboard/billing?payment=cancelled`,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
+      switch (selectedGateway) {
+        case 'stripe':
+          await handleStripeCheckout(plan);
+          break;
+        case 'paypal':
+          await handlePayPalCheckout(plan);
+          break;
+        case 'esewa':
+          await handleESewaCheckout(plan);
+          break;
       }
     } catch (error: any) {
       console.error('Checkout error:', error);
-      toast({
-        title: 'Checkout Failed',
-        description: error.message || 'Failed to start checkout',
-        variant: 'destructive',
-      });
+      
+      // Handle integration errors
+      if (error.error?.is_config_issue) {
+        toast({
+          title: error.error.human_message || 'Payment service unavailable',
+          description: error.error.fix_steps?.[0] || 'Please contact support.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Checkout Failed',
+          description: error.message || 'Failed to start checkout',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setCheckoutLoading(null);
     }
+  };
+
+  const handleStripeCheckout = async (plan: Plan) => {
+    const { data, error } = await supabase.functions.invoke('create-checkout', {
+      body: {
+        plan_id: plan.id,
+        success_url: `${window.location.origin}/dashboard/billing?payment=success&gateway=stripe`,
+        cancel_url: `${window.location.origin}/dashboard/billing?payment=cancelled`,
+      },
+    });
+
+    if (error) throw error;
+    if (data.error) throw data;
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error('No checkout URL returned');
+    }
+  };
+
+  const handlePayPalCheckout = async (plan: Plan) => {
+    const { data, error } = await supabase.functions.invoke('paypal-checkout', {
+      body: {
+        action: 'create-order',
+        plan_id: plan.id,
+        success_url: `${window.location.origin}/dashboard/billing?payment=success&gateway=paypal`,
+        cancel_url: `${window.location.origin}/dashboard/billing?payment=cancelled`,
+      },
+    });
+
+    if (error) throw error;
+    if (data.error) throw data;
+
+    if (data.approvalUrl) {
+      window.location.href = data.approvalUrl;
+    } else {
+      throw new Error('No PayPal approval URL returned');
+    }
+  };
+
+  const handleESewaCheckout = async (plan: Plan) => {
+    const { data, error } = await supabase.functions.invoke('esewa-checkout', {
+      body: {
+        action: 'initiate',
+        plan_id: plan.id,
+        success_url: `${window.location.origin}/dashboard/billing?payment=success&gateway=esewa`,
+        failure_url: `${window.location.origin}/dashboard/billing?payment=failed&gateway=esewa`,
+      },
+    });
+
+    if (error) throw error;
+    if (data.error) throw data;
+
+    if (data.formData && data.paymentUrl) {
+      // Create and submit eSewa form
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.paymentUrl;
+      
+      Object.entries(data.formData).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      });
+      
+      document.body.appendChild(form);
+      form.submit();
+    } else {
+      throw new Error('No eSewa payment data returned');
+    }
+  };
+
+  const formatPrice = (price: number, currency: string) => {
+    if (selectedGateway === 'esewa') {
+      const nprPrice = Math.round(price * NPR_RATE);
+      return `रू ${nprPrice.toLocaleString()}`;
+    }
+    return `${currency === 'USD' ? '$' : currency} ${price}`;
   };
 
   if (loading) {
@@ -245,6 +348,59 @@ export default function BillingPage() {
         </div>
       )}
 
+      {/* Payment Method Selection */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <h2 className="font-semibold mb-4 flex items-center gap-2">
+          <Wallet className="h-5 w-5 text-primary" />
+          Payment Method
+        </h2>
+        
+        <RadioGroup
+          value={selectedGateway}
+          onValueChange={(value) => setSelectedGateway(value as PaymentGateway)}
+          className="grid gap-3 sm:grid-cols-3"
+        >
+          <div className={`flex items-center space-x-3 rounded-lg border p-4 cursor-pointer transition-colors ${selectedGateway === 'stripe' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+            <RadioGroupItem value="stripe" id="stripe" />
+            <Label htmlFor="stripe" className="flex-1 cursor-pointer">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                <span className="font-medium">Credit Card</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Visa, Mastercard, etc.</p>
+            </Label>
+          </div>
+          
+          <div className={`flex items-center space-x-3 rounded-lg border p-4 cursor-pointer transition-colors ${selectedGateway === 'paypal' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+            <RadioGroupItem value="paypal" id="paypal" />
+            <Label htmlFor="paypal" className="flex-1 cursor-pointer">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-[#003087]" />
+                <span className="font-medium">PayPal</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">International payments</p>
+            </Label>
+          </div>
+          
+          <div className={`flex items-center space-x-3 rounded-lg border p-4 cursor-pointer transition-colors ${selectedGateway === 'esewa' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+            <RadioGroupItem value="esewa" id="esewa" />
+            <Label htmlFor="esewa" className="flex-1 cursor-pointer">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-[#60BB46]" />
+                <span className="font-medium">eSewa</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Nepal (NPR pricing)</p>
+            </Label>
+          </div>
+        </RadioGroup>
+        
+        {selectedGateway === 'esewa' && (
+          <p className="text-sm text-muted-foreground mt-3 p-3 bg-muted/50 rounded-lg">
+            💡 Prices shown in NPR (approx. रू{NPR_RATE} = $1 USD)
+          </p>
+        )}
+      </div>
+
       {/* Available Plans */}
       <div id="plans" className="space-y-4">
         <h2 className="font-semibold">Available Plans</h2>
@@ -281,7 +437,9 @@ export default function BillingPage() {
                   </div>
 
                   <div className="flex items-baseline gap-1 mb-4">
-                    <span className="text-3xl font-bold">${plan.price}</span>
+                    <span className="text-3xl font-bold">
+                      {formatPrice(plan.price, plan.currency)}
+                    </span>
                     <span className="text-muted-foreground">
                       /{plan.billing_type.replace('_', ' ')}
                     </span>
@@ -314,7 +472,7 @@ export default function BillingPage() {
                     ) : (
                       <>
                         <Crown className="mr-2 h-4 w-4" />
-                        Upgrade Now
+                        Upgrade with {selectedGateway === 'stripe' ? 'Card' : selectedGateway === 'paypal' ? 'PayPal' : 'eSewa'}
                       </>
                     )}
                   </Button>

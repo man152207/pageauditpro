@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -13,11 +13,43 @@ serve(async (req) => {
   }
 
   try {
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      console.error("Supabase configuration missing");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create admin client to fetch settings
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch Stripe secret key from settings first, fallback to env
+    const { data: stripeKeyData } = await supabaseAdmin
+      .from("settings")
+      .select("value_encrypted")
+      .eq("scope", "global")
+      .eq("key", "stripe_secret_key")
+      .maybeSingle();
+
+    const stripeSecretKey = stripeKeyData?.value_encrypted || Deno.env.get("STRIPE_SECRET_KEY");
+    
     if (!stripeSecretKey) {
       console.error("STRIPE_SECRET_KEY not configured");
       return new Response(
-        JSON.stringify({ error: "Payment service not configured" }),
+        JSON.stringify({ 
+          error: {
+            error_code: "STRIPE_NOT_CONFIGURED",
+            human_message: "Payment service is not configured",
+            fix_steps: ["Go to Super Admin Settings → Integrations", "Add your Stripe Secret Key"],
+            is_config_issue: true,
+            missing_keys: ["stripe_secret_key"]
+          }
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -30,22 +62,11 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("Supabase configuration missing");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Verify user using getUser instead of getClaims
+    // Verify user
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: authError } = await supabase.auth.getUser(token);
     if (authError || !userData?.user) {
@@ -111,7 +132,7 @@ serve(async (req) => {
     // Determine checkout mode
     const isSubscription = plan.billing_type === "monthly" || plan.billing_type === "yearly";
 
-    // Use origin from request or fallback to a safe default
+    // Use origin from request or fallback to production domain
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, '') || "https://pagelyzer.io";
 
     // Create checkout session
