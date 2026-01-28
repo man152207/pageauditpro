@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 
 const PRODUCTION_DOMAIN = 'https://pagelyzer.io';
+const SUPABASE_FUNCTIONS_URL = 'https://wrjqheztddmazlifbzbi.supabase.co/functions/v1';
 
 // Configuration data
 const appSettings = [
@@ -199,11 +200,12 @@ export default function FacebookSettings() {
         .upsert({
           key: 'facebook_webhook_verify_token',
           scope: 'global',
+          scope_id: null,
           value_encrypted: verifyToken,
           is_sensitive: true,
           updated_at: new Date().toISOString(),
         }, {
-          onConflict: 'key,scope,scope_id'
+          onConflict: 'scope,scope_id,key'
         });
 
       if (error) throw error;
@@ -488,7 +490,7 @@ export default function FacebookSettings() {
               <div>
                 <h4 className="text-sm font-medium mb-3">Product Webhook URLs</h4>
                 <p className="text-xs text-muted-foreground mb-3">
-                  For each product, use the callback URL below and the Verify Token above.
+                  Use the <strong>same Callback URL</strong> for all products. The product type is passed in the path.
                 </p>
                 <div className="border rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
@@ -500,27 +502,30 @@ export default function FacebookSettings() {
                       </tr>
                     </thead>
                     <tbody>
-                      {webhookProducts.map((product) => (
-                        <tr key={product.id} className="border-t">
-                          <td className="p-3">
-                            <div>
-                              <p className="font-medium">{product.name}</p>
-                              <p className="text-xs text-muted-foreground">{product.description}</p>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                              {PRODUCTION_DOMAIN}/api/webhooks/facebook/{product.id}
-                            </code>
-                          </td>
-                          <td className="p-3">
-                            <CopyButton 
-                              value={`${PRODUCTION_DOMAIN}/api/webhooks/facebook/${product.id}`}
-                              label={`${product.name} webhook URL`}
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                      {webhookProducts.map((product) => {
+                        const callbackUrl = `${SUPABASE_FUNCTIONS_URL}/facebook-webhook/${product.id}`;
+                        return (
+                          <tr key={product.id} className="border-t">
+                            <td className="p-3">
+                              <div>
+                                <p className="font-medium">{product.name}</p>
+                                <p className="text-xs text-muted-foreground">{product.description}</p>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <code className="text-xs bg-muted px-2 py-1 rounded font-mono break-all">
+                                {callbackUrl}
+                              </code>
+                            </td>
+                            <td className="p-3">
+                              <CopyButton 
+                                value={callbackUrl}
+                                label={`${product.name} webhook URL`}
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

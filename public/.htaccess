@@ -16,6 +16,9 @@
   # eSewa Payment Callback
   RewriteRule ^api/payments/esewa/success$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/esewa-checkout?action=success [P,QSA,L]
   
+  # Facebook Webhooks (all products)
+  RewriteRule ^api/webhooks/facebook/(.*)$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-webhook/$1 [P,QSA,L]
+  
   # Sitemap - proxy to edge function
   RewriteRule ^sitemap\.xml$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap [P,L]
 
