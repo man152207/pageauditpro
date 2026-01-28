@@ -43,6 +43,31 @@ export default function SEOSettings() {
     fetchSettings();
   }, []);
 
+  // Auto-save default SEO values if they don't exist in database
+  const initializeDefaultSettings = async (existingKeys: Set<string>) => {
+    const defaultSettings = [
+      { key: 'seo_title', value: 'Pagelyzer - Smart Facebook Page Audit Platform' },
+      { key: 'seo_description', value: 'Get instant page health scores, engagement analysis, and AI-powered recommendations.' },
+      { key: 'canonical_url', value: PRODUCTION_DOMAIN },
+      { key: 'sitemap_url', value: `${PRODUCTION_DOMAIN}/sitemap.xml` },
+    ];
+
+    const missingSettings = defaultSettings.filter((s) => !existingKeys.has(s.key));
+    
+    if (missingSettings.length > 0) {
+      for (const setting of missingSettings) {
+        await supabase.from('settings').upsert({
+          scope: 'global',
+          scope_id: null,
+          key: setting.key,
+          value_encrypted: setting.value,
+          is_sensitive: false,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'scope,scope_id,key' });
+      }
+    }
+  };
+
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -52,15 +77,20 @@ export default function SEOSettings() {
 
       if (error) throw error;
 
+      const existingKeys = new Set<string>();
       if (data) {
         const newSettings = { ...settings };
         data.forEach((item) => {
+          existingKeys.add(item.key);
           if (item.key in newSettings) {
             newSettings[item.key as keyof typeof settings] = item.value_encrypted || '';
           }
         });
         setSettings(newSettings);
       }
+
+      // Initialize default SEO values if they don't exist
+      await initializeDefaultSettings(existingKeys);
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {

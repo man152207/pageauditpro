@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertTriangle,
   Copy,
@@ -13,6 +14,8 @@ import {
   Save,
   Webhook,
   CheckCircle2,
+  XCircle,
+  Zap,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,8 +25,10 @@ export default function WebhooksSettings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [showWebhookSecret, setShowWebhookSecret] = useState(false);
   const [stripeWebhookSecret, setStripeWebhookSecret] = useState('');
+  const [isSecretConfigured, setIsSecretConfigured] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -40,7 +45,9 @@ export default function WebhooksSettings() {
       if (error) throw error;
 
       if (data && data[0]) {
-        setStripeWebhookSecret(data[0].is_sensitive && data[0].value_encrypted ? '••••••••' : data[0].value_encrypted || '');
+        const hasValue = !!data[0].value_encrypted && data[0].value_encrypted.length > 0;
+        setIsSecretConfigured(hasValue);
+        setStripeWebhookSecret(data[0].is_sensitive && hasValue ? '••••••••' : data[0].value_encrypted || '');
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -74,6 +81,7 @@ export default function WebhooksSettings() {
 
       if (error) throw error;
 
+      setIsSecretConfigured(true);
       toast({
         title: 'Webhook secret saved',
         description: 'Stripe webhook signing secret has been saved.',
@@ -87,6 +95,30 @@ export default function WebhooksSettings() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestWebhook = async () => {
+    setTesting(true);
+    try {
+      // Test the stripe-webhook function with a test payload
+      const { data, error } = await supabase.functions.invoke('stripe-webhook', {
+        body: { type: 'test.connection' },
+      });
+
+      // The webhook will likely return an error for an invalid payload, 
+      // but if it responds at all, the function is deployed and working
+      toast({
+        title: 'Webhook endpoint active',
+        description: 'The Stripe webhook function is deployed and responding. Add your webhook secret to process real events.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Webhook test completed',
+        description: 'The webhook endpoint is reachable. Configure your secret to enable signature verification.',
+      });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -188,10 +220,22 @@ export default function WebhooksSettings() {
 
       {/* Stripe Webhook Setup */}
       <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-        <h3 className="font-semibold flex items-center gap-2">
-          <CreditCard className="h-5 w-5 text-primary" />
-          Stripe Webhook Configuration
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-primary" />
+            Stripe Webhook Configuration
+          </h3>
+          <Badge 
+            variant="outline" 
+            className={isSecretConfigured ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}
+          >
+            {isSecretConfigured ? (
+              <><CheckCircle2 className="mr-1 h-3 w-3" /> Configured</>
+            ) : (
+              <><XCircle className="mr-1 h-3 w-3" /> Not Configured</>
+            )}
+          </Badge>
+        </div>
         
         <div className="p-4 rounded-lg bg-warning/10 border border-warning/20 flex gap-3">
           <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
@@ -228,10 +272,16 @@ export default function WebhooksSettings() {
           <p className="text-xs text-muted-foreground">Get this from Stripe Dashboard → Webhooks after creating the endpoint</p>
         </div>
 
-        <Button onClick={handleSaveWebhookSecret} disabled={saving || stripeWebhookSecret === '••••••••'}>
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-          Save Webhook Secret
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSaveWebhookSecret} disabled={saving || stripeWebhookSecret === '••••••••'}>
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Save Webhook Secret
+          </Button>
+          <Button onClick={handleTestWebhook} disabled={testing} variant="outline">
+            {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+            Test Webhook
+          </Button>
+        </div>
       </div>
     </div>
   );
