@@ -1,177 +1,117 @@
 
-# Pagelyzer Domain & Integration Fixes
+# Implement Sitemap at pagelyzer.io/sitemap.xml
 
-## Issues Identified
+## Overview
+This plan implements proper routing to serve the dynamic sitemap from the main domain (`https://pagelyzer.io/sitemap.xml`) instead of the Supabase edge function URL. This is better for SEO because search engines prefer sitemaps hosted on the same domain.
 
-### 1. Webhook URL Issues
-The current webhook URLs use incorrect domain patterns. Need to update to use the correct Supabase project domain:
-- **Current Wrong Pattern**: `https://40febc51-8966-4181-a674-0cb4cbe114ee.lovableproject.com/functions/v1/...`
-- **Correct Pattern**: `https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/...`
+## Implementation Approach
 
-The production domain is **pagelyzer.io**
+Since we're using a React SPA with Vite, we have two options:
 
-### 2. Missing Implementations
+1. **Recommended: Create a SitemapPage component** that fetches from the edge function and serves XML
+2. Create a static redirect in public folder (not ideal for dynamic content)
 
-| Feature | Status | Required Action |
-|---------|--------|-----------------|
-| Stripe Integration | Working | Update webhook URL display |
-| PayPal Integration | Backend Done | Add UI payment option in BillingPage |
-| eSewa Integration | Backend Done | Add UI payment option in BillingPage |
-| Facebook OAuth Login | Backend Done | Needs complete-login flow integration |
-| Email Reports | Backend Done | Add cron/scheduling for recurring emails |
-| SEO Settings | Done | No changes needed |
-| Error Handling Framework | Done | Already implemented |
-| IntegrationSettings Component | Created | Not integrated into SuperAdminSettingsPage |
+We'll go with Option 1 as it allows serving dynamic content while keeping the URL on the main domain.
 
----
+## Changes Required
 
-## Implementation Plan
-
-### Phase 1: Fix Webhook URL Display in Super Admin Settings
-
-Update `SuperAdminSettingsPage.tsx` to show correct webhook URLs:
+### 1. Create SitemapPage Component
+Create a new page component that:
+- Fetches sitemap XML from the edge function
+- Renders it with proper `Content-Type: application/xml`
+- Uses `useEffect` to redirect bots to raw XML response
 
 ```text
-Stripe Webhook URL:
-https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/stripe-webhook
+File: src/pages/SitemapPage.tsx
 
-Facebook OAuth Callback:
-https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-oauth?action=callback
-
-Facebook Login Callback:
-https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-auth-login?action=callback
-
-PayPal Return URL:
-https://pagelyzer.io/dashboard?payment=success&gateway=paypal
-
-eSewa Success Callback:
-https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/esewa-checkout?action=success
+- Fetches from: https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap
+- Returns XML content directly
+- Sets document content type for XML
 ```
 
-### Phase 2: Integrate IntegrationSettings Component
+### 2. Add Route in App.tsx
+Add a new route for `/sitemap.xml`:
 
-Add the already-created `IntegrationSettings` component to SuperAdminSettingsPage Integrations tab. This provides:
-- PayPal key management (Client ID, Secret, Sandbox toggle)
-- eSewa key management (Merchant ID, Secret Key, Sandbox toggle)
-- Email provider (Resend) key management
-- Facebook API key management
-- Test Connection buttons for each integration
+```text
+<Route path="/sitemap.xml" element={<SitemapPage />} />
+```
 
-### Phase 3: Add Multiple Payment Gateway Options to BillingPage
+### 3. Update robots.txt
+Add sitemap reference to `public/robots.txt`:
 
-Update `BillingPage.tsx` to offer payment method selection:
-- Stripe (default)
-- PayPal (for international users)
-- eSewa (for Nepal users - shows NPR pricing)
+```text
+Sitemap: https://pagelyzer.io/sitemap.xml
+```
 
-Add a payment gateway selector before checkout.
+### 4. Update SEO Settings Default
+Update `useSEO.ts` to set default sitemap URL:
 
-### Phase 4: Complete Facebook Login Integration
+```text
+sitemap_url: 'https://pagelyzer.io/sitemap.xml'
+```
 
-Update `AuthPage.tsx` to properly handle the Facebook login callback and complete the authentication flow using the `complete-login` action.
-
-### Phase 5: Add Stripe Key Management to Settings
-
-Currently Stripe uses env-only key. Update:
-1. `create-checkout` edge function to fetch `stripe_secret_key` from settings first
-2. Add Stripe key fields to IntegrationSettings component
-3. Keep env fallback for backward compatibility
-
-### Phase 6: Add Recurring Email Scheduling
-
-Create a scheduled function endpoint that Super Admin can trigger or set up as a cron job for weekly email summaries.
-
----
-
-## File Changes Summary
-
-### Modified Files
-
-| File | Changes |
-|------|---------|
-| `src/pages/super-admin/SuperAdminSettingsPage.tsx` | Replace Integrations tab with IntegrationSettings component, fix webhook URLs |
-| `src/pages/dashboard/BillingPage.tsx` | Add multi-gateway payment selector (Stripe, PayPal, eSewa) |
-| `src/pages/AuthPage.tsx` | Complete Facebook login flow with complete-login action |
-| `src/components/settings/IntegrationSettings.tsx` | Add Stripe key management section |
-| `supabase/functions/create-checkout/index.ts` | Fetch stripe_secret_key from settings table first |
-
-### New Files
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/weekly-email-cron/index.ts` | Scheduled function to send weekly summary emails |
-
----
+### 5. Update Sitemap Edge Function
+Update the edge function to include the correct sitemap URL in its output and add a reference in the XML header if needed.
 
 ## Technical Details
 
-### Correct Supabase Edge Function URLs
+### SitemapPage Component Logic
 
 ```text
-Base URL: https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/
-
-Endpoints:
-- /stripe-webhook (POST, no JWT)
-- /facebook-oauth?action=callback (GET, no JWT)
-- /facebook-auth-login?action=callback (GET, no JWT)
-- /paypal-checkout?action=capture-order (POST)
-- /esewa-checkout?action=success (GET)
-- /create-checkout (POST, requires auth)
-- /run-audit (POST, requires auth)
-- /get-audit-report (POST, requires auth)
-- /send-audit-email (POST)
-- /check-subscription (POST, requires auth)
+1. On component mount, fetch sitemap from edge function
+2. Create a Blob with XML content
+3. Replace entire document with XML content
+4. Set proper Content-Type header via meta tag
 ```
 
-### Payment Gateway Integration in BillingPage
+For search engine crawlers, this approach works because:
+- The URL is `https://pagelyzer.io/sitemap.xml`
+- The response contains valid XML
+- Crawlers will see the sitemap content
 
-```tsx
-// Payment method selector
-const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal' | 'esewa'>('stripe');
+### Alternative: Direct Blob URL Redirect
 
-// Handle checkout based on selected gateway
-const handleCheckout = async (plan: Plan) => {
-  switch (paymentMethod) {
-    case 'stripe':
-      // Existing Stripe flow
-      break;
-    case 'paypal':
-      // Call paypal-checkout?action=create-order
-      // Redirect to PayPal approval URL
-      break;
-    case 'esewa':
-      // Call esewa-checkout?action=initiate
-      // Submit form to eSewa payment page
-      break;
-  }
-};
+For better XML handling, we can:
+1. Fetch the XML from edge function
+2. Create a data URL or Blob URL
+3. Replace `window.location` with raw XML view
+
+### Vercel/Netlify Headers (if deployed there)
+If using a hosting platform like Vercel, we could add rewrite rules in `vercel.json`:
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap"
+    }
+  ]
+}
 ```
 
-### Settings-Driven Stripe Key Fetch
+However, since we're on Lovable, we'll use the React component approach.
 
-```typescript
-// In create-checkout edge function
-const { data: stripeKeyData } = await supabaseAdmin
-  .from("settings")
-  .select("key, value_encrypted")
-  .eq("scope", "global")
-  .eq("key", "stripe_secret_key");
+## File Changes Summary
 
-const stripeSecretKey = stripeKeyData?.[0]?.value_encrypted || 
-  Deno.env.get("STRIPE_SECRET_KEY");
-```
+| File | Action | Description |
+|------|--------|-------------|
+| `src/pages/SitemapPage.tsx` | Create | New page to serve sitemap XML |
+| `src/App.tsx` | Modify | Add route for /sitemap.xml |
+| `public/robots.txt` | Modify | Add Sitemap directive |
+| `src/hooks/useSEO.ts` | Modify | Update default sitemap_url |
 
----
+## SEO Benefits
 
-## Production URLs Summary
+1. **Domain Authority**: Sitemap on main domain improves domain authority signals
+2. **Crawler Trust**: Search engines trust sitemaps more when hosted on the same domain
+3. **robots.txt Integration**: Direct reference from robots.txt to sitemap
+4. **Consistent Indexing**: All URLs in sitemap match the domain serving it
 
-| Purpose | URL |
-|---------|-----|
-| Main Domain | https://pagelyzer.io |
-| Supabase Functions | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/ |
-| Stripe Webhook | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/stripe-webhook |
-| FB OAuth Callback | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-oauth?action=callback |
-| FB Login Callback | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-auth-login?action=callback |
-| PayPal Success | https://pagelyzer.io/dashboard?payment=success&gateway=paypal |
-| eSewa Success | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/esewa-checkout?action=success |
-| Sitemap | https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap |
+## Testing Steps
+
+After implementation:
+1. Visit `https://pagelyzer.io/sitemap.xml`
+2. Verify XML content is displayed correctly
+3. Use Google Search Console's sitemap testing tool
+4. Verify all URLs in sitemap are correct and accessible
