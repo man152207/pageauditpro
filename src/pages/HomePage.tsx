@@ -219,22 +219,22 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 lg:py-28 relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
+      <section className="py-20 lg:py-28 relative overflow-hidden bg-primary">
         {/* Pattern overlay */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
             backgroundSize: '32px 32px',
           }} />
         </div>
         
         <div className="container relative">
-          <div className="max-w-3xl mx-auto text-center text-primary-foreground">
-            <Crown className="h-14 w-14 mx-auto mb-6 opacity-90 animate-bounce-soft" />
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <Crown className="h-14 w-14 mx-auto mb-6 text-primary-foreground/90 animate-bounce-soft" />
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-primary-foreground">
               Ready to Grow Your Facebook Page?
             </h2>
-            <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
+            <p className="text-lg text-primary-foreground/90 mb-8 max-w-xl mx-auto">
               Join thousands of page owners who use Pagelyzer to optimize their 
               content strategy and grow their audience.
             </p>
@@ -247,9 +247,8 @@ export default function HomePage() {
               </Button>
               <Button
                 size="xl"
-                variant="outline"
                 asChild
-                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                className="bg-primary-foreground/10 text-primary-foreground border-2 border-primary-foreground/30 hover:bg-primary-foreground/20 hover:border-primary-foreground/50"
               >
                 <Link to="/features">
                   Learn More

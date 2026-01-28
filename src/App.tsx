@@ -14,6 +14,8 @@ import HomePage from "@/pages/HomePage";
 import AuthPage from "@/pages/AuthPage";
 import PricingPage from "@/pages/PricingPage";
 import FeaturesPage from "@/pages/FeaturesPage";
+import SampleReportPage from "@/pages/SampleReportPage";
+import FAQPage from "@/pages/FAQPage";
 import NotFound from "@/pages/NotFound";
 
 // Dashboard Pages
@@ -48,8 +50,8 @@ const App = () => (
               <Route path="/" element={<HomePage />} />
               <Route path="/features" element={<FeaturesPage />} />
               <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/sample-report" element={<HomePage />} />
-              <Route path="/faq" element={<HomePage />} />
+              <Route path="/sample-report" element={<SampleReportPage />} />
+              <Route path="/faq" element={<FAQPage />} />
               <Route path="/contact" element={<HomePage />} />
               <Route path="/privacy" element={<HomePage />} />
               <Route path="/terms" element={<HomePage />} />
