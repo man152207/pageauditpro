@@ -21,6 +21,7 @@ import NotFound from "@/pages/NotFound";
 // Dashboard Pages
 import UserDashboard from "@/pages/dashboard/UserDashboard";
 import ManualAuditPage from "@/pages/dashboard/ManualAuditPage";
+import AuditReportPage from "@/pages/dashboard/AuditReportPage";
 import BillingPage from "@/pages/dashboard/BillingPage";
 
 // Admin Pages
@@ -57,11 +58,6 @@ const App = () => (
               <Route path="/terms" element={<HomePage />} />
             </Route>
 
-            {/* Public Audit (no auth required) */}
-            <Route path="/audit" element={<MarketingLayout />}>
-              <Route index element={<ManualAuditPage />} />
-            </Route>
-
             {/* Dashboard Routes (Auth Required) */}
             <Route
               path="/dashboard"
@@ -74,6 +70,7 @@ const App = () => (
               <Route index element={<UserDashboard />} />
               <Route path="audit" element={<ManualAuditPage />} />
               <Route path="reports" element={<UserDashboard />} />
+              <Route path="reports/:auditId" element={<AuditReportPage />} />
               <Route path="history" element={<UserDashboard />} />
               <Route path="billing" element={<BillingPage />} />
               <Route path="profile" element={<UserDashboard />} />

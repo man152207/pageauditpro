@@ -1,0 +1,160 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    logStep("Function started");
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      logStep("No auth header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: authError } = await supabase.auth.getClaims(token);
+    
+    if (authError || !claims?.claims) {
+      logStep("Auth error", { error: authError?.message });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = claims.claims.sub;
+    logStep("User authenticated", { userId });
+
+    // Fetch active subscription with plan details
+    const { data: subscription, error: subError } = await supabase
+      .from("subscriptions")
+      .select(`
+        *,
+        plan:plans(*)
+      `)
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (subError) {
+      logStep("Subscription query error", { error: subError.message });
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch subscription" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if user has an active subscription
+    const hasActiveSubscription = !!subscription;
+    const plan = subscription?.plan;
+    
+    logStep("Subscription status", { 
+      hasActiveSubscription, 
+      planName: plan?.name || "Free",
+      planId: plan?.id || null 
+    });
+
+    // Determine if user is Pro (any paid plan)
+    const isPro = hasActiveSubscription && plan?.billing_type !== "free";
+
+    // Get plan features and limits
+    const featureFlags = (plan?.feature_flags as Record<string, boolean>) || {};
+    const limits = (plan?.limits as Record<string, number>) || {
+      audits_per_month: 3,
+      pdf_exports: 0,
+      history_days: 7,
+    };
+
+    // Calculate usage this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { count: auditsThisMonth } = await supabase
+      .from("audits")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", startOfMonth.toISOString());
+
+    const usageStats = {
+      auditsUsed: auditsThisMonth || 0,
+      auditsLimit: limits.audits_per_month || 3,
+      auditsRemaining: Math.max(0, (limits.audits_per_month || 3) - (auditsThisMonth || 0)),
+    };
+
+    logStep("Usage stats", usageStats);
+
+    const response = {
+      subscribed: hasActiveSubscription,
+      isPro,
+      subscription: subscription ? {
+        id: subscription.id,
+        status: subscription.status,
+        started_at: subscription.started_at,
+        expires_at: subscription.expires_at,
+        renews_at: subscription.renews_at,
+      } : null,
+      plan: plan ? {
+        id: plan.id,
+        name: plan.name,
+        billing_type: plan.billing_type,
+        price: plan.price,
+        currency: plan.currency,
+      } : {
+        id: null,
+        name: "Free",
+        billing_type: "free",
+        price: 0,
+        currency: "USD",
+      },
+      features: {
+        canAutoAudit: isPro || featureFlags.auto_audit === true,
+        canExportPdf: isPro || featureFlags.pdf_export === true,
+        canShareReport: isPro || featureFlags.share_report === true,
+        canViewFullMetrics: isPro || featureFlags.full_metrics === true,
+        canViewDemographics: isPro || featureFlags.demographics === true,
+        canViewAIInsights: isPro || featureFlags.ai_insights === true,
+      },
+      limits,
+      usage: usageStats,
+    };
+
+    logStep("Response prepared", { isPro, planName: response.plan.name });
+
+    return new Response(
+      JSON.stringify(response),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    logStep("ERROR", { message: errorMessage });
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
