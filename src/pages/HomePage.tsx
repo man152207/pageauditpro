@@ -6,7 +6,6 @@ import {
   BarChart3,
   CheckCircle2,
   Crown,
-  Facebook,
   FileBarChart,
   Lightbulb,
   Shield,
@@ -15,6 +14,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function HomePage() {
   const features = [
@@ -69,13 +69,18 @@ export default function HomePage() {
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 lg:py-32">
-        {/* Background gradient */}
+        {/* Background effects */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-primary/5 blur-3xl animate-pulse-slow" />
+        
+        {/* Floating decorative elements */}
+        <div className="absolute top-32 left-[10%] w-16 h-16 rounded-2xl bg-primary/10 animate-float opacity-60 hidden lg:block" />
+        <div className="absolute top-48 right-[15%] w-12 h-12 rounded-full bg-accent/10 animate-float stagger-2 opacity-60 hidden lg:block" />
+        <div className="absolute bottom-32 left-[20%] w-10 h-10 rounded-lg bg-success/10 animate-float stagger-3 opacity-60 hidden lg:block" />
         
         <div className="container relative">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in border border-primary/20">
               <Sparkles className="h-4 w-4" />
               Smart Facebook Page Audit Platform
             </div>
@@ -85,19 +90,19 @@ export default function HomePage() {
               <span className="gradient-text">Data-Driven</span> Insights
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in-up">
+            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in-up stagger-1">
               Get instant page health scores, engagement analysis, and AI-powered 
               recommendations to boost your Facebook presence.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up">
-              <Button size="lg" asChild className="text-lg px-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-2">
+              <Button size="xl" asChild className="shadow-glow">
                 <Link to="/audit">
                   <Zap className="mr-2 h-5 w-5" />
                   Run Free Audit
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="text-lg px-8">
+              <Button size="xl" variant="outline" asChild>
                 <Link to="/sample-report">
                   View Sample Report
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -106,16 +111,16 @@ export default function HomePage() {
             </div>
 
             {/* Trust badges */}
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-muted-foreground animate-fade-in">
-              <div className="flex items-center gap-2">
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-muted-foreground animate-fade-in stagger-3">
+              <div className="flex items-center gap-2 transition-colors hover:text-foreground">
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <span className="text-sm">No credit card required</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 transition-colors hover:text-foreground">
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <span className="text-sm">5 free audits/month</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 transition-colors hover:text-foreground">
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <span className="text-sm">Instant results</span>
               </div>
@@ -125,13 +130,13 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 lg:py-28 bg-muted/30">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 animate-fade-in">
               Everything You Need to Optimize Your Page
             </h2>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-muted-foreground animate-fade-in stagger-1">
               Powerful analytics and insights to help you understand your audience 
               and create better content.
             </p>
@@ -141,9 +146,12 @@ export default function HomePage() {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="group p-6 rounded-2xl border border-border bg-card hover:shadow-card-hover hover:border-primary/20 transition-all duration-300"
+                className={cn(
+                  'group interactive-card p-6 animate-fade-in-up',
+                  `stagger-${Math.min(index + 1, 5)}`
+                )}
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
                   <feature.icon className="h-6 w-6" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
@@ -155,7 +163,7 @@ export default function HomePage() {
       </section>
 
       {/* Free vs Pro Comparison */}
-      <section className="py-20">
+      <section className="py-20 lg:py-28">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -167,7 +175,7 @@ export default function HomePage() {
           </div>
 
           <div className="max-w-3xl mx-auto">
-            <div className="rounded-2xl border border-border overflow-hidden">
+            <div className="rounded-2xl border border-border overflow-hidden shadow-card">
               {/* Header */}
               <div className="grid grid-cols-3 bg-muted/50">
                 <div className="p-4 font-semibold">Feature</div>
@@ -181,9 +189,9 @@ export default function HomePage() {
               {comparisonData.map((row, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-3 border-t border-border hover:bg-muted/30 transition-colors"
+                  className="grid grid-cols-3 border-t border-border transition-colors duration-200 hover:bg-muted/30 group"
                 >
-                  <div className="p-4 text-sm">{row.feature}</div>
+                  <div className="p-4 text-sm group-hover:text-foreground transition-colors">{row.feature}</div>
                   <div className="p-4 text-center">
                     {row.free ? (
                       <CheckCircle2 className="h-5 w-5 text-success mx-auto" />
@@ -198,7 +206,7 @@ export default function HomePage() {
               ))}
             </div>
 
-            <div className="mt-8 text-center">
+            <div className="mt-10 text-center">
               <Button size="lg" asChild>
                 <Link to="/pricing">
                   View Full Pricing
@@ -211,29 +219,37 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="container">
-          <div className="max-w-3xl mx-auto text-center">
-            <Crown className="h-12 w-12 mx-auto mb-6 opacity-90" />
+      <section className="py-20 lg:py-28 relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
+        {/* Pattern overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
+            backgroundSize: '32px 32px',
+          }} />
+        </div>
+        
+        <div className="container relative">
+          <div className="max-w-3xl mx-auto text-center text-primary-foreground">
+            <Crown className="h-14 w-14 mx-auto mb-6 opacity-90 animate-bounce-soft" />
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Ready to Grow Your Facebook Page?
             </h2>
-            <p className="text-lg opacity-90 mb-8">
+            <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
               Join thousands of page owners who use Pagelyzer to optimize their 
               content strategy and grow their audience.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="secondary" asChild className="text-lg px-8">
+              <Button size="xl" variant="secondary" asChild className="shadow-lg">
                 <Link to="/audit">
                   <Zap className="mr-2 h-5 w-5" />
                   Run Free Audit Now
                 </Link>
               </Button>
               <Button
-                size="lg"
+                size="xl"
                 variant="outline"
                 asChild
-                className="text-lg px-8 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
               >
                 <Link to="/features">
                   Learn More

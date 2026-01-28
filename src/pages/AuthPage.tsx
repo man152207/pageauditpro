@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BarChart3, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { BarChart3, Eye, EyeOff, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { cn } from '@/lib/utils';
 
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -28,15 +29,14 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [shake, setShake] = useState(false);
 
-  // Redirect if already logged in - use useEffect to prevent render issues
   useEffect(() => {
     if (user) {
       navigate('/dashboard', { replace: true });
     }
   }, [user, navigate]);
 
-  // Don't render anything while redirecting
   if (user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -59,6 +59,9 @@ export default function AuthPage() {
           }
         });
         setErrors(newErrors);
+        // Trigger shake animation
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
       }
       return false;
     }
@@ -103,6 +106,8 @@ export default function AuthPage() {
             description: 'Invalid email or password. Please try again.',
             variant: 'destructive',
           });
+          setShake(true);
+          setTimeout(() => setShake(false), 500);
           return;
         }
         toast({
@@ -116,46 +121,62 @@ export default function AuthPage() {
     }
   };
 
+  const benefits = [
+    'Instant page health score',
+    'Engagement rate analysis',
+    'Content recommendations',
+    'Export professional reports',
+  ];
+
   return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12">
+        <div className="w-full max-w-md animate-fade-in">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Link to="/" className="flex items-center gap-2.5 font-bold text-xl mb-8 group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform duration-200 group-hover:scale-105">
               <BarChart3 className="h-5 w-5" />
             </div>
             <span>Pagelyzer</span>
           </Link>
 
-          {/* Header */}
+          {/* Header with transition */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-2">
+            <h1 className="text-2xl lg:text-3xl font-bold mb-2 transition-all duration-300">
               {mode === 'login' ? 'Welcome back' : 'Create your account'}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground transition-all duration-300">
               {mode === 'login'
                 ? 'Enter your credentials to access your dashboard'
                 : 'Start auditing your Facebook pages for free'}
             </p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'signup' && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
+          {/* Form with shake animation */}
+          <form 
+            onSubmit={handleSubmit} 
+            className={cn(
+              'space-y-5 transition-transform duration-100',
+              shake && 'animate-[shake_0.5s_ease-in-out]'
             )}
+          >
+            {/* Name field with slide animation */}
+            <div className={cn(
+              'space-y-2 transition-all duration-300 overflow-hidden',
+              mode === 'signup' ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'
+            )}>
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={isLoading}
+                className="transition-all duration-200"
+              />
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -164,12 +185,16 @@ export default function AuthPage() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors({ ...errors, email: '' });
+                }}
                 disabled={isLoading}
-                className={errors.email ? 'border-destructive' : ''}
+                error={!!errors.email}
+                className="transition-all duration-200"
               />
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
+                <p className="text-sm text-destructive animate-fade-in">{errors.email}</p>
               )}
             </div>
 
@@ -181,9 +206,13 @@ export default function AuthPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) setErrors({ ...errors, password: '' });
+                  }}
                   disabled={isLoading}
-                  className={errors.password ? 'border-destructive' : ''}
+                  error={!!errors.password}
+                  className="pr-10 transition-all duration-200"
                 />
                 <Button
                   type="button"
@@ -191,16 +220,17 @@ export default function AuthPage() {
                   size="icon"
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <Eye className="h-4 w-4 text-muted-foreground transition-colors hover:text-foreground" />
                   )}
                 </Button>
               </div>
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
+                <p className="text-sm text-destructive animate-fade-in">{errors.password}</p>
               )}
             </div>
 
@@ -224,7 +254,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setMode('signup')}
-                  className="text-primary font-medium hover:underline"
+                  className="text-primary font-medium hover:underline underline-offset-4 transition-colors"
                 >
                   Sign up
                 </button>
@@ -235,7 +265,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setMode('login')}
-                  className="text-primary font-medium hover:underline"
+                  className="text-primary font-medium hover:underline underline-offset-4 transition-colors"
                 >
                   Sign in
                 </button>
@@ -245,37 +275,58 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Right side - Decorative */}
-      <div className="hidden lg:flex flex-1 items-center justify-center bg-primary p-12">
-        <div className="max-w-md text-primary-foreground">
-          <BarChart3 className="h-16 w-16 mb-8 opacity-90" />
-          <h2 className="text-3xl font-bold mb-4">
+      {/* Right side - Decorative with animations */}
+      <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
+        {/* Animated background shapes */}
+        <div className="absolute top-20 left-20 w-32 h-32 rounded-full bg-white/10 animate-float" />
+        <div className="absolute bottom-32 right-20 w-24 h-24 rounded-2xl bg-white/10 animate-float stagger-2" />
+        <div className="absolute top-1/2 left-10 w-16 h-16 rounded-lg bg-white/5 animate-float stagger-3" />
+        
+        <div className="max-w-md text-primary-foreground relative z-10 px-12">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 mb-8 animate-bounce-soft">
+            <BarChart3 className="h-8 w-8" />
+          </div>
+          
+          <h2 className="text-3xl font-bold mb-4 animate-fade-in">
             Audit Your Facebook Page in Minutes
           </h2>
-          <p className="text-lg opacity-90 mb-8">
+          <p className="text-lg opacity-90 mb-8 animate-fade-in stagger-1">
             Get detailed insights, engagement analysis, and AI-powered 
             recommendations to grow your audience.
           </p>
-          <div className="space-y-3 text-sm opacity-80">
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-current" />
-              <span>Instant page health score</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-current" />
-              <span>Engagement rate analysis</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-current" />
-              <span>Content recommendations</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-current" />
-              <span>Export professional reports</span>
-            </div>
+          
+          <div className="space-y-4">
+            {benefits.map((benefit, index) => (
+              <div 
+                key={benefit}
+                className={cn(
+                  'flex items-center gap-3 animate-fade-in',
+                  `stagger-${index + 2}`
+                )}
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <span className="opacity-90">{benefit}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Decorative sparkle */}
+          <div className="absolute bottom-0 right-0 opacity-20">
+            <Sparkles className="h-32 w-32" />
           </div>
         </div>
       </div>
+
+      {/* Shake animation keyframes */}
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+          20%, 40%, 60%, 80% { transform: translateX(4px); }
+        }
+      `}</style>
     </div>
   );
 }
