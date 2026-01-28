@@ -195,7 +195,7 @@ export default function BillingPage() {
       body: {
         action: 'create-order',
         plan_id: plan.id,
-        success_url: `${window.location.origin}/dashboard/billing?payment=success&gateway=paypal`,
+        success_url: `${window.location.origin}/dashboard/paypal-callback`,
         cancel_url: `${window.location.origin}/dashboard/billing?payment=cancelled`,
       },
     });
