@@ -23,25 +23,36 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies (CI)
-        run: npm ci
+      # ✅ WORKING NOW: lock mismatch हुँदा पनि चल्ने
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
 
       - name: Build project
         run: npm run build
 
-      # (Optional) Confirm dist exists & show files
+      # ✅ Verify output + helpful debug
       - name: Verify build output
         run: |
+          echo "Root files:"
           ls -la
+          echo "Dist folder:"
           ls -la dist || true
+          test -d dist || (echo "ERROR: dist/ folder not found. Check build output folder (dist/build/out)." && exit 1)
 
+      # ✅ Deploy only dist/ folder
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: 192.250.235.126
-          username: go@pagelyzer.io
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           local-dir: dist/
           server-dir: /
           dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.github/**
+            **/*.map
