@@ -3,12 +3,27 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Facebook OAuth configuration
-const FB_APP_ID = Deno.env.get("FACEBOOK_APP_ID") || "";
-const FB_APP_SECRET = Deno.env.get("FACEBOOK_APP_SECRET") || "";
+// Fixed production redirect URI (must match Facebook console exactly)
+const PRODUCTION_REDIRECT_URI = "https://pagelyzer.io/api/auth/facebook/page/callback";
+
+// Helper to create structured error response
+function errorResponse(code: string, message: string, fixSteps: string[], status = 400) {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: {
+        error_code: code,
+        human_message: message,
+        fix_steps: fixSteps,
+        is_config_issue: code.includes('NOT_CONFIGURED'),
+      }
+    }),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -18,17 +33,41 @@ serve(async (req) => {
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
 
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
   try {
+    // Fetch Facebook credentials from settings
+    const { data: settingsData } = await supabaseAdmin
+      .from("settings")
+      .select("key, value_encrypted")
+      .eq("scope", "global")
+      .in("key", ["facebook_app_id", "facebook_app_secret"]);
+
+    const settingsMap = new Map(settingsData?.map(s => [s.key, s.value_encrypted]) || []);
+    const FB_APP_ID = settingsMap.get("facebook_app_id");
+    const FB_APP_SECRET = settingsMap.get("facebook_app_secret");
+
+    // Validate Facebook configuration
+    if (!FB_APP_ID || FB_APP_ID === "••••••••" || !FB_APP_SECRET || FB_APP_SECRET === "••••••••") {
+      console.error("[FB-OAUTH] Facebook credentials not configured");
+      return errorResponse(
+        'FACEBOOK_NOT_CONFIGURED',
+        'Facebook integration is not configured yet.',
+        [
+          'Super Admin needs to configure Facebook integration',
+          'Go to Settings → Integrations → Facebook API',
+          'Enter Facebook App ID and App Secret',
+          'Get credentials from developers.facebook.com'
+        ],
+        500
+      );
+    }
+
     // Action: Get OAuth URL
     if (action === "get-auth-url") {
-      if (!FB_APP_ID) {
-        return new Response(
-          JSON.stringify({ error: "Facebook App not configured" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const redirectUri = `${url.origin}/facebook-oauth?action=callback`;
       const scopes = [
         "pages_show_list",
         "pages_read_engagement",
@@ -36,52 +75,69 @@ serve(async (req) => {
         "read_insights",
       ].join(",");
 
+      const state = crypto.randomUUID(); // CSRF protection
+
       const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
         `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `redirect_uri=${encodeURIComponent(PRODUCTION_REDIRECT_URI)}&` +
         `scope=${scopes}&` +
+        `state=${state}&` +
         `response_type=code`;
 
+      console.log(`[FB-OAUTH] Generated auth URL with redirect: ${PRODUCTION_REDIRECT_URI}`);
+
       return new Response(
-        JSON.stringify({ authUrl }),
+        JSON.stringify({ authUrl, state }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Action: OAuth Callback
-    if (action === "callback") {
-      const code = url.searchParams.get("code");
-      const error = url.searchParams.get("error");
-
-      if (error) {
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-oauth-error', error: '${error}' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
-        );
+    // Action: Exchange code for page data (called from frontend callback component)
+    if (action === "exchange-code" || (req.method === "POST" && !action)) {
+      let code: string | null = null;
+      
+      // Try to get code from body (POST) or query params
+      if (req.method === "POST") {
+        try {
+          const body = await req.json();
+          code = body.code;
+        } catch {
+          // Body parsing failed, try query params
+        }
+      }
+      
+      if (!code) {
+        code = url.searchParams.get("code");
       }
 
       if (!code) {
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-oauth-error', error: 'No code received' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
+        return errorResponse(
+          'MISSING_CODE',
+          'Authorization code is required.',
+          ['This is an internal error. Please try again.'],
+          400
         );
       }
 
       // Exchange code for access token
-      const redirectUri = `${url.origin}/facebook-oauth?action=callback`;
       const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?` +
         `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `redirect_uri=${encodeURIComponent(PRODUCTION_REDIRECT_URI)}&` +
         `client_secret=${FB_APP_SECRET}&` +
         `code=${code}`;
+
+      console.log(`[FB-OAUTH] Exchanging code for token with redirect: ${PRODUCTION_REDIRECT_URI}`);
 
       const tokenResponse = await fetch(tokenUrl);
       const tokenData = await tokenResponse.json();
 
       if (tokenData.error) {
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-oauth-error', error: '${tokenData.error.message}' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
+        console.error("[FB-OAUTH] Token exchange failed:", tokenData.error);
+        return errorResponse(
+          'TOKEN_EXCHANGE_FAILED',
+          tokenData.error.message || 'Failed to exchange authorization code.',
+          ['Please try again', 'If the issue persists, contact support'],
+          400
         );
       }
 
@@ -104,41 +160,70 @@ serve(async (req) => {
       const pagesData = await pagesResponse.json();
 
       if (pagesData.error) {
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-oauth-error', error: '${pagesData.error.message}' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
+        console.error("[FB-OAUTH] Failed to get pages:", pagesData.error);
+        return errorResponse(
+          'PAGES_FETCH_FAILED',
+          pagesData.error.message || 'Failed to get your Facebook pages.',
+          ['Make sure you have admin access to at least one Facebook page', 'Please try again'],
+          400
         );
       }
 
-      const pages = pagesData.data?.map((page: any) => ({
+      const pages = pagesData.data?.map((page: Record<string, unknown>) => ({
         id: page.id,
         name: page.name,
         access_token: page.access_token,
         category: page.category,
       })) || [];
 
-      // Send data back to opener window
+      console.log(`[FB-OAUTH] Successfully fetched ${pages.length} pages`);
+
       return new Response(
-        `<script>
-          window.opener.postMessage({
-            type: 'fb-oauth-success',
-            pages: ${JSON.stringify(pages)},
-            userToken: '${accessToken}',
-            expiresIn: ${expiresIn}
-          }, '*');
-          window.close();
-        </script>`,
-        { headers: { "Content-Type": "text/html" } }
+        JSON.stringify({
+          success: true,
+          pages,
+          userToken: accessToken,
+          expiresIn,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Legacy callback action (kept for backwards compatibility)
+    if (action === "callback") {
+      const code = url.searchParams.get("code");
+      const error = url.searchParams.get("error");
+      const errorDescription = url.searchParams.get("error_description");
+      
+      // Build redirect URL to frontend callback
+      let frontendCallback = PRODUCTION_REDIRECT_URI;
+      if (code) {
+        frontendCallback += `?code=${encodeURIComponent(code)}`;
+      } else if (error) {
+        frontendCallback += `?error=${encodeURIComponent(error)}`;
+        if (errorDescription) {
+          frontendCallback += `&error_description=${encodeURIComponent(errorDescription)}`;
+        }
+      }
+      
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          "Location": frontendCallback,
+        }
+      });
     }
 
     // Action: Save page connection
     if (action === "save-connection") {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          'UNAUTHORIZED',
+          'You must be logged in to connect a Facebook page.',
+          ['Please log in and try again'],
+          401
         );
       }
 
@@ -151,9 +236,11 @@ serve(async (req) => {
       const token = authHeader.replace("Bearer ", "");
       const { data: claims, error: authError } = await supabase.auth.getClaims(token);
       if (authError || !claims?.claims) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          'UNAUTHORIZED',
+          'Your session has expired.',
+          ['Please log in again'],
+          401
         );
       }
 
@@ -161,9 +248,11 @@ serve(async (req) => {
       const { page_id, page_name, access_token, expires_in } = await req.json();
 
       if (!page_id || !page_name || !access_token) {
-        return new Response(
-          JSON.stringify({ error: "Missing required fields" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          'MISSING_FIELDS',
+          'Missing required page information.',
+          ['This is an internal error. Please try again.'],
+          400
         );
       }
 
@@ -188,10 +277,12 @@ serve(async (req) => {
         .single();
 
       if (error) {
-        console.error("Error saving connection:", error);
-        return new Response(
-          JSON.stringify({ error: "Failed to save connection" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        console.error("[FB-OAUTH] Error saving connection:", error);
+        return errorResponse(
+          'SAVE_FAILED',
+          'Failed to save your Facebook page connection.',
+          ['Please try again', 'If the issue persists, contact support'],
+          500
         );
       }
 
@@ -205,9 +296,11 @@ serve(async (req) => {
     if (action === "get-insights") {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          'UNAUTHORIZED',
+          'You must be logged in to view insights.',
+          ['Please log in and try again'],
+          401
         );
       }
 
@@ -220,9 +313,11 @@ serve(async (req) => {
       const token = authHeader.replace("Bearer ", "");
       const { data: claims, error: authError } = await supabase.auth.getClaims(token);
       if (authError || !claims?.claims) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          'UNAUTHORIZED',
+          'Your session has expired.',
+          ['Please log in again'],
+          401
         );
       }
 
@@ -238,9 +333,11 @@ serve(async (req) => {
         .single();
 
       if (connError || !connection) {
-        return new Response(
-          JSON.stringify({ error: "Connection not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        return errorResponse(
+          'CONNECTION_NOT_FOUND',
+          'Facebook page connection not found.',
+          ['Please reconnect your Facebook page'],
+          404
         );
       }
 
@@ -288,16 +385,20 @@ serve(async (req) => {
       );
     }
 
-    return new Response(
-      JSON.stringify({ error: "Invalid action" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    return errorResponse(
+      'INVALID_ACTION',
+      'Invalid action specified.',
+      ['This is an internal error. Please try again.'],
+      400
     );
   } catch (error: unknown) {
-    console.error("Facebook OAuth error:", error);
+    console.error("[FB-OAUTH] Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    return errorResponse(
+      'UNKNOWN_ERROR',
+      'An unexpected error occurred.',
+      ['Please try again', 'If the issue persists, contact support'],
+      500
     );
   }
 });
