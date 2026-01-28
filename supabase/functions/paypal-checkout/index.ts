@@ -130,10 +130,13 @@ serve(async (req) => {
       );
 
       const token = authHeader.replace("Bearer ", "");
-      const { data: userData, error: authError } = await supabaseClient.auth.getUser(token);
-      if (authError || !userData?.user) {
+      const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+      if (authError || !claimsData?.claims) {
+        console.error("[PAYPAL] Auth error:", authError);
         return errorResponse('UNAUTHORIZED', 'Session expired. Please log in again.', ['Sign in to your account'], undefined, 401);
       }
+
+      const userId = claimsData.claims.sub as string;
 
       const plan_id = body.plan_id as string;
       const success_url = body.success_url as string | undefined;
@@ -193,7 +196,7 @@ serve(async (req) => {
           purchase_units: [{
             reference_id: plan_id,
             description: plan.name,
-            custom_id: `${userData.user.id}|${plan_id}`,
+            custom_id: `${userId}|${plan_id}`,
             amount: {
               currency_code: plan.currency.toUpperCase(),
               value: plan.price.toFixed(2),
