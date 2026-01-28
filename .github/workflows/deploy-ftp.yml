@@ -1,9 +1,13 @@
 name: Deploy to cPanel via FTP
 
-on: 
+on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
@@ -13,16 +17,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Install dependencies
+      - name: Install dependencies (CI)
         run: npm ci
 
       - name: Build project
         run: npm run build
+
+      # (Optional) Confirm dist exists & show files
+      - name: Verify build output
+        run: |
+          ls -la
+          ls -la dist || true
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -31,6 +42,6 @@ jobs:
           username: go@pagelyzer.io
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
-          local-dir: dist/             # ✔ MUST end with slash
-          server-dir: /  # ✔ server folder
+          local-dir: dist/
+          server-dir: /
           dangerous-clean-slate: false
