@@ -1,4 +1,4 @@
-name: Deploy to cPanel via FTP
+name: Deploy to cPanel
 
 on:
   push:
@@ -12,47 +12,39 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # ✅ WORKING NOW: lock mismatch हुँदा पनि चल्ने
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Build project
+      - name: Build
         run: npm run build
 
-      # ✅ Verify output + helpful debug
       - name: Verify build output
         run: |
-          echo "Root files:"
-          ls -la
-          echo "Dist folder:"
-          ls -la dist || true
-          test -d dist || (echo "ERROR: dist/ folder not found. Check build output folder (dist/build/out)." && exit 1)
+          test -d dist || (echo "dist not found" && exit 1)
 
-      # ✅ Deploy only dist/ folder
-      - name: Deploy via FTP
+      - name: Test connectivity
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y netcat-openbsd
+          echo "Check 21/22:"
+          nc -vz -w 10 ${{ secrets.FTP_SERVER }} 21 || true
+          nc -vz -w 10 ${{ secrets.FTP_SERVER }} 22 || true
+
+      - name: Deploy via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          protocol: ftps
           local-dir: dist/
-          server-dir: /
+          server-dir: /public_html/
           dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.github/**
-            **/*.map
