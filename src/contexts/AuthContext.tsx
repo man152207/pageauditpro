@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,6 +13,50 @@ interface UserProfile {
   is_active: boolean;
 }
 
+interface PlanInfo {
+  id: string | null;
+  name: string;
+  billing_type: string;
+  price: number;
+  currency: string;
+}
+
+interface SubscriptionFeatures {
+  canAutoAudit: boolean;
+  canExportPdf: boolean;
+  canShareReport: boolean;
+  canViewFullMetrics: boolean;
+  canViewDemographics: boolean;
+  canViewAIInsights: boolean;
+}
+
+interface UsageLimits {
+  audits_per_month: number;
+  pdf_exports: number;
+  history_days: number;
+}
+
+interface UsageStats {
+  auditsUsed: number;
+  auditsLimit: number;
+  auditsRemaining: number;
+}
+
+export interface SubscriptionState {
+  subscribed: boolean;
+  subscription: {
+    id: string;
+    status: string;
+    started_at: string | null;
+    expires_at: string | null;
+    renews_at: string | null;
+  } | null;
+  plan: PlanInfo;
+  features: SubscriptionFeatures;
+  limits: UsageLimits;
+  usage: UsageStats;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -21,13 +65,49 @@ interface AuthContextType {
   isLoading: boolean;
   isSuperAdmin: boolean;
   isAdmin: boolean;
+  // Subscription state
+  subscription: SubscriptionState | null;
+  isPro: boolean;
+  isSubscriptionLoading: boolean;
+  // Methods
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
+  refreshSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const defaultSubscription: SubscriptionState = {
+  subscribed: false,
+  subscription: null,
+  plan: {
+    id: null,
+    name: 'Free',
+    billing_type: 'free',
+    price: 0,
+    currency: 'USD',
+  },
+  features: {
+    canAutoAudit: false,
+    canExportPdf: false,
+    canShareReport: false,
+    canViewFullMetrics: false,
+    canViewDemographics: false,
+    canViewAIInsights: false,
+  },
+  limits: {
+    audits_per_month: 3,
+    pdf_exports: 0,
+    history_days: 7,
+  },
+  usage: {
+    auditsUsed: 0,
+    auditsLimit: 3,
+    auditsRemaining: 3,
+  },
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,6 +115,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Subscription state
+  const [subscription, setSubscription] = useState<SubscriptionState | null>(null);
+  const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
 
   const fetchUserData = async (userId: string) => {
     try {
@@ -63,9 +147,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchSubscription = useCallback(async (accessToken: string) => {
+    if (!accessToken) return;
+    
+    setIsSubscriptionLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setSubscription(data);
+      } else {
+        console.error('Failed to fetch subscription:', await response.text());
+        setSubscription(defaultSubscription);
+      }
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      setSubscription(defaultSubscription);
+    } finally {
+      setIsSubscriptionLoading(false);
+    }
+  }, []);
+
+  const refreshSubscription = useCallback(async () => {
+    if (session?.access_token) {
+      await fetchSubscription(session.access_token);
+    }
+  }, [session?.access_token, fetchSubscription]);
+
   useEffect(() => {
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -74,10 +194,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setTimeout(() => {
             fetchUserData(session.user.id);
+            fetchSubscription(session.access_token);
           }, 0);
         } else {
           setProfile(null);
           setRoles([]);
+          setSubscription(null);
         }
         
         setIsLoading(false);
@@ -91,13 +213,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (session?.user) {
         fetchUserData(session.user.id);
+        fetchSubscription(session.access_token);
       }
       
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => authSubscription.unsubscribe();
+  }, [fetchSubscription]);
+
+  // Refresh subscription periodically (every 5 minutes)
+  useEffect(() => {
+    if (!session?.access_token) return;
+
+    const interval = setInterval(() => {
+      fetchSubscription(session.access_token);
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [session?.access_token, fetchSubscription]);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -131,11 +265,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setProfile(null);
     setRoles([]);
+    setSubscription(null);
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);
   const isSuperAdmin = hasRole('super_admin');
   const isAdmin = hasRole('admin') || isSuperAdmin;
+  const isPro = subscription?.subscribed === true && subscription?.plan?.billing_type !== 'free';
 
   return (
     <AuthContext.Provider
@@ -147,10 +283,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isSuperAdmin,
         isAdmin,
+        subscription,
+        isPro,
+        isSubscriptionLoading,
         signUp,
         signIn,
         signOut,
         hasRole,
+        refreshSubscription,
       }}
     >
       {children}
