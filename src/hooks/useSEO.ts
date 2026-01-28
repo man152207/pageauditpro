@@ -67,7 +67,7 @@ const defaultSEO: SEOSettings = {
   google_tag_manager_id: '',
   facebook_pixel_id: '',
   favicon_url: '/favicon.ico',
-  sitemap_url: '',
+  sitemap_url: 'https://pagelyzer.io/sitemap.xml',
 };
 
 export function useSEO() {

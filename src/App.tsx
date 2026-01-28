@@ -17,6 +17,7 @@ import FeaturesPage from "@/pages/FeaturesPage";
 import SampleReportPage from "@/pages/SampleReportPage";
 import FAQPage from "@/pages/FAQPage";
 import NotFound from "@/pages/NotFound";
+import SitemapPage from "@/pages/SitemapPage";
 
 // Dashboard Pages
 import UserDashboard from "@/pages/dashboard/UserDashboard";
@@ -43,6 +44,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Sitemap (serves XML) */}
+            <Route path="/sitemap.xml" element={<SitemapPage />} />
+
             {/* Auth Page (standalone) */}
             <Route path="/auth" element={<AuthPage />} />
 
