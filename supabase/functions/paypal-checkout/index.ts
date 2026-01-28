@@ -49,7 +49,21 @@ serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const action = url.searchParams.get("action");
+  let action = url.searchParams.get("action");
+  
+  // Clone the request to read body multiple times if needed
+  const clonedReq = req.clone();
+  let body: Record<string, unknown> = {};
+  
+  try {
+    body = await req.json();
+    // If action not in URL, check body
+    if (!action && body.action) {
+      action = body.action as string;
+    }
+  } catch {
+    // Body might be empty for some actions
+  }
 
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -121,7 +135,9 @@ serve(async (req) => {
         return errorResponse('UNAUTHORIZED', 'Session expired. Please log in again.', ['Sign in to your account'], undefined, 401);
       }
 
-      const { plan_id, success_url, cancel_url } = await req.json();
+      const plan_id = body.plan_id as string;
+      const success_url = body.success_url as string | undefined;
+      const cancel_url = body.cancel_url as string | undefined;
 
       if (!plan_id) {
         return errorResponse('INVALID_REQUEST', 'Plan ID is required.', ['Select a plan to continue'], undefined, 400);
@@ -205,7 +221,7 @@ serve(async (req) => {
 
     // Action: Capture Order (after user approves)
     if (action === "capture-order") {
-      const { order_id } = await req.json();
+      const order_id = body.order_id as string;
 
       if (!order_id) {
         return errorResponse('INVALID_REQUEST', 'Order ID is required.', ['Complete the payment flow again'], undefined, 400);
