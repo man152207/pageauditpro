@@ -22,6 +22,10 @@ import TermsOfServicePage from "@/pages/TermsOfServicePage";
 import NotFound from "@/pages/NotFound";
 import SitemapPage from "@/pages/SitemapPage";
 
+// OAuth Callback Pages
+import FacebookLoginCallback from "@/pages/callbacks/FacebookLoginCallback";
+import FacebookPageCallback from "@/pages/callbacks/FacebookPageCallback";
+
 // Dashboard Pages
 import UserDashboard from "@/pages/dashboard/UserDashboard";
 import ManualAuditPage from "@/pages/dashboard/ManualAuditPage";
@@ -60,6 +64,10 @@ const App = () => (
 
             {/* Auth Page (standalone) */}
             <Route path="/auth" element={<AuthPage />} />
+
+            {/* Facebook OAuth Callbacks (no auth required - called during OAuth flow) */}
+            <Route path="/api/auth/facebook/login/callback" element={<FacebookLoginCallback />} />
+            <Route path="/api/auth/facebook/page/callback" element={<FacebookPageCallback />} />
 
             {/* Marketing Pages */}
             <Route element={<MarketingLayout />}>

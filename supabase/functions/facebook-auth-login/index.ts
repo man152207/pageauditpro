@@ -63,9 +63,11 @@ serve(async (req) => {
       );
     }
 
+    // Fixed production redirect URI (must match Facebook console exactly)
+    const PRODUCTION_REDIRECT_URI = "https://pagelyzer.io/api/auth/facebook/login/callback";
+
     // Action: Get login URL
     if (action === "get-login-url") {
-      const redirectUri = `${url.origin}/facebook-auth-login?action=callback`;
       const scopes = [
         "email",
         "public_profile",
@@ -75,10 +77,12 @@ serve(async (req) => {
 
       const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
         `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `redirect_uri=${encodeURIComponent(PRODUCTION_REDIRECT_URI)}&` +
         `scope=${scopes}&` +
         `state=${state}&` +
         `response_type=code`;
+
+      console.log(`[FB-AUTH-LOGIN] Generated auth URL with redirect: ${PRODUCTION_REDIRECT_URI}`);
 
       return new Response(
         JSON.stringify({ authUrl, state }),
@@ -86,42 +90,56 @@ serve(async (req) => {
       );
     }
 
-    // Action: OAuth Callback - exchange code for user info
-    if (action === "callback") {
-      const code = url.searchParams.get("code");
-      const error = url.searchParams.get("error");
-
-      if (error) {
-        const errorMsg = url.searchParams.get("error_description") || error;
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-login-error', error: '${errorMsg}' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
-        );
+    // Action: Exchange code for user data (called from frontend callback component)
+    if (action === "exchange-code" || req.method === "POST") {
+      let code: string | null = null;
+      
+      // Try to get code from body (POST) or query params
+      if (req.method === "POST") {
+        try {
+          const body = await req.json();
+          code = body.code;
+          // If action is in body, use it
+          if (body.action && body.action !== "exchange-code") {
+            // This might be complete-login, handle below
+          }
+        } catch {
+          // Body parsing failed, try query params
+        }
+      }
+      
+      if (!code) {
+        code = url.searchParams.get("code");
       }
 
       if (!code) {
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-login-error', error: 'No authorization code received' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
+        return errorResponse(
+          'MISSING_CODE',
+          'Authorization code is required.',
+          ['This is an internal error. Please try again.'],
+          400
         );
       }
 
       // Exchange code for access token
-      const redirectUri = `${url.origin}/facebook-auth-login?action=callback`;
       const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?` +
         `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `redirect_uri=${encodeURIComponent(PRODUCTION_REDIRECT_URI)}&` +
         `client_secret=${FB_APP_SECRET}&` +
         `code=${code}`;
+
+      console.log(`[FB-AUTH-LOGIN] Exchanging code for token with redirect: ${PRODUCTION_REDIRECT_URI}`);
 
       const tokenResponse = await fetch(tokenUrl);
       const tokenData = await tokenResponse.json();
 
       if (tokenData.error) {
         console.error("[FB-AUTH-LOGIN] Token exchange failed:", tokenData.error);
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-login-error', error: '${tokenData.error.message}' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
+        return errorResponse(
+          'TOKEN_EXCHANGE_FAILED',
+          tokenData.error.message || 'Failed to exchange authorization code.',
+          ['Please try again', 'If the issue persists, contact support'],
+          400
         );
       }
 
@@ -134,9 +152,11 @@ serve(async (req) => {
 
       if (userData.error) {
         console.error("[FB-AUTH-LOGIN] Failed to get user info:", userData.error);
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-login-error', error: '${userData.error.message}' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
+        return errorResponse(
+          'USER_INFO_FAILED',
+          userData.error.message || 'Failed to get user information from Facebook.',
+          ['Please try again'],
+          400
         );
       }
 
@@ -146,30 +166,56 @@ serve(async (req) => {
       const fbPicture = userData.picture?.data?.url;
 
       if (!fbEmail) {
-        return new Response(
-          `<script>window.opener.postMessage({ type: 'fb-login-error', error: 'Email permission is required. Please try again and allow email access.' }, '*'); window.close();</script>`,
-          { headers: { "Content-Type": "text/html" } }
+        return errorResponse(
+          'EMAIL_REQUIRED',
+          'Email permission is required.',
+          ['Please try again and allow email access when prompted by Facebook'],
+          400
         );
       }
 
       console.log(`[FB-AUTH-LOGIN] User authenticated: ${fbEmail}, name: ${fbName}`);
 
-      // Send data back to opener window for client-side auth handling
+      // Return user data to frontend (frontend will call complete-login)
       return new Response(
-        `<script>
-          window.opener.postMessage({
-            type: 'fb-login-success',
-            userData: {
-              facebookId: '${fbUserId}',
-              email: '${fbEmail}',
-              name: '${fbName || ''}',
-              picture: '${fbPicture || ''}'
-            }
-          }, '*');
-          window.close();
-        </script>`,
-        { headers: { "Content-Type": "text/html" } }
+        JSON.stringify({
+          success: true,
+          userData: {
+            facebookId: fbUserId,
+            email: fbEmail,
+            name: fbName || '',
+            picture: fbPicture || ''
+          }
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Legacy callback action (kept for backwards compatibility, but frontend now handles this)
+    if (action === "callback") {
+      // Redirect to frontend callback handler which will call exchange-code
+      const code = url.searchParams.get("code");
+      const error = url.searchParams.get("error");
+      const errorDescription = url.searchParams.get("error_description");
+      
+      // Build redirect URL to frontend callback
+      let frontendCallback = PRODUCTION_REDIRECT_URI;
+      if (code) {
+        frontendCallback += `?code=${encodeURIComponent(code)}`;
+      } else if (error) {
+        frontendCallback += `?error=${encodeURIComponent(error)}`;
+        if (errorDescription) {
+          frontendCallback += `&error_description=${encodeURIComponent(errorDescription)}`;
+        }
+      }
+      
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          "Location": frontendCallback,
+        }
+      });
     }
 
     // Action: Complete login (called from frontend after popup callback)
