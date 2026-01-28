@@ -162,7 +162,24 @@ serve(async (req) => {
       // Get PayPal access token
       const accessToken = await getPayPalAccessToken(PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_SANDBOX);
 
-      const origin = req.headers.get("origin") || "https://pagelyzer.io";
+      // For PayPal, always use a consistent production domain that's registered in PayPal
+      // This avoids issues with dynamic preview domains not being whitelisted
+      const WHITELISTED_DOMAINS = [
+        "https://pagelyzer.io",
+        "https://pageauditpro.lovable.app"
+      ];
+      
+      // Check if success_url starts with a whitelisted domain, otherwise use production
+      const getWhitelistedOrigin = (url?: string): string => {
+        if (url) {
+          for (const domain of WHITELISTED_DOMAINS) {
+            if (url.startsWith(domain)) return domain;
+          }
+        }
+        return "https://pagelyzer.io"; // Default to production domain
+      };
+      
+      const origin = getWhitelistedOrigin(success_url);
 
       // Create PayPal order
       const orderResponse = await fetch(`${baseUrl}/v2/checkout/orders`, {
