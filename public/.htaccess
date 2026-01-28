@@ -2,6 +2,27 @@
   RewriteEngine On
   RewriteBase /
 
+  # ============================================
+  # API Proxy Rules - Forward to Supabase Edge Functions
+  # ============================================
+  
+  # Stripe Webhook
+  RewriteRule ^api/webhooks/stripe$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/stripe-webhook [P,L]
+  
+  # Facebook OAuth Callbacks
+  RewriteRule ^api/auth/facebook/page/callback$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-oauth?action=callback [P,QSA,L]
+  RewriteRule ^api/auth/facebook/login/callback$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-auth-login?action=callback [P,QSA,L]
+  
+  # eSewa Payment Callback
+  RewriteRule ^api/payments/esewa/success$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/esewa-checkout?action=success [P,QSA,L]
+  
+  # Sitemap - proxy to edge function
+  RewriteRule ^sitemap\.xml$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap [P,L]
+
+  # ============================================
+  # Standard SPA Rules
+  # ============================================
+  
   # If requesting an actual existing file or directory, serve it
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
@@ -9,6 +30,11 @@
 
   # SPA fallback: everything else goes to index.html
   RewriteRule . /index.html [L]
+</IfModule>
+
+# Enable mod_proxy if available (required for [P] flag)
+<IfModule mod_proxy.c>
+  ProxyPreserveHost On
 </IfModule>
 
 # Optional safety: if rewrites are disabled for some reason, still fallback
