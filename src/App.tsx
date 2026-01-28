@@ -45,6 +45,7 @@ import UsersManagementPage from "@/pages/super-admin/UsersManagementPage";
 import SettingsLayout from "@/pages/super-admin/settings/SettingsLayout";
 import GeneralSettings from "@/pages/super-admin/settings/GeneralSettings";
 import IntegrationsSettings from "@/pages/super-admin/settings/IntegrationsSettings";
+import FacebookSettings from "@/pages/super-admin/settings/FacebookSettings";
 import WebhooksSettings from "@/pages/super-admin/settings/WebhooksSettings";
 import SEOSettings from "@/pages/super-admin/settings/SEOSettings";
 import SecuritySettings from "@/pages/super-admin/settings/SecuritySettings";
@@ -140,6 +141,7 @@ const App = () => (
                 <Route index element={<Navigate to="/super-admin/settings/general" replace />} />
                 <Route path="general" element={<GeneralSettings />} />
                 <Route path="integrations" element={<IntegrationsSettings />} />
+                <Route path="facebook" element={<FacebookSettings />} />
                 <Route path="webhooks" element={<WebhooksSettings />} />
                 <Route path="seo" element={<SEOSettings />} />
                 <Route path="security" element={<SecuritySettings />} />
