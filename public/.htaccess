@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # If requesting an actual existing file or directory, serve it
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # SPA fallback: everything else goes to index.html
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Optional safety: if rewrites are disabled for some reason, still fallback
+ErrorDocument 404 /index.html
