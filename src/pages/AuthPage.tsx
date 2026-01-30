@@ -138,12 +138,11 @@ export default function AuthPage() {
     try {
       // Get the Facebook login URL from edge function
       const { data, error } = await supabase.functions.invoke('facebook-auth-login', {
-        body: {},
-        headers: { 'Content-Type': 'application/json' },
+        body: { action: 'get-login-url' },
       });
 
       // Check for configuration error
-      if (error || data?.error) {
+      if (error || data?.error || !data?.authUrl) {
         const errorData = data?.error || {};
         toast({
           title: errorData.human_message || 'Facebook login unavailable',
@@ -154,28 +153,13 @@ export default function AuthPage() {
       }
 
       // Open popup for Facebook OAuth
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-auth-login?action=get-login-url`
-      );
-      const urlData = await response.json();
-
-      if (urlData.error) {
-        toast({
-          title: urlData.error.human_message || 'Facebook login error',
-          description: urlData.error.fix_steps?.[0] || 'Please try again later.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Open popup
       const width = 600;
       const height = 700;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
       
       const popup = window.open(
-        urlData.authUrl,
+        data.authUrl,
         'facebook-login',
         `width=${width},height=${height},left=${left},top=${top}`
       );
