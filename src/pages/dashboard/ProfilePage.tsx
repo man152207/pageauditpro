@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,8 +44,15 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [fullName, setFullName] = useState(profile?.full_name || '');
+  const [fullName, setFullName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Sync fullName state when profile loads
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFullName(profile.full_name);
+    }
+  }, [profile?.full_name]);
 
   // Fetch connected Facebook pages
   const { data: fbConnections = [], isLoading: connectionsLoading } = useQuery({
