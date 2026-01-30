@@ -583,10 +583,6 @@ export default function FacebookSettings() {
                       <code className="text-xs bg-background px-2 py-0.5 rounded">pagelyzer.io</code>
                       <CopyButton value="pagelyzer.io" />
                     </li>
-                    <li className="flex items-center gap-2">
-                      <code className="text-xs bg-background px-2 py-0.5 rounded">pageauditpro.lovable.app</code>
-                      <CopyButton value="pageauditpro.lovable.app" />
-                    </li>
                   </ul>
                 </div>
               </div>
