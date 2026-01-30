@@ -21,7 +21,6 @@ import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "@/pages/TermsOfServicePage";
 import DataDeletionPage from "@/pages/DataDeletionPage";
 import NotFound from "@/pages/NotFound";
-import SitemapPage from "@/pages/SitemapPage";
 
 // OAuth Callback Pages
 import FacebookLoginCallback from "@/pages/callbacks/FacebookLoginCallback";
@@ -61,9 +60,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Sitemap (serves XML) */}
-            <Route path="/sitemap.xml" element={<SitemapPage />} />
-
+            {/* Sitemap handled by .htaccess proxy to edge function */}
             {/* Auth Page (standalone) */}
             <Route path="/auth" element={<AuthPage />} />
 
