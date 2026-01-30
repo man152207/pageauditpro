@@ -116,6 +116,36 @@ serve(async (req) => {
 
     const baseUrl = PAYPAL_SANDBOX ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
 
+    // Action: Test Connection (for Super Admin integration settings)
+    if (action === "test") {
+      try {
+        // Try to get an access token to validate credentials
+        const accessToken = await getPayPalAccessToken(PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_SANDBOX);
+        
+        if (accessToken) {
+          console.log("[PAYPAL] Connection test successful");
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: 'PayPal credentials are valid.',
+              mode: PAYPAL_SANDBOX ? 'sandbox' : 'live',
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error("[PAYPAL] Connection test failed:", errMsg);
+        return errorResponse(
+          'INVALID_CREDENTIALS',
+          'PayPal credentials are invalid.',
+          ['Check your Client ID and Client Secret', 'Ensure credentials match the selected mode (sandbox/live)'],
+          undefined,
+          400
+        );
+      }
+    }
+
     // Action: Create Order
     if (action === "create-order" || !action) {
       const authHeader = req.headers.get("Authorization");
