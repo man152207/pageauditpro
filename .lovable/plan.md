@@ -1,246 +1,194 @@
 
-# Facebook Developer Console Configuration Guide
+# Site Audit: Admin Sidebar र Routing Issues
 
-## Overview
+## 🔍 Problem Summary
 
-You want a dedicated section in Super Admin Settings that displays all the configuration details needed for the Facebook Developer Console. This will include:
+तपाईंले रिपोर्ट गर्नुभएको issue सही छ! Sidebar मा multiple menu items देखिन्छन् तर **सबै routes मा एउटै page render हुन्छ**।
 
-1. **Facebook Webhooks** - Callback URLs and Verify Tokens for User, Page, Permissions, Application, Instagram, and Catalog
-2. **Facebook Login Settings** - OAuth settings, Redirect URIs, Deauthorize callback
-3. **App Settings** - App Domains, Website URL, Privacy Policy URL, etc.
+### Current Issue Analysis
 
-Currently, the WebhooksSettings page only shows basic callback URLs mixed with other services (Stripe, PayPal). We need a dedicated, comprehensive Facebook configuration section.
-
----
-
-## What Will Be Created
-
-### New Tab: "Facebook" in Settings Navigation
-
-Add a new tab between "Integrations" and "Webhooks":
-
-| Tab | Purpose |
-|-----|---------|
-| General | App name, logo, support email |
-| Integrations | API keys for Stripe, Facebook, PayPal, eSewa, Email |
-| **Facebook** | **NEW: Complete Facebook Developer Console guide** |
-| Webhooks | Stripe webhook, general callback URLs |
-| SEO | Meta tags, sitemap settings |
-| Security | Security policies |
+| Section | Sidebar Menu | Route | Actual Page Component |
+|---------|--------------|-------|----------------------|
+| **User** | Overview | `/dashboard` | ✅ UserDashboard.tsx |
+| | Run Audit | `/dashboard/audit` | ✅ ManualAuditPage.tsx |
+| | Reports | `/dashboard/reports` | ❌ **UserDashboard.tsx** (गलत!) |
+| | History | `/dashboard/history` | ❌ **UserDashboard.tsx** (गलत!) |
+| | Billing | `/dashboard/billing` | ✅ BillingPage.tsx |
+| **Admin** | Dashboard | `/admin` | ✅ AdminDashboard.tsx |
+| | Users | `/admin/users` | ❌ **AdminDashboard.tsx** (गलत!) |
+| | All Audits | `/admin/audits` | ❌ **AdminDashboard.tsx** (गलत!) |
+| | Branding | `/admin/branding` | ❌ **AdminDashboard.tsx** (गलत!) |
+| **Super Admin** | System | `/super-admin` | ✅ SuperAdminDashboard.tsx |
+| | Users | `/super-admin/users` | ✅ UsersManagementPage.tsx |
+| | Plans | `/super-admin/plans` | ✅ PlansManagementPage.tsx |
+| | Settings | `/super-admin/settings/*` | ✅ SettingsLayout + nested |
 
 ---
 
-## New FacebookSettings Page Structure
+## 📊 Architecture Diagram
 
-### Section 1: App Settings (Settings > Basic)
-
-| Setting | Value to Copy | Notes |
-|---------|---------------|-------|
-| App Domains | `pagelyzer.io` | Required for OAuth |
-| Website URL | `https://pagelyzer.io` | Main site URL |
-| Privacy Policy URL | `https://pagelyzer.io/privacy-policy` | Required for public apps |
-| Terms of Service URL | `https://pagelyzer.io/terms-of-service` | Required for public apps |
-
-### Section 2: Facebook Login Configuration
-
-| Setting | Recommended Value |
-|---------|-------------------|
-| Client OAuth login | ON |
-| Web OAuth login | ON |
-| Enforce HTTPS | ON |
-| Force Web OAuth reauthentication | OFF |
-| Embedded browser OAuth login | OFF |
-| Use Strict Mode for redirect URIs | ON |
-| Login with the JavaScript SDK | OFF |
-| Login from devices | OFF |
-
-**Valid OAuth Redirect URIs** (copy these exactly):
-- `https://pagelyzer.io/api/auth/facebook/login/callback` - For "Continue with Facebook" login
-- `https://pagelyzer.io/api/auth/facebook/page/callback` - For Facebook Page connection
-
-**Allowed Domains for JavaScript SDK** (if enabled):
-- `pagelyzer.io`
-- `pageauditpro.lovable.app`
-
-**Deauthorize Callback URL**:
-- `https://pagelyzer.io/api/webhooks/facebook/deauthorize`
-
-### Section 3: Webhook Configuration
-
-For each webhook product (User, Page, Permissions, Application, Instagram, Catalog):
-
-| Field | Value |
-|-------|-------|
-| Callback URL | `https://pagelyzer.io/api/webhooks/facebook/{product}` |
-| Verify Token | (Generated token - stored in settings) |
-
-**Products to configure:**
-
-| Product | Callback URL | Use Case |
-|---------|--------------|----------|
-| User | `https://pagelyzer.io/api/webhooks/facebook/user` | User data changes |
-| Page | `https://pagelyzer.io/api/webhooks/facebook/page` | Page insights, posts, messages |
-| Permissions | `https://pagelyzer.io/api/webhooks/facebook/permissions` | Permission changes |
-| Application | `https://pagelyzer.io/api/webhooks/facebook/application` | App-level events |
-| Instagram | `https://pagelyzer.io/api/webhooks/facebook/instagram` | Instagram Business data |
-| Catalog | `https://pagelyzer.io/api/webhooks/facebook/catalog` | Product catalog updates |
-
-### Section 4: Redirect URI Validator
-
-A helper section that shows:
-- What URIs are currently configured in your app
-- A quick copy button for each URI
-- Status indicator (Valid/Invalid based on Facebook's requirements)
-
----
-
-## Files to Create/Modify
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/pages/super-admin/settings/FacebookSettings.tsx` | **CREATE** | New comprehensive Facebook configuration page |
-| `src/pages/super-admin/settings/SettingsLayout.tsx` | **MODIFY** | Add "Facebook" tab to navigation |
-| `src/App.tsx` | **MODIFY** | Add route for `/super-admin/settings/facebook` |
-| `supabase/functions/facebook-webhook/index.ts` | **CREATE** | New edge function to handle Facebook webhooks (verification + events) |
-
----
-
-## Technical Implementation
-
-### 1. FacebookSettings.tsx Component Structure
-
-```tsx
-// Sections with collapsible panels:
-- App Basic Settings (with copy buttons)
-- Facebook Login Configuration (with recommended toggles)
-- OAuth Redirect URIs (with copy + validation)
-- Webhook Configuration (per product)
-- Verify Token Management (generate/save)
-- Quick Setup Checklist
-```
-
-### 2. Verify Token Management
-
-The Verify Token is a secret string you create that Facebook uses to verify your webhook endpoint. We will:
-- Store it in the `settings` table with key `facebook_webhook_verify_token`
-- Allow Super Admin to generate a new token or enter a custom one
-- Display it with reveal/hide toggle
-
-### 3. Facebook Webhook Edge Function
-
-Create a new edge function that:
-- Handles GET requests for webhook verification (returns `hub.challenge`)
-- Handles POST requests for incoming webhook events
-- Validates the verify token from settings table
-- Logs all webhook events for debugging
-
----
-
-## UI Design
-
-### Visual Layout
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Facebook Developer Console Configuration                    │
-│ Complete guide for configuring your Facebook App            │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ 📋 Quick Setup Checklist                                    │
-│ ─────────────────────────────────────────────────────────── │
-│ ☐ Add App Domains in Settings > Basic                       │
-│ ☐ Add Website URL in Settings > Basic                       │
-│ ☐ Add Privacy Policy URL                                    │
-│ ☐ Configure Facebook Login settings                         │
-│ ☐ Add Valid OAuth Redirect URIs                             │
-│ ☐ Configure webhooks (optional)                             │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ ⚙️ App Settings (Settings > Basic)                          │
-│ ─────────────────────────────────────────────────────────── │
-│ App Domains          │ pagelyzer.io              │ [Copy]   │
-│ Website URL          │ https://pagelyzer.io      │ [Copy]   │
-│ Privacy Policy URL   │ https://pagelyzer.io/...  │ [Copy]   │
-│ Terms of Service URL │ https://pagelyzer.io/...  │ [Copy]   │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ 🔐 Facebook Login (Use Cases > Facebook Login)              │
-│ ─────────────────────────────────────────────────────────── │
-│ Client OAuth Settings:                                      │
-│                                                             │
-│ Setting                              │ Recommended          │
-│ ───────────────────────────────────────────────────────── │
-│ Client OAuth login                   │ ✓ ON                 │
-│ Web OAuth login                      │ ✓ ON                 │
-│ Enforce HTTPS                        │ ✓ ON                 │
-│ Use Strict Mode for redirect URIs    │ ✓ ON                 │
-│ Login with JavaScript SDK            │ ✗ OFF                │
-│                                                             │
-│ Valid OAuth Redirect URIs (add all of these):               │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ https://pagelyzer.io/api/auth/facebook/login/callback   │ │
-│ │ For: "Continue with Facebook" login          [Copy]     │ │
-│ └─────────────────────────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ https://pagelyzer.io/api/auth/facebook/page/callback    │ │
-│ │ For: Facebook Page connection                [Copy]     │ │
-│ └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│ Deauthorize Callback URL:                                   │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ https://pagelyzer.io/api/webhooks/facebook/deauthorize  │ │
-│ │ For: User app removal notification           [Copy]     │ │
-│ └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ 🔔 Webhooks (Use Cases > Webhooks)                          │
-│ ─────────────────────────────────────────────────────────── │
-│                                                             │
-│ Verify Token: [••••••••] [👁] [Copy] [Generate New]         │
-│                                                             │
-│ Product Webhooks:                                           │
-│ ┌──────────────┬────────────────────────────────┬────────┐ │
-│ │ Product      │ Callback URL                   │ Status │ │
-│ ├──────────────┼────────────────────────────────┼────────┤ │
-│ │ User         │ .../api/webhooks/facebook/user │ [Copy] │ │
-│ │ Page         │ .../api/webhooks/facebook/page │ [Copy] │ │
-│ │ Permissions  │ .../api/webhooks/facebook/...  │ [Copy] │ │
-│ │ Application  │ .../api/webhooks/facebook/...  │ [Copy] │ │
-│ │ Instagram    │ .../api/webhooks/facebook/...  │ [Copy] │ │
-│ │ Catalog      │ .../api/webhooks/facebook/...  │ [Copy] │ │
-│ └──────────────┴────────────────────────────────┴────────┘ │
-│                                                             │
-│ Note: Use the same Verify Token for all webhook products.   │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│ 🌐 JavaScript SDK (Optional)                                │
-│ ─────────────────────────────────────────────────────────── │
-│ If you enable "Login with JavaScript SDK":                  │
-│                                                             │
-│ Allowed Domains:                                            │
-│ • pagelyzer.io                                              │
-│ • pageauditpro.lovable.app                                  │
-│                                                             │
-│ Note: Currently using server-side OAuth (recommended)       │
-└─────────────────────────────────────────────────────────────┘
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                    DASHBOARD LAYOUT                          │
+│  ┌────────────────┐  ┌─────────────────────────────────────┐ │
+│  │   SIDEBAR      │  │           MAIN CONTENT              │ │
+│  │                │  │                                     │ │
+│  │ ─ User ───────│  │   <Outlet /> renders:                │ │
+│  │   Overview    │  │   ├── /dashboard → UserDashboard     │ │
+│  │   Run Audit   │  │   ├── /dashboard/audit → ManualAudit │ │
+│  │   Reports  ❌ │  │   ├── /dashboard/reports → ???       │ │
+│  │   History  ❌ │  │   ├── /dashboard/history → ???       │ │
+│  │   Billing     │  │   └── /dashboard/billing → Billing   │ │
+│  │                │  │                                     │ │
+│  │ ─ Admin ──────│  │   Admin Routes:                      │ │
+│  │   Dashboard   │  │   ├── /admin → AdminDashboard        │ │
+│  │   Users    ❌ │  │   ├── /admin/users → ???             │ │
+│  │   Audits   ❌ │  │   ├── /admin/audits → ???            │ │
+│  │   Branding ❌ │  │   └── /admin/branding → ???          │ │
+│  │                │  │                                     │ │
+│  └────────────────┘  └─────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
+           ❌ = Page component missing or incorrectly mapped
 ```
 
 ---
 
-## Summary
+## 🔴 Root Cause: App.tsx Routing
 
-This plan creates a dedicated Facebook configuration section that:
+`App.tsx` मा routing configuration मा placeholder pages छन्:
 
-1. Shows ALL settings needed for Facebook Developer Console in one place
-2. Provides copy buttons for every URL and value
-3. Includes a quick setup checklist
-4. Manages the webhook Verify Token
-5. Creates a new edge function to handle Facebook webhooks
-6. Separates Facebook-specific configuration from general webhooks
+```typescript
+// Current problematic routes:
+<Route path="reports" element={<UserDashboard />} />   // ← WRONG!
+<Route path="history" element={<UserDashboard />} />   // ← WRONG!
+<Route path="profile" element={<UserDashboard />} />   // ← WRONG!
+<Route path="settings" element={<UserDashboard />} />  // ← WRONG!
 
-After implementation, Super Admin can open this page and configure Facebook Developer Console step-by-step without needing to remember URLs or settings.
+<Route path="users" element={<AdminDashboard />} />    // ← WRONG!
+<Route path="audits" element={<AdminDashboard />} />   // ← WRONG!
+<Route path="branding" element={<AdminDashboard />} /> // ← WRONG!
+```
+
+---
+
+## 📝 Missing Pages List
+
+### User Panel (Priority: High)
+| Page | Purpose | Complexity |
+|------|---------|------------|
+| `ReportsListPage.tsx` | List all audit reports with filters | Medium |
+| `HistoryPage.tsx` | Audit history timeline | Medium |
+| `ProfilePage.tsx` | User profile settings | Low |
+| `UserSettingsPage.tsx` | User preferences (email, notifications) | Low |
+
+### Admin Panel (Priority: Medium)
+| Page | Purpose | Complexity |
+|------|---------|------------|
+| `AdminUsersPage.tsx` | Manage organization users, invite | Medium |
+| `AdminAuditsPage.tsx` | View all audits from org users | Medium |
+| `AdminBrandingPage.tsx` | Agency branding (logo, colors) | Low-Medium |
+
+---
+
+## ✅ What's Working Correctly
+
+1. **Super Admin Panel** - पूर्ण रूपमा काम गर्छ:
+   - Dashboard (`/super-admin`)
+   - Users Management (`/super-admin/users`)
+   - Plans Management (`/super-admin/plans`)
+   - Settings with nested routes (`/super-admin/settings/*`)
+
+2. **Authentication System** - Role-based access control सही छ:
+   - `AuthContext` correctly loads roles from `user_roles` table
+   - `isAdmin` र `isSuperAdmin` flags properly computed
+   - `RoleGuard` component correctly protects routes
+
+3. **Sidebar Navigation** - Menu structure सही छ:
+   - Correct role-based visibility
+   - Active state highlighting works
+   - Navigation links are correct
+
+---
+
+## 🛠️ Implementation Plan
+
+### Phase 1: User Panel Pages (Est: 2-3 hours)
+
+**1. ReportsListPage.tsx**
+- All audits list with pagination
+- Filters: date range, score, status
+- Link to individual report
+
+**2. HistoryPage.tsx**
+- Timeline view of audit activity
+- Quick stats summary
+- Export functionality (Pro only)
+
+**3. ProfilePage.tsx**
+- Edit full name, avatar
+- Connected Facebook pages list
+- Account actions (delete, export data)
+
+**4. UserSettingsPage.tsx**
+- Email notification preferences
+- Timezone/language settings
+
+### Phase 2: Admin Panel Pages (Est: 3-4 hours)
+
+**5. AdminUsersPage.tsx**
+- List org users with roles
+- Invite new user form
+- Edit/disable user actions
+
+**6. AdminAuditsPage.tsx**
+- All audits from org users
+- Filter by user, date, status
+- Bulk export CSV
+
+**7. AdminBrandingPage.tsx**
+- Logo upload
+- Brand colors picker
+- Preview branded report
+
+### Phase 3: Routing Updates (Est: 30 min)
+- Update `App.tsx` with correct component mappings
+- Add any missing guards
+
+---
+
+## 🔒 Security Considerations
+
+All pages will need:
+1. **RLS Policies** - Already in place for most tables
+2. **Role Checks** - Frontend guards + edge function verification
+3. **Organization Scope** - Admin sees only their org's data
+
+---
+
+## 📋 Recommendation
+
+**Option A: Full Implementation** (Recommended)
+- Create all 7 missing pages
+- Complete, production-ready panels
+- Est. time: 5-7 hours
+
+**Option B: MVP First**
+- Create only Reports + History pages
+- Admin pages as placeholders
+- Est. time: 2-3 hours
+
+---
+
+## Technical Details
+
+### Database Tables Already Available
+- `audits` - Has `user_id`, `organization_id` for filtering
+- `profiles` - User profile data
+- `user_roles` - Role assignments
+- `organizations` - Org settings (branding storage needed)
+
+### Hooks to Create
+- `useOrganizationAudits()` - Admin level audit fetching
+- `useOrganizationUsers()` - Admin level user management
+- `useBrandingSettings()` - Agency branding CRUD
+
