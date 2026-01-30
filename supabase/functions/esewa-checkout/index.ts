@@ -99,6 +99,22 @@ serve(async (req) => {
       ? 'https://rc-epay.esewa.com.np'
       : 'https://epay.esewa.com.np';
 
+    // Action: Test Connection (for Super Admin integration settings)
+    if (action === "test") {
+      // For eSewa, we can only validate that credentials are configured
+      // There's no public API to verify credentials without making a payment
+      console.log("[ESEWA] Connection test successful (credentials configured)");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'eSewa credentials are configured.',
+          mode: ESEWA_SANDBOX ? 'sandbox' : 'live',
+          note: 'Full validation occurs during payment.',
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Action: Initiate Payment
     if (action === "initiate" || !action) {
       const authHeader = req.headers.get("Authorization");
