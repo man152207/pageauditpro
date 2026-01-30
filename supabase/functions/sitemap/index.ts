@@ -11,10 +11,12 @@ const staticPages = [
   { path: "/", priority: "1.0", changefreq: "daily" },
   { path: "/features", priority: "0.8", changefreq: "weekly" },
   { path: "/pricing", priority: "0.9", changefreq: "weekly" },
-  { path: "/auth", priority: "0.5", changefreq: "monthly" },
+  { path: "/sample-report", priority: "0.7", changefreq: "weekly" },
   { path: "/faq", priority: "0.6", changefreq: "monthly" },
   { path: "/contact", priority: "0.5", changefreq: "monthly" },
-  { path: "/audit", priority: "0.8", changefreq: "weekly" },
+  { path: "/privacy-policy", priority: "0.4", changefreq: "yearly" },
+  { path: "/terms-of-service", priority: "0.4", changefreq: "yearly" },
+  { path: "/data-deletion", priority: "0.3", changefreq: "yearly" },
 ];
 
 serve(async (req) => {
