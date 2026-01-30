@@ -47,7 +47,30 @@ serve(async (req) => {
     const FB_APP_ID = settingsMap.get("facebook_app_id");
     const FB_APP_SECRET = settingsMap.get("facebook_app_secret");
 
-    // Validate Facebook configuration
+    // Action: Test Connection (for Super Admin integration settings)
+    if (action === "test") {
+      if (!FB_APP_ID || FB_APP_ID === "••••••••" || !FB_APP_SECRET || FB_APP_SECRET === "••••••••") {
+        console.log("[FB-AUTH-LOGIN] Test failed: credentials not configured");
+        return errorResponse(
+          'FACEBOOK_NOT_CONFIGURED',
+          'Facebook credentials are not configured.',
+          ['Go to Settings → Integrations → Facebook API', 'Enter Facebook App ID and App Secret'],
+          400
+        );
+      }
+      
+      console.log("[FB-AUTH-LOGIN] Connection test successful (credentials configured)");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Facebook credentials are configured.',
+          note: 'Full OAuth validation occurs during login flow.',
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate Facebook configuration for other actions
     if (!FB_APP_ID || FB_APP_ID === "••••••••" || !FB_APP_SECRET || FB_APP_SECRET === "••••••••") {
       console.error("[FB-AUTH-LOGIN] Facebook credentials not configured");
       return errorResponse(
