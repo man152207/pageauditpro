@@ -90,27 +90,23 @@ serve(async (req) => {
       );
     }
 
+    // For POST requests, parse body first to determine action
+    let bodyData: { action?: string; code?: string; email?: string; name?: string; picture?: string; facebookId?: string } = {};
+    
+    if (req.method === "POST") {
+      try {
+        bodyData = await req.json();
+      } catch {
+        // Body parsing failed
+      }
+    }
+
+    // Get action from body or query params
+    const effectiveAction = bodyData.action || action;
+
     // Action: Exchange code for user data (called from frontend callback component)
-    if (action === "exchange-code" || req.method === "POST") {
-      let code: string | null = null;
-      
-      // Try to get code from body (POST) or query params
-      if (req.method === "POST") {
-        try {
-          const body = await req.json();
-          code = body.code;
-          // If action is in body, use it
-          if (body.action && body.action !== "exchange-code") {
-            // This might be complete-login, handle below
-          }
-        } catch {
-          // Body parsing failed, try query params
-        }
-      }
-      
-      if (!code) {
-        code = url.searchParams.get("code");
-      }
+    if (effectiveAction === "exchange-code") {
+      const code = bodyData.code || url.searchParams.get("code");
 
       if (!code) {
         return errorResponse(
@@ -219,9 +215,8 @@ serve(async (req) => {
     }
 
     // Action: Complete login (called from frontend after popup callback)
-    if (action === "complete-login") {
-      const body = await req.json();
-      const { email, name, picture, facebookId } = body;
+    if (effectiveAction === "complete-login") {
+      const { email, name, picture, facebookId } = bodyData;
 
       if (!email) {
         return errorResponse(
