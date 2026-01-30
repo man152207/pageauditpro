@@ -19,6 +19,7 @@ import FAQPage from "@/pages/FAQPage";
 import ContactPage from "@/pages/ContactPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "@/pages/TermsOfServicePage";
+import DataDeletionPage from "@/pages/DataDeletionPage";
 import NotFound from "@/pages/NotFound";
 import SitemapPage from "@/pages/SitemapPage";
 
@@ -80,6 +81,7 @@ const App = () => (
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+              <Route path="/data-deletion" element={<DataDeletionPage />} />
               {/* Legacy routes - redirect to new paths */}
               <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
               <Route path="/terms" element={<Navigate to="/terms-of-service" replace />} />
