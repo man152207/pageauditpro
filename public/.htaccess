@@ -3,29 +3,29 @@
   RewriteBase /
 
   # ============================================
-  # API Proxy Rules - Forward to Supabase Edge Functions
+  # Proxy Rules - Forward to Supabase Edge Functions
+  # These require mod_proxy to be enabled
   # ============================================
   
-  # Stripe Webhook
+  # Sitemap - proxy to edge function (URL stays as pagelyzer.io/sitemap.xml)
+  RewriteRule ^sitemap\.xml$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap [P,L]
+  
+  # Stripe Webhook - proxy to edge function
   RewriteRule ^api/webhooks/stripe$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/stripe-webhook [P,L]
   
-  # Facebook OAuth Callbacks
-  RewriteRule ^api/auth/facebook/page/callback$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-oauth?action=callback [P,QSA,L]
-  RewriteRule ^api/auth/facebook/login/callback$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-auth-login?action=callback [P,QSA,L]
-  
-  # eSewa Payment Callback
-  RewriteRule ^api/payments/esewa/success$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/esewa-checkout?action=success [P,QSA,L]
-  
-  # Facebook Webhooks (all products) - Use redirect if mod_proxy unavailable
-  RewriteCond %{HTTP:X-Hub-Signature} ^$
-  RewriteRule ^api/webhooks/facebook/?(.*)$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-webhook?$1 [R=307,QSA,L]
-  
-  # For actual webhook events with signature, use proxy if available
+  # Facebook Webhooks - proxy to edge function
   RewriteRule ^api/webhooks/facebook/?(.*)$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/facebook-webhook?$1 [P,QSA,L]
   
-  # Sitemap - proxy to edge function
-  RewriteRule ^sitemap\.xml$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/sitemap [P,L]
+  # eSewa Payment Success Callback - proxy to edge function
+  RewriteRule ^api/payments/esewa/success$ https://wrjqheztddmazlifbzbi.supabase.co/functions/v1/esewa-checkout?action=success [P,QSA,L]
 
+  # ============================================
+  # SPA Routes - Handled by React Router
+  # These routes are caught by React, not proxied
+  # ============================================
+  # /api/auth/facebook/login/callback -> React FacebookLoginCallback component
+  # /api/auth/facebook/page/callback -> React FacebookPageCallback component
+  
   # ============================================
   # Standard SPA Rules
   # ============================================
