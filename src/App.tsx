@@ -30,11 +30,18 @@ import FacebookPageCallback from "@/pages/callbacks/FacebookPageCallback";
 import UserDashboard from "@/pages/dashboard/UserDashboard";
 import ManualAuditPage from "@/pages/dashboard/ManualAuditPage";
 import AuditReportPage from "@/pages/dashboard/AuditReportPage";
+import ReportsListPage from "@/pages/dashboard/ReportsListPage";
+import HistoryPage from "@/pages/dashboard/HistoryPage";
+import ProfilePage from "@/pages/dashboard/ProfilePage";
+import SettingsPage from "@/pages/dashboard/SettingsPage";
 import BillingPage from "@/pages/dashboard/BillingPage";
 import PayPalCallback from "@/pages/dashboard/PayPalCallback";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminUsersPage from "@/pages/admin/AdminUsersPage";
+import AdminAuditsPage from "@/pages/admin/AdminAuditsPage";
+import AdminBrandingPage from "@/pages/admin/AdminBrandingPage";
 
 // Super Admin Pages
 import SuperAdminDashboard from "@/pages/super-admin/SuperAdminDashboard";
@@ -95,13 +102,13 @@ const App = () => (
             >
               <Route index element={<UserDashboard />} />
               <Route path="audit" element={<ManualAuditPage />} />
-              <Route path="reports" element={<UserDashboard />} />
+              <Route path="reports" element={<ReportsListPage />} />
               <Route path="reports/:auditId" element={<AuditReportPage />} />
-              <Route path="history" element={<UserDashboard />} />
+              <Route path="history" element={<HistoryPage />} />
               <Route path="billing" element={<BillingPage />} />
               <Route path="paypal-callback" element={<PayPalCallback />} />
-              <Route path="profile" element={<UserDashboard />} />
-              <Route path="settings" element={<UserDashboard />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="settings" element={<SettingsPage />} />
             </Route>
 
             {/* Admin Routes */}
@@ -114,9 +121,9 @@ const App = () => (
               }
             >
               <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<AdminDashboard />} />
-              <Route path="audits" element={<AdminDashboard />} />
-              <Route path="branding" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="audits" element={<AdminAuditsPage />} />
+              <Route path="branding" element={<AdminBrandingPage />} />
             </Route>
 
             {/* Super Admin Routes */}
