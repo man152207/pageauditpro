@@ -165,6 +165,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setSubscription(data);
+      } else if (response.status === 401) {
+        // Token expired - try to refresh session
+        console.log('Token expired, attempting refresh...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData.session) {
+          console.error('Failed to refresh session:', refreshError);
+          setSubscription(defaultSubscription);
+          return;
+        }
+        
+        // Retry with new token
+        const retryResponse = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`,
+          {
+            headers: {
+              Authorization: `Bearer ${refreshData.session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        
+        if (retryResponse.ok) {
+          const data = await retryResponse.json();
+          setSubscription(data);
+        } else {
+          console.error('Failed after refresh:', await retryResponse.text());
+          setSubscription(defaultSubscription);
+        }
       } else {
         console.error('Failed to fetch subscription:', await response.text());
         setSubscription(defaultSubscription);

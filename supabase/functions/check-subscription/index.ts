@@ -35,17 +35,29 @@ serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: authError } = await supabase.auth.getClaims(token);
     
-    if (authError || !claims?.claims) {
-      logStep("Auth error", { error: authError?.message });
+    let userId: string;
+    try {
+      const { data: claims, error: authError } = await supabase.auth.getClaims(token);
+      
+      if (authError || !claims?.claims) {
+        logStep("Auth error", { error: authError?.message });
+        return new Response(
+          JSON.stringify({ error: "Unauthorized", code: "AUTH_ERROR" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      userId = claims.claims.sub;
+    } catch (jwtError: unknown) {
+      // Handle JWT expiration or other JWT-related errors
+      const errorMessage = jwtError instanceof Error ? jwtError.message : "JWT validation failed";
+      logStep("JWT error", { message: errorMessage });
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Session expired", code: "JWT_EXPIRED" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const userId = claims.claims.sub;
     logStep("User authenticated", { userId });
 
     // Fetch active subscription with plan details
