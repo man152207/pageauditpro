@@ -28,7 +28,20 @@ serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const action = url.searchParams.get("action");
+  const queryAction = url.searchParams.get("action");
+
+  // Parse body early for POST requests to get action from body
+  let bodyData: { action?: string; code?: string; email?: string; name?: string; picture?: string; facebookId?: string } = {};
+  if (req.method === "POST") {
+    try {
+      bodyData = await req.json();
+    } catch {
+      // Body parsing failed, continue with empty object
+    }
+  }
+
+  // Get action from body or query params
+  const action = bodyData.action || queryAction;
 
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -113,22 +126,8 @@ serve(async (req) => {
       );
     }
 
-    // For POST requests, parse body first to determine action
-    let bodyData: { action?: string; code?: string; email?: string; name?: string; picture?: string; facebookId?: string } = {};
-    
-    if (req.method === "POST") {
-      try {
-        bodyData = await req.json();
-      } catch {
-        // Body parsing failed
-      }
-    }
-
-    // Get action from body or query params
-    const effectiveAction = bodyData.action || action;
-
     // Action: Exchange code for user data (called from frontend callback component)
-    if (effectiveAction === "exchange-code") {
+    if (action === "exchange-code") {
       const code = bodyData.code || url.searchParams.get("code");
 
       if (!code) {
@@ -238,7 +237,7 @@ serve(async (req) => {
     }
 
     // Action: Complete login (called from frontend after popup callback)
-    if (effectiveAction === "complete-login") {
+    if (action === "complete-login") {
       const { email, name, picture, facebookId } = bodyData;
 
       if (!email) {
