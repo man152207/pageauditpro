@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
+import { getEdgeFunctionHumanMessage } from '@/lib/edgeFunctionError';
 
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -144,8 +145,9 @@ export default function AuthPage() {
       // Check for configuration error
       if (error || data?.error || !data?.authUrl) {
         const errorData = data?.error || {};
+        const human = getEdgeFunctionHumanMessage(error, data, 'Facebook login unavailable');
         toast({
-          title: errorData.human_message || 'Facebook login unavailable',
+          title: errorData.human_message || human,
           description: errorData.fix_steps?.[0] || 'Please contact support or use email login.',
           variant: 'destructive',
         });
@@ -186,9 +188,14 @@ export default function AuthPage() {
            });
 
           if (loginError || !loginResult?.success) {
+            const message = getEdgeFunctionHumanMessage(
+              loginError,
+              loginResult,
+              'Could not complete Facebook login.'
+            );
             toast({
               title: 'Login failed',
-              description: loginResult?.error?.human_message || 'Could not complete Facebook login.',
+              description: message,
               variant: 'destructive',
             });
             return;
