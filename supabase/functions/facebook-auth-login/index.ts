@@ -31,7 +31,16 @@ serve(async (req) => {
   const queryAction = url.searchParams.get("action");
 
   // Parse body early for POST requests to get action from body
-  let bodyData: { action?: string; code?: string; email?: string; name?: string; picture?: string; facebookId?: string } = {};
+  let bodyData: {
+    action?: string;
+    code?: string;
+    email?: string;
+    name?: string;
+    picture?: string;
+    facebookId?: string;
+    redirect_uri?: string;
+    redirectUri?: string;
+  } = {};
   if (req.method === "POST") {
     try {
       bodyData = await req.json();
@@ -99,8 +108,12 @@ serve(async (req) => {
       );
     }
 
-    // Fixed production redirect URI (must match Facebook console exactly)
-    const PRODUCTION_REDIRECT_URI = "https://pagelyzer.io/api/auth/facebook/login/callback";
+  // Redirect URI is derived from the calling site's Origin header so the popup callback
+  // returns to the same domain that initiated the login.
+  const FALLBACK_SITE_ORIGIN = "https://pageauditpro.lovable.app";
+  const requestOrigin = req.headers.get("origin");
+  const siteOrigin = requestOrigin && requestOrigin.startsWith("http") ? requestOrigin : FALLBACK_SITE_ORIGIN;
+  const defaultRedirectUri = `${siteOrigin}/api/auth/facebook/login/callback`;
 
     // Action: Get login URL
     if (action === "get-login-url") {
@@ -111,17 +124,24 @@ serve(async (req) => {
 
       const state = crypto.randomUUID(); // CSRF protection
 
+      const redirectUri =
+        bodyData.redirect_uri ||
+        // @ts-ignore - tolerate legacy key
+        (bodyData as any).redirectUri ||
+        url.searchParams.get("redirect_uri") ||
+        defaultRedirectUri;
+
       const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
         `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(PRODUCTION_REDIRECT_URI)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `scope=${scopes}&` +
         `state=${state}&` +
         `response_type=code`;
 
-      console.log(`[FB-AUTH-LOGIN] Generated auth URL with redirect: ${PRODUCTION_REDIRECT_URI}`);
+      console.log(`[FB-AUTH-LOGIN] Generated auth URL with redirect: ${redirectUri}`);
 
       return new Response(
-        JSON.stringify({ authUrl, state }),
+        JSON.stringify({ authUrl, state, redirectUri }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -129,6 +149,13 @@ serve(async (req) => {
     // Action: Exchange code for user data (called from frontend callback component)
     if (action === "exchange-code") {
       const code = bodyData.code || url.searchParams.get("code");
+      const redirectUri =
+        // @ts-ignore - tolerate legacy key
+        (bodyData as any).redirect_uri ||
+        // @ts-ignore
+        (bodyData as any).redirectUri ||
+        url.searchParams.get("redirect_uri") ||
+        defaultRedirectUri;
 
       if (!code) {
         return errorResponse(
@@ -142,11 +169,11 @@ serve(async (req) => {
       // Exchange code for access token
       const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?` +
         `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(PRODUCTION_REDIRECT_URI)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `client_secret=${FB_APP_SECRET}&` +
         `code=${code}`;
 
-      console.log(`[FB-AUTH-LOGIN] Exchanging code for token with redirect: ${PRODUCTION_REDIRECT_URI}`);
+      console.log(`[FB-AUTH-LOGIN] Exchanging code for token with redirect: ${redirectUri}`);
 
       const tokenResponse = await fetch(tokenUrl);
       const tokenData = await tokenResponse.json();
@@ -217,7 +244,7 @@ serve(async (req) => {
       const errorDescription = url.searchParams.get("error_description");
       
       // Build redirect URL to frontend callback
-      let frontendCallback = PRODUCTION_REDIRECT_URI;
+      let frontendCallback = defaultRedirectUri;
       if (code) {
         frontendCallback += `?code=${encodeURIComponent(code)}`;
       } else if (error) {

@@ -32,6 +32,11 @@ serve(async (req) => {
 
   const url = new URL(req.url);
 
+  const FALLBACK_SITE_ORIGIN = "https://pageauditpro.lovable.app";
+  const requestOrigin = req.headers.get("origin");
+  const siteOrigin = requestOrigin && requestOrigin.startsWith("http") ? requestOrigin : FALLBACK_SITE_ORIGIN;
+  const defaultRedirectUri = `${siteOrigin}/api/auth/facebook/page/callback`;
+
   const queryAction = url.searchParams.get("action");
 
   // Parse JSON body once (avoid reading req.json() multiple times)
@@ -91,17 +96,23 @@ serve(async (req) => {
 
       const state = crypto.randomUUID(); // CSRF protection
 
+      const redirectUri =
+        (typeof bodyData.redirect_uri === "string" ? bodyData.redirect_uri : undefined) ||
+        (typeof bodyData.redirectUri === "string" ? bodyData.redirectUri : undefined) ||
+        url.searchParams.get("redirect_uri") ||
+        defaultRedirectUri;
+
       const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
         `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(PRODUCTION_REDIRECT_URI)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `scope=${scopes}&` +
         `state=${state}&` +
         `response_type=code`;
 
-      console.log(`[FB-OAUTH] Generated auth URL with redirect: ${PRODUCTION_REDIRECT_URI}`);
+      console.log(`[FB-OAUTH] Generated auth URL with redirect: ${redirectUri}`);
 
       return new Response(
-        JSON.stringify({ authUrl, state }),
+        JSON.stringify({ authUrl, state, redirectUri }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -113,6 +124,12 @@ serve(async (req) => {
       (req.method === "POST" && !action && (typeof bodyData.code === "string" || url.searchParams.get("code")))
     ) {
       const code = (typeof bodyData.code === "string" ? bodyData.code : null) || url.searchParams.get("code");
+
+      const redirectUri =
+        (typeof bodyData.redirect_uri === "string" ? bodyData.redirect_uri : undefined) ||
+        (typeof bodyData.redirectUri === "string" ? bodyData.redirectUri : undefined) ||
+        url.searchParams.get("redirect_uri") ||
+        defaultRedirectUri;
 
       if (!code) {
         return errorResponse(
@@ -126,11 +143,11 @@ serve(async (req) => {
       // Exchange code for access token
       const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?` +
         `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(PRODUCTION_REDIRECT_URI)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `client_secret=${FB_APP_SECRET}&` +
         `code=${code}`;
 
-      console.log(`[FB-OAUTH] Exchanging code for token with redirect: ${PRODUCTION_REDIRECT_URI}`);
+      console.log(`[FB-OAUTH] Exchanging code for token with redirect: ${redirectUri}`);
 
       const tokenResponse = await fetch(tokenUrl);
       const tokenData = await tokenResponse.json();

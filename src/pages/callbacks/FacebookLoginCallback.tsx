@@ -18,8 +18,28 @@ export default function FacebookLoginCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       const code = searchParams.get('code');
+      const returnedState = searchParams.get('state');
       const error = searchParams.get('error');
       const errorDescription = searchParams.get('error_description');
+
+      // Validate OAuth state (CSRF protection)
+      try {
+        const storedState = localStorage.getItem('fb_login_oauth_state');
+        if (returnedState && storedState && returnedState !== storedState) {
+          const message = 'Invalid login state. Please try again.';
+          setStatus('error');
+          setErrorMessage(message);
+          if (window.opener) {
+            window.opener.postMessage({ type: 'fb-login-error', error: message }, '*');
+            setTimeout(() => window.close(), 1500);
+          }
+          return;
+        }
+        // Clear after use
+        if (storedState) localStorage.removeItem('fb_login_oauth_state');
+      } catch {
+        // ignore
+      }
 
       // Handle Facebook error response
       if (error) {
@@ -48,9 +68,10 @@ export default function FacebookLoginCallback() {
       }
 
       try {
+        const redirectUri = `${window.location.origin}${window.location.pathname}`;
         // Call the edge function to exchange code for user data
         const { data, error: fnError } = await supabase.functions.invoke('facebook-auth-login', {
-          body: { action: 'exchange-code', code },
+          body: { action: 'exchange-code', code, redirect_uri: redirectUri },
         });
 
         if (fnError || !data?.success) {
