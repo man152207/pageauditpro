@@ -105,6 +105,15 @@ export function FacebookConnect() {
         throw new Error(result?.error?.human_message || error?.message || 'Failed to start Facebook connection');
       }
 
+      // Store OAuth state in localStorage so the popup callback window can validate it
+      try {
+        if (result?.state) {
+          localStorage.setItem('fb_page_oauth_state', result.state);
+        }
+      } catch {
+        // ignore
+      }
+
       // Open popup for OAuth
       const width = 600;
       const height = 700;

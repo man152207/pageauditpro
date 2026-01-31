@@ -152,6 +152,15 @@ export default function AuthPage() {
         return;
       }
 
+      // Store OAuth state in localStorage so the popup callback window can validate it
+      try {
+        if (data?.state) {
+          localStorage.setItem('fb_login_oauth_state', data.state);
+        }
+      } catch {
+        // ignore
+      }
+
       // Open popup for Facebook OAuth
       const width = 600;
       const height = 700;
