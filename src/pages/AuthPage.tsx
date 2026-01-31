@@ -170,11 +170,11 @@ export default function AuthPage() {
           window.removeEventListener('message', handleMessage);
           popup?.close();
 
-          // Complete login with the received user data
-          const { data: loginResult, error: loginError } = await supabase.functions.invoke('facebook-auth-login', {
-            body: { ...event.data.userData },
-            headers: { 'Content-Type': 'application/json' },
-          });
+           // Complete login with the received user data
+           // NOTE: edge function requires an explicit action, otherwise it returns INVALID_ACTION (non-2xx)
+           const { data: loginResult, error: loginError } = await supabase.functions.invoke('facebook-auth-login', {
+             body: { action: 'complete-login', ...event.data.userData },
+           });
 
           if (loginError || !loginResult?.success) {
             toast({

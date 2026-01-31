@@ -31,7 +31,21 @@ serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const action = url.searchParams.get("action");
+
+  const queryAction = url.searchParams.get("action");
+
+  // Parse JSON body once (avoid reading req.json() multiple times)
+  let bodyData: Record<string, unknown> = {};
+  if (req.method === "POST") {
+    try {
+      bodyData = await req.json();
+    } catch {
+      bodyData = {};
+    }
+  }
+
+  const bodyAction = typeof bodyData.action === "string" ? bodyData.action : undefined;
+  const action = bodyAction || queryAction;
 
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -93,22 +107,12 @@ serve(async (req) => {
     }
 
     // Action: Exchange code for page data (called from frontend callback component)
-    if (action === "exchange-code" || (req.method === "POST" && !action)) {
-      let code: string | null = null;
-      
-      // Try to get code from body (POST) or query params
-      if (req.method === "POST") {
-        try {
-          const body = await req.json();
-          code = body.code;
-        } catch {
-          // Body parsing failed, try query params
-        }
-      }
-      
-      if (!code) {
-        code = url.searchParams.get("code");
-      }
+    // Back-compat: older clients POSTed { code } without an explicit action.
+    if (
+      action === "exchange-code" ||
+      (req.method === "POST" && !action && (typeof bodyData.code === "string" || url.searchParams.get("code")))
+    ) {
+      const code = (typeof bodyData.code === "string" ? bodyData.code : null) || url.searchParams.get("code");
 
       if (!code) {
         return errorResponse(
@@ -245,7 +249,10 @@ serve(async (req) => {
       }
 
       const userId = claims.claims.sub;
-      const { page_id, page_name, access_token, expires_in } = await req.json();
+      const page_id = typeof bodyData.page_id === "string" ? bodyData.page_id : undefined;
+      const page_name = typeof bodyData.page_name === "string" ? bodyData.page_name : undefined;
+      const access_token = typeof bodyData.access_token === "string" ? bodyData.access_token : undefined;
+      const expires_in = typeof bodyData.expires_in === "number" ? bodyData.expires_in : undefined;
 
       if (!page_id || !page_name || !access_token) {
         return errorResponse(
