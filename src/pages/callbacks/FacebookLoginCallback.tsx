@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { getEdgeFunctionHumanMessage } from '@/lib/edgeFunctionError';
 
 /**
  * Facebook Login OAuth Callback Handler
@@ -20,6 +21,8 @@ export default function FacebookLoginCallback() {
       const code = searchParams.get('code');
       const returnedState = searchParams.get('state');
       const error = searchParams.get('error');
+      const errorReason = searchParams.get('error_reason');
+      const errorMessage = searchParams.get('error_message');
       const errorDescription = searchParams.get('error_description');
 
       // Validate OAuth state (CSRF protection)
@@ -43,7 +46,7 @@ export default function FacebookLoginCallback() {
 
       // Handle Facebook error response
       if (error) {
-        const message = errorDescription || error;
+        const message = errorDescription || errorMessage || errorReason || error;
         setStatus('error');
         setErrorMessage(message);
         
@@ -75,7 +78,11 @@ export default function FacebookLoginCallback() {
         });
 
         if (fnError || !data?.success) {
-          const message = data?.error?.human_message || fnError?.message || 'Failed to authenticate with Facebook';
+          const message = getEdgeFunctionHumanMessage(
+            fnError,
+            data,
+            'Failed to authenticate with Facebook'
+          );
           setStatus('error');
           setErrorMessage(message);
           
@@ -123,8 +130,8 @@ export default function FacebookLoginCallback() {
         
         {status === 'success' && (
           <>
-            <div className="h-8 w-8 rounded-full bg-green-500 mx-auto mb-4 flex items-center justify-center">
-              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="h-8 w-8 rounded-full bg-success mx-auto mb-4 flex items-center justify-center">
+              <svg className="h-5 w-5 text-success-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -136,7 +143,7 @@ export default function FacebookLoginCallback() {
         {status === 'error' && (
           <>
             <div className="h-8 w-8 rounded-full bg-destructive mx-auto mb-4 flex items-center justify-center">
-              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 text-destructive-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
