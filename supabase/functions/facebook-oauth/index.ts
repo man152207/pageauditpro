@@ -32,10 +32,9 @@ serve(async (req) => {
 
   const url = new URL(req.url);
 
-  const FALLBACK_SITE_ORIGIN = "https://pageauditpro.lovable.app";
-  const requestOrigin = req.headers.get("origin");
-  const siteOrigin = requestOrigin && requestOrigin.startsWith("http") ? requestOrigin : FALLBACK_SITE_ORIGIN;
-  const defaultRedirectUri = `${siteOrigin}/api/auth/facebook/page/callback`;
+  // ALWAYS use production domain for OAuth redirects per project requirements
+  const PRODUCTION_ORIGIN = "https://pagelyzer.io";
+  const defaultRedirectUri = `${PRODUCTION_ORIGIN}/api/auth/facebook/page/callback`;
 
   const queryAction = url.searchParams.get("action");
 

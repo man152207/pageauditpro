@@ -108,12 +108,9 @@ serve(async (req) => {
       );
     }
 
-  // Redirect URI is derived from the calling site's Origin header so the popup callback
-  // returns to the same domain that initiated the login.
-  const FALLBACK_SITE_ORIGIN = "https://pageauditpro.lovable.app";
-  const requestOrigin = req.headers.get("origin");
-  const siteOrigin = requestOrigin && requestOrigin.startsWith("http") ? requestOrigin : FALLBACK_SITE_ORIGIN;
-  const defaultRedirectUri = `${siteOrigin}/api/auth/facebook/login/callback`;
+  // ALWAYS use production domain for OAuth redirects per project requirements
+  const PRODUCTION_ORIGIN = "https://pagelyzer.io";
+  const defaultRedirectUri = `${PRODUCTION_ORIGIN}/api/auth/facebook/login/callback`;
 
     // Action: Get login URL
     if (action === "get-login-url") {
