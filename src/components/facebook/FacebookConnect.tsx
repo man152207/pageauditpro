@@ -55,11 +55,12 @@ export function FacebookConnect() {
 
     // Listen for OAuth callback
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'fb-oauth-success') {
+      // Accept both legacy + current callback event names
+      if (event.data.type === 'fb-oauth-success' || event.data.type === 'fb-page-success') {
         setConnecting(false);
-        setAvailablePages(event.data.pages);
+        setAvailablePages(event.data.pages || []);
         setShowPagesDialog(true);
-      } else if (event.data.type === 'fb-oauth-error') {
+      } else if (event.data.type === 'fb-oauth-error' || event.data.type === 'fb-page-error') {
         setConnecting(false);
         toast({
           title: 'Connection Failed',
@@ -95,25 +96,13 @@ export function FacebookConnect() {
     setConnecting(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('facebook-oauth', {
-        body: {},
-        headers: {},
+      // Get auth URL from backend function (uses the current session automatically)
+      const { data: result, error } = await supabase.functions.invoke('facebook-oauth', {
+        body: { action: 'get-auth-url' },
       });
 
-      // Get auth URL from edge function
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-oauth?action=get-auth-url`,
-        {
-          headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-        }
-      );
-      
-      const result = await response.json();
-      
-      if (result.error) {
-        throw new Error(result.error);
+      if (error || result?.error || !result?.authUrl) {
+        throw new Error(result?.error?.human_message || error?.message || 'Failed to start Facebook connection');
       }
 
       // Open popup for OAuth
@@ -141,28 +130,17 @@ export function FacebookConnect() {
     setSavingPage(page.id);
 
     try {
-      const session = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-oauth?action=save-connection`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            page_id: page.id,
-            page_name: page.name,
-            access_token: page.access_token,
-          }),
-        }
-      );
+      const { data: result, error } = await supabase.functions.invoke('facebook-oauth', {
+        body: {
+          action: 'save-connection',
+          page_id: page.id,
+          page_name: page.name,
+          access_token: page.access_token,
+        },
+      });
 
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(result.error);
+      if (error || result?.error || !result?.success) {
+        throw new Error(result?.error?.human_message || error?.message || 'Failed to save connection');
       }
 
       toast({
