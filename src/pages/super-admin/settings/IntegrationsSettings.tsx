@@ -10,6 +10,7 @@ export default function IntegrationsSettings() {
   const [settings, setSettings] = useState<Record<string, string>>({
     facebook_app_id: '',
     facebook_app_secret: '',
+    facebook_login_business_config_id: '',
     stripe_secret_key: '',
     stripe_publishable_key: '',
     stripe_webhook_secret: '',
