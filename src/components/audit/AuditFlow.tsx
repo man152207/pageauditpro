@@ -51,10 +51,11 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
 
     // Listen for OAuth callback
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'fb-oauth-success') {
+      // Accept both legacy + current callback event names
+      if (event.data.type === 'fb-oauth-success' || event.data.type === 'fb-page-success') {
         setConnecting(false);
         handleOAuthSuccess(event.data.pages);
-      } else if (event.data.type === 'fb-oauth-error') {
+      } else if (event.data.type === 'fb-oauth-error' || event.data.type === 'fb-page-error') {
         setConnecting(false);
         toast({
           title: 'Connection Failed',
