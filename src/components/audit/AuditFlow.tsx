@@ -35,7 +35,7 @@ interface AuditFlowProps {
 }
 
 export function AuditFlow({ onComplete }: AuditFlowProps) {
-  const { user, session } = useAuth();
+  const { user, session, subscription } = useAuth();
   const { toast } = useToast();
   const { isPro, usage, hasReachedLimit } = useSubscription();
   const runAudit = useRunAudit();
@@ -308,10 +308,17 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
   return (
     <div className="space-y-8">
       {/* Usage info for free users */}
-      {!isPro && (
+      {!isPro && !subscription?.hasFreeAuditGrant && (
         <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
           <p>
             <strong>Free Plan:</strong> {usage.auditsRemaining} of {usage.auditsLimit} audits remaining this month
+          </p>
+        </div>
+      )}
+      {subscription?.hasFreeAuditGrant && !isPro && (
+        <div className="bg-green-500/10 rounded-lg p-4 text-sm text-green-600 dark:text-green-400">
+          <p>
+            <strong>🎁 Free Audit Grant:</strong> Unlimited audits this month
           </p>
         </div>
       )}
