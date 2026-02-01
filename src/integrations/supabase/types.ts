@@ -201,6 +201,30 @@ export type Database = {
           },
         ]
       }
+      free_audit_grants: {
+        Row: {
+          created_at: string | null
+          grant_month: string
+          granted_by: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          grant_month: string
+          granted_by: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          grant_month?: string
+          granted_by?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           branding_settings: Json | null

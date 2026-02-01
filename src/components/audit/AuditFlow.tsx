@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useRunAudit } from '@/hooks/useAudits';
 import { useSubscription } from '@/hooks/useSubscription';
+import { ConnectedPagesList } from './ConnectedPagesList';
+import { BasicReportPreview } from './BasicReportPreview';
 import {
-  CheckCircle2,
   Facebook,
   Loader2,
-  PlayCircle,
-  Sparkles,
+  Plus,
   Zap,
 } from 'lucide-react';
 
@@ -24,25 +22,30 @@ interface FBConnection {
   connected_at: string;
 }
 
+interface AuditResult {
+  auditId: string;
+  pageName: string;
+  score: number;
+  breakdown: { engagement: number; consistency: number; readiness: number };
+  recommendations: any[];
+}
+
 interface AuditFlowProps {
   onComplete?: (auditId: string) => void;
 }
 
-type FlowStep = 'connect' | 'select' | 'running' | 'complete';
-
 export function AuditFlow({ onComplete }: AuditFlowProps) {
   const { user, session } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const { isPro, usage, hasReachedLimit } = useSubscription();
   const runAudit = useRunAudit();
 
-  const [step, setStep] = useState<FlowStep>('connect');
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [connections, setConnections] = useState<FBConnection[]>([]);
-  const [selectedConnection, setSelectedConnection] = useState<FBConnection | null>(null);
-  const [completedAuditId, setCompletedAuditId] = useState<string | null>(null);
+  const [runningAuditId, setRunningAuditId] = useState<string | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [lastAuditResult, setLastAuditResult] = useState<AuditResult | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -79,13 +82,7 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
         .order('connected_at', { ascending: false });
 
       if (error) throw error;
-      
       setConnections(data || []);
-      
-      // If user has connections, go to select step
-      if (data && data.length > 0) {
-        setStep('select');
-      }
     } catch (error) {
       console.error('Error fetching connections:', error);
     } finally {
@@ -143,14 +140,8 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
       return;
     }
 
-    // If only one page, auto-select and save it
-    if (pages.length === 1) {
-      await saveAndSelectPage(pages[0]);
-    } else {
-      // Multiple pages - for now just save the first one
-      // TODO: Show page selection dialog
-      await saveAndSelectPage(pages[0]);
-    }
+    // Save the first page (or all pages if we implement multi-select later)
+    await saveAndSelectPage(pages[0]);
   };
 
   const saveAndSelectPage = async (page: any) => {
@@ -182,12 +173,8 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
         description: `${page.name} is now connected.`,
       });
 
+      // Refresh connections list (don't auto-run audit)
       await fetchConnections();
-      
-      // Auto-run audit on the newly connected page
-      if (result.connection) {
-        await handleRunAudit(result.connection);
-      }
     } catch (error: any) {
       toast({
         title: 'Failed to Save',
@@ -208,22 +195,72 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
       return;
     }
 
-    setSelectedConnection(connection);
-    setStep('running');
+    setRunningAuditId(connection.id);
+    setLastAuditResult(null);
 
     try {
       const result = await runAudit.mutateAsync(connection.id);
-      setCompletedAuditId(result.audit_id);
-      setStep('complete');
+      
+      // Store result for inline preview
+      setLastAuditResult({
+        auditId: result.audit_id,
+        pageName: connection.page_name,
+        score: result.scores?.overall || 0,
+        breakdown: {
+          engagement: result.scores?.engagement || 0,
+          consistency: result.scores?.consistency || 0,
+          readiness: result.scores?.readiness || 0,
+        },
+        recommendations: [], // We'll fetch these from the audit
+      });
+
+      // Fetch recommendations from the created audit
+      const { data: audit } = await supabase
+        .from('audits')
+        .select('recommendations')
+        .eq('id', result.audit_id)
+        .single();
+
+      if (audit?.recommendations) {
+        setLastAuditResult(prev => prev ? {
+          ...prev,
+          recommendations: audit.recommendations as any[],
+        } : null);
+      }
+
+      onComplete?.(result.audit_id);
     } catch (error) {
-      setStep('select');
+      // Error already handled by useRunAudit hook
+    } finally {
+      setRunningAuditId(null);
     }
   };
 
-  const handleViewReport = () => {
-    if (completedAuditId) {
-      navigate(`/dashboard/reports/${completedAuditId}`);
-      onComplete?.(completedAuditId);
+  const handleDisconnect = async (connection: FBConnection) => {
+    setDisconnectingId(connection.id);
+
+    try {
+      const { error } = await supabase
+        .from('fb_connections')
+        .update({ is_active: false })
+        .eq('id', connection.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Page Disconnected',
+        description: `${connection.page_name} has been disconnected.`,
+      });
+
+      await fetchConnections();
+    } catch (error: any) {
+      toast({
+        title: 'Failed to Disconnect',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setDisconnectingId(null);
     }
   };
 
@@ -235,143 +272,118 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
     );
   }
 
-  // Step 1: Connect Facebook
-  if (step === 'connect') {
+  // Running state overlay
+  if (runningAuditId) {
+    const runningConnection = connections.find(c => c.id === runningAuditId);
     return (
-      <div className="max-w-md mx-auto text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#1877F2]/10 mx-auto mb-6">
-          <Facebook className="h-10 w-10 text-[#1877F2]" />
-        </div>
-        <h2 className="text-2xl font-bold mb-3">Connect Your Facebook Page</h2>
-        <p className="text-muted-foreground mb-6">
-          Connect your Facebook page to automatically analyze your engagement, 
-          content performance, and get personalized recommendations.
-        </p>
-        
-        {!isPro && (
-          <div className="bg-muted/50 rounded-lg p-4 mb-6 text-sm text-muted-foreground">
-            <p>
-              <strong>Free Plan:</strong> {usage.auditsRemaining} of {usage.auditsLimit} audits remaining this month
-            </p>
-          </div>
-        )}
+      <div className="space-y-8">
+        {/* Show pages list in background */}
+        <ConnectedPagesList
+          connections={connections}
+          onRunAudit={handleRunAudit}
+          onDisconnect={handleDisconnect}
+          runningAuditId={runningAuditId}
+          disconnectingId={disconnectingId}
+        />
 
-        <Button
-          onClick={handleConnect}
-          disabled={connecting}
-          size="lg"
-          className="w-full bg-[#1877F2] hover:bg-[#166fe5]"
-        >
-          {connecting ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Connecting...
-            </>
-          ) : (
-            <>
-              <Facebook className="mr-2 h-5 w-5" />
-              Connect with Facebook
-            </>
-          )}
-        </Button>
-      </div>
-    );
-  }
-
-  // Step 2: Select Page & Run Audit
-  if (step === 'select') {
-    return (
-      <div className="max-w-lg mx-auto">
-        <div className="text-center mb-8">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10 mx-auto mb-4">
-            <CheckCircle2 className="h-8 w-8 text-success" />
+        {/* Running indicator */}
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-8 text-center">
+          <div className="relative mb-6">
+            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse-glow">
+              <Zap className="h-10 w-10 text-primary animate-pulse" />
+            </div>
           </div>
-          <h2 className="text-2xl font-bold mb-2">Page Connected!</h2>
-          <p className="text-muted-foreground">
-            Select a page to run your audit
+          <h3 className="text-xl font-bold mb-2">Analyzing Your Page...</h3>
+          <p className="text-muted-foreground mb-1">
+            Fetching data from <strong>{runningConnection?.page_name}</strong>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            This usually takes 10-20 seconds
           </p>
         </div>
+      </div>
+    );
+  }
 
-        <div className="space-y-3 mb-6">
-          {connections.map((conn) => (
-            <div
-              key={conn.id}
-              className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#1877F2] text-white">
-                  <Facebook className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-semibold">{conn.page_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Connected {new Date(conn.connected_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => handleRunAudit(conn)}
-                disabled={runAudit.isPending}
-              >
-                <PlayCircle className="mr-2 h-4 w-4" />
-                Run Audit
-              </Button>
-            </div>
-          ))}
+  return (
+    <div className="space-y-8">
+      {/* Usage info for free users */}
+      {!isPro && (
+        <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
+          <p>
+            <strong>Free Plan:</strong> {usage.auditsRemaining} of {usage.auditsLimit} audits remaining this month
+          </p>
         </div>
+      )}
 
-        <div className="text-center">
-          <Button variant="outline" onClick={handleConnect} disabled={connecting}>
-            <Facebook className="mr-2 h-4 w-4" />
-            Connect Another Page
+      {/* Connected Pages Section */}
+      {connections.length > 0 ? (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Connected Pages</h3>
+            <Button variant="outline" size="sm" onClick={handleConnect} disabled={connecting}>
+              {connecting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              Connect Another Page
+            </Button>
+          </div>
+
+          <ConnectedPagesList
+            connections={connections}
+            onRunAudit={handleRunAudit}
+            onDisconnect={handleDisconnect}
+            runningAuditId={runningAuditId}
+            disconnectingId={disconnectingId}
+          />
+        </div>
+      ) : (
+        /* No connections - Show connect CTA */
+        <div className="max-w-md mx-auto text-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#1877F2]/10 mx-auto mb-6">
+            <Facebook className="h-10 w-10 text-[#1877F2]" />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Connect Your Facebook Page</h2>
+          <p className="text-muted-foreground mb-6">
+            Connect your Facebook page to automatically analyze your engagement, 
+            content performance, and get personalized recommendations.
+          </p>
+
+          <Button
+            onClick={handleConnect}
+            disabled={connecting}
+            size="lg"
+            className="w-full bg-[#1877F2] hover:bg-[#166fe5]"
+          >
+            {connecting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <Facebook className="mr-2 h-5 w-5" />
+                Connect with Facebook
+              </>
+            )}
           </Button>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // Step 3: Running Audit
-  if (step === 'running') {
-    return (
-      <div className="max-w-md mx-auto text-center py-12">
-        <div className="relative mb-8">
-          <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse-glow">
-            <Zap className="h-12 w-12 text-primary animate-pulse" />
-          </div>
+      {/* Basic Report Preview - Shows after audit completes */}
+      {lastAuditResult && (
+        <div className="pt-4 border-t border-border">
+          <BasicReportPreview
+            auditId={lastAuditResult.auditId}
+            pageName={lastAuditResult.pageName}
+            score={lastAuditResult.score}
+            breakdown={lastAuditResult.breakdown}
+            recommendations={lastAuditResult.recommendations}
+          />
         </div>
-        <h2 className="text-2xl font-bold mb-3">Analyzing Your Page...</h2>
-        <p className="text-muted-foreground mb-2">
-          Fetching data from <strong>{selectedConnection?.page_name}</strong>
-        </p>
-        <p className="text-sm text-muted-foreground mb-8">
-          This usually takes 10-20 seconds
-        </p>
-        <div className="flex items-center justify-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <span className="text-sm text-muted-foreground">Processing...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Step 4: Complete
-  if (step === 'complete') {
-    return (
-      <div className="max-w-md mx-auto text-center py-12">
-        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-success/10 mx-auto mb-6 animate-bounce-soft">
-          <CheckCircle2 className="h-12 w-12 text-success" />
-        </div>
-        <h2 className="text-2xl font-bold mb-3">Audit Complete! 🎉</h2>
-        <p className="text-muted-foreground mb-8">
-          Your page analysis is ready. View your personalized report and recommendations.
-        </p>
-        <Button onClick={handleViewReport} size="lg">
-          <Sparkles className="mr-2 h-5 w-5" />
-          View Your Report
-        </Button>
-      </div>
-    );
-  }
-
-  return null;
+      )}
+    </div>
+  );
 }

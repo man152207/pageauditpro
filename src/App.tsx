@@ -56,6 +56,7 @@ import FacebookSettings from "@/pages/super-admin/settings/FacebookSettings";
 import WebhooksSettings from "@/pages/super-admin/settings/WebhooksSettings";
 import SEOSettings from "@/pages/super-admin/settings/SEOSettings";
 import SecuritySettings from "@/pages/super-admin/settings/SecuritySettings";
+import PromotionsSettings from "@/pages/super-admin/settings/PromotionsSettings";
 
 const queryClient = new QueryClient();
 
@@ -151,6 +152,7 @@ const App = () => (
                 <Route path="webhooks" element={<WebhooksSettings />} />
                 <Route path="seo" element={<SEOSettings />} />
                 <Route path="security" element={<SecuritySettings />} />
+                <Route path="promotions" element={<PromotionsSettings />} />
               </Route>
             </Route>
 
