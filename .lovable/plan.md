@@ -1,84 +1,107 @@
 
+# Facebook Page Connect "Connecting..." Issue Fix Plan
 
-# Facebook Login मा सबै Permissions Request गर्ने Plan
+## समस्याको सारांश
 
-## समस्या
-
-- अहिले "Continue with Facebook" मा केवल `email` scope request हुँदैछ
-- तपाईंले `pages_show_list`, `pages_read_engagement`, `pages_read_user_content`, `read_insights` पनि Login मा नै request गर्न चाहनुहुन्छ
-- यी page permissions अझै "Ready for testing" मा छन्, जसले "App needs at least one supported permission" error दिन सक्छ
+"Run Page Audit" मा "Connect with Facebook" click गर्दा Facebook OAuth successful हुन्छ, तर app मा "Connecting..." मा अड्किन्छ। यो event name mismatch को कारण हो।
 
 ---
 
-## Technical Solution
+## Root Cause Analysis
 
-### 1. facebook-auth-login Edge Function Update
-
-**File:** `supabase/functions/facebook-auth-login/index.ts`
-
-Line ~120 मा scope update गर्ने:
-
-```typescript
-// Before (current)
-const scopes = ["email"].join(",");
-
-// After (with all permissions)
-const scopes = [
-  "email",
-  "pages_show_list",
-  "pages_read_engagement",
-  "pages_read_user_content",
-  "read_insights"
-].join(",");
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         DATA FLOW DIAGRAM                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  AuditFlow.tsx                        FacebookPageCallback.tsx               │
+│  ─────────────                        ────────────────────────               │
+│                                                                               │
+│  Listens for:                         Sends:                                 │
+│  'fb-oauth-success' ─────────X─────── 'fb-page-success'  ← MISMATCH!        │
+│  'fb-oauth-error'   ─────────X─────── 'fb-page-error'    ← MISMATCH!        │
+│                                                                               │
+│  Result: Event never received, "Connecting..." forever                       │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Debug Logging Improve
+---
 
-Auth URL generation मा better logging add गर्ने ताकि exact URL verify गर्न सकियोस्।
+## Solution
+
+### File: `src/components/audit/AuditFlow.tsx`
+
+**Location:** Lines 54-64 (message event listener)
+
+**Change:** Add fallback to listen for both event name formats (like `FacebookConnect.tsx` already does)
+
+**Before:**
+```typescript
+if (event.data.type === 'fb-oauth-success') {
+  setConnecting(false);
+  handleOAuthSuccess(event.data.pages);
+} else if (event.data.type === 'fb-oauth-error') {
+  setConnecting(false);
+  toast({...});
+}
+```
+
+**After:**
+```typescript
+// Accept both legacy + current callback event names
+if (event.data.type === 'fb-oauth-success' || event.data.type === 'fb-page-success') {
+  setConnecting(false);
+  handleOAuthSuccess(event.data.pages);
+} else if (event.data.type === 'fb-oauth-error' || event.data.type === 'fb-page-error') {
+  setConnecting(false);
+  toast({...});
+}
+```
 
 ---
 
-## Important Warning
+## Technical Details
 
-`pages_*` र `read_insights` permissions अझै **"Ready for testing"** status मा छन्। यसको मतलब:
+| File | Line | Current | Fix |
+|------|------|---------|-----|
+| `AuditFlow.tsx` | 54 | `'fb-oauth-success'` | `'fb-oauth-success' \|\| 'fb-page-success'` |
+| `AuditFlow.tsx` | 57 | `'fb-oauth-error'` | `'fb-oauth-error' \|\| 'fb-page-error'` |
 
-- केवल App Admins/Developers/Testers ले यी permissions प्रयोग गर्न सक्छन्
-- Normal users ले "App needs at least one supported permission" error पाउनेछन्
-- **Production users को लागि App Review submit गरेर Advanced Access लिनुपर्छ**
+---
 
-### Temporary Workaround (Testing को लागि)
+## Why `FacebookConnect.tsx` Works But `AuditFlow.tsx` Doesn't
 
-तपाईं App Role मा add भएको account ले test गर्दा, यो काम गर्नुपर्छ।
+`FacebookConnect.tsx` (line 59) already has the fix:
+```typescript
+if (event.data.type === 'fb-oauth-success' || event.data.type === 'fb-page-success') {
+```
+
+But `AuditFlow.tsx` was not updated with this same pattern.
 
 ---
 
 ## Implementation Steps
 
-1. **Edge Function Update:** `facebook-auth-login` मा scope array expand गर्ने
-2. **Deploy:** Edge function redeploy गर्ने
-3. **Test:** App admin/tester account ले "Continue with Facebook" test गर्ने
-4. **Verify:** OAuth dialog मा सबै permissions देखिन्छ कि check गर्ने
+1. **Update `AuditFlow.tsx`**: Add OR conditions for both event name formats
+2. **Deploy**: Changes will auto-deploy
+3. **Test**: Go to Run Page Audit → Connect with Facebook → Verify pages load
 
 ---
 
-## Meta Console Requirement (Production को लागि)
+## Expected Result After Fix
 
-Production users को लागि यी permissions को Advanced Access चाहिन्छ:
-
-| Permission | Current Status | Required Status | Action |
-|------------|----------------|-----------------|--------|
-| email | Standard Access | Standard Access | Done |
-| pages_show_list | Ready for testing | Advanced Access | Submit App Review |
-| pages_read_engagement | Ready for testing | Advanced Access | Submit App Review |
-| pages_read_user_content | Ready for testing | Advanced Access | Submit App Review |
-| read_insights | Ready for testing | Advanced Access | Submit App Review |
+1. Click "Connect with Facebook" in Run Page Audit
+2. Complete Facebook OAuth flow
+3. Popup closes and sends `fb-page-success` event
+4. `AuditFlow.tsx` now catches this event
+5. Pages dialog shows OR auto-selects page
+6. Audit runs successfully
 
 ---
 
-## Expected Result After Implementation
+## Optional Enhancement (Future)
 
-1. "Continue with Facebook" click गर्दा Facebook OAuth dialog खुल्छ
-2. Dialog मा सबै permissions देखिन्छ (email, pages_show_list, etc.)
-3. User approve गरेपछि login complete हुन्छ
-4. User को pages access token पनि पाइन्छ
-
+Standardize all event names to one format across the entire codebase to prevent future confusion:
+- Choose either `fb-oauth-*` OR `fb-page-*` as the standard
+- Update all senders and listeners to use the same format
