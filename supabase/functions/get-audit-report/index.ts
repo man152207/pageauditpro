@@ -85,8 +85,24 @@ serve(async (req) => {
     const isPro = !!subscription && subscription.plan?.billing_type !== "free";
     logStep("Subscription check", { isPro, auditIsProUnlocked: audit.is_pro_unlocked });
 
-    // User has Pro access if: currently subscribed OR this specific audit was unlocked
-    const hasProAccess = isPro || audit.is_pro_unlocked;
+    // Check for free audit grant for this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const monthStr = startOfMonth.toISOString().split('T')[0];
+
+    const { data: freeGrant } = await supabase
+      .from("free_audit_grants")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("grant_month", monthStr)
+      .maybeSingle();
+
+    const hasFreeAuditGrant = !!freeGrant;
+    logStep("Free audit grant check", { hasFreeAuditGrant, month: monthStr });
+
+    // User has Pro access if: currently subscribed OR this specific audit was unlocked OR has free grant
+    const hasProAccess = isPro || audit.is_pro_unlocked || hasFreeAuditGrant;
 
     // Prepare base response (available to all users)
     const baseResponse: any = {

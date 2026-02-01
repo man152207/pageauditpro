@@ -323,8 +323,9 @@ serve(async (req) => {
 
     logStep("Scores calculated", scores);
 
-    // Generate recommendations
-    const recommendations = generateRecommendations(scores, metrics, isPro);
+    // Generate recommendations - include Pro recommendations if user has grant OR subscription
+    const hasProAccess = isPro || hasFreeAuditGrant;
+    const recommendations = generateRecommendations(scores, metrics, hasProAccess);
 
     // Create audit record
     const { data: audit, error: auditError } = await supabase
@@ -345,8 +346,8 @@ serve(async (req) => {
         },
         score_total: overallScore,
         score_breakdown: scores,
-        recommendations: recommendations.filter(r => !r.isPro || isPro),
-        is_pro_unlocked: isPro,
+        recommendations: recommendations.filter(r => !r.isPro || hasProAccess),
+        is_pro_unlocked: hasProAccess,
       })
       .select()
       .single();
@@ -361,8 +362,8 @@ serve(async (req) => {
 
     logStep("Audit created", { auditId: audit.id });
 
-    // Store detailed metrics for Pro users
-    if (isPro) {
+    // Store detailed metrics for Pro users OR users with free audit grants
+    if (hasProAccess) {
       await supabase.from("audit_metrics").insert({
         audit_id: audit.id,
         raw_metrics: {
@@ -380,7 +381,7 @@ serve(async (req) => {
         computed_metrics: metrics,
         data_availability: dataAvailability,
       });
-      logStep("Metrics stored for Pro user");
+      logStep("Metrics stored for Pro/Grant user");
     }
 
     // Create report record
