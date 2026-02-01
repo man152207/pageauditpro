@@ -18,10 +18,15 @@ const LOCATION_COLORS = ['#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6'];
 export function DemographicsSection({ demographics }: DemographicsSectionProps) {
   if (!demographics) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-        <p>Demographics data is being collected.</p>
-        <p className="text-sm">This may take a few minutes after connecting your page.</p>
+      <div className="text-center py-6 text-muted-foreground">
+        <div className="relative inline-flex items-center justify-center w-16 h-16 mb-4">
+          <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse" />
+          <Users className="h-8 w-8 text-primary relative z-10" />
+        </div>
+        <p className="font-medium text-foreground text-base mb-1">Loading Demographics...</p>
+        <p className="text-sm max-w-xs mx-auto">
+          Audience data is being fetched from Facebook. This typically takes 10-30 seconds.
+        </p>
       </div>
     );
   }
