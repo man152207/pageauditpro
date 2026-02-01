@@ -1,104 +1,84 @@
 
-# Site Audit: Admin Sidebar र Routing Issues - ✅ COMPLETED
 
-## 🎉 Implementation Complete
+# Facebook Login मा सबै Permissions Request गर्ने Plan
 
-All 7 missing pages have been created and routing has been updated.
+## समस्या
 
----
-
-## ✅ Completed Pages
-
-### User Panel
-| Page | Route | Status |
-|------|-------|--------|
-| `ReportsListPage.tsx` | `/dashboard/reports` | ✅ Complete |
-| `HistoryPage.tsx` | `/dashboard/history` | ✅ Complete |
-| `ProfilePage.tsx` | `/dashboard/profile` | ✅ Complete |
-| `SettingsPage.tsx` | `/dashboard/settings` | ✅ Complete |
-
-### Admin Panel
-| Page | Route | Status |
-|------|-------|--------|
-| `AdminUsersPage.tsx` | `/admin/users` | ✅ Complete |
-| `AdminAuditsPage.tsx` | `/admin/audits` | ✅ Complete |
-| `AdminBrandingPage.tsx` | `/admin/branding` | ✅ Complete |
+- अहिले "Continue with Facebook" मा केवल `email` scope request हुँदैछ
+- तपाईंले `pages_show_list`, `pages_read_engagement`, `pages_read_user_content`, `read_insights` पनि Login मा नै request गर्न चाहनुहुन्छ
+- यी page permissions अझै "Ready for testing" मा छन्, जसले "App needs at least one supported permission" error दिन सक्छ
 
 ---
 
-## 📁 Files Created/Modified
+## Technical Solution
 
-### New Pages Created:
-- `src/pages/dashboard/ReportsListPage.tsx` - Audit reports list with search & filters
-- `src/pages/dashboard/HistoryPage.tsx` - Timeline view of audit activity
-- `src/pages/dashboard/ProfilePage.tsx` - User profile management
-- `src/pages/dashboard/SettingsPage.tsx` - Email & app preferences
-- `src/pages/admin/AdminUsersPage.tsx` - Organization user management
-- `src/pages/admin/AdminAuditsPage.tsx` - All org audits with CSV export
-- `src/pages/admin/AdminBrandingPage.tsx` - Agency branding customization
+### 1. facebook-auth-login Edge Function Update
 
-### Routing Updated:
-- `src/App.tsx` - All routes now point to correct components
+**File:** `supabase/functions/facebook-auth-login/index.ts`
 
----
+Line ~120 मा scope update गर्ने:
 
-## 🔧 Features Implemented
+```typescript
+// Before (current)
+const scopes = ["email"].join(",");
 
-### ReportsListPage
-- Search by page name/URL
-- Filter by score (Excellent/Good/Needs Work)
-- Sort by date/score/name
-- Responsive design with cards
+// After (with all permissions)
+const scopes = [
+  "email",
+  "pages_show_list",
+  "pages_read_engagement",
+  "pages_read_user_content",
+  "read_insights"
+].join(",");
+```
 
-### HistoryPage
-- Timeline view grouped by date
-- Monthly stats comparison
-- Score trend tracking
-- Pro-only extended history
+### 2. Debug Logging Improve
 
-### ProfilePage
-- Edit full name
-- View connected Facebook pages
-- Disconnect pages
-- Export data / Delete account
-
-### SettingsPage
-- Email notification toggles
-- Theme selection (light/dark/system)
-- Timezone & language settings
-
-### AdminUsersPage
-- Team member list with roles
-- Invite user dialog
-- Search functionality
-- Status badges
-
-### AdminAuditsPage
-- All organization audits
-- Search & score filters
-- CSV export functionality
-- Link to individual reports
-
-### AdminBrandingPage
-- Logo upload
-- Brand color picker
-- Live preview of branded report
+Auth URL generation मा better logging add गर्ने ताकि exact URL verify गर्न सकियोस्।
 
 ---
 
-## ✅ All Working Now
+## Important Warning
 
-| Section | Menu Item | Route | Component |
-|---------|-----------|-------|-----------|
-| User | Overview | `/dashboard` | UserDashboard ✅ |
-| User | Run Audit | `/dashboard/audit` | ManualAuditPage ✅ |
-| User | Reports | `/dashboard/reports` | ReportsListPage ✅ |
-| User | History | `/dashboard/history` | HistoryPage ✅ |
-| User | Billing | `/dashboard/billing` | BillingPage ✅ |
-| User | Profile | `/dashboard/profile` | ProfilePage ✅ |
-| User | Settings | `/dashboard/settings` | SettingsPage ✅ |
-| Admin | Dashboard | `/admin` | AdminDashboard ✅ |
-| Admin | Users | `/admin/users` | AdminUsersPage ✅ |
-| Admin | All Audits | `/admin/audits` | AdminAuditsPage ✅ |
-| Admin | Branding | `/admin/branding` | AdminBrandingPage ✅ |
-| Super Admin | All routes | `/super-admin/*` | Already working ✅ |
+`pages_*` र `read_insights` permissions अझै **"Ready for testing"** status मा छन्। यसको मतलब:
+
+- केवल App Admins/Developers/Testers ले यी permissions प्रयोग गर्न सक्छन्
+- Normal users ले "App needs at least one supported permission" error पाउनेछन्
+- **Production users को लागि App Review submit गरेर Advanced Access लिनुपर्छ**
+
+### Temporary Workaround (Testing को लागि)
+
+तपाईं App Role मा add भएको account ले test गर्दा, यो काम गर्नुपर्छ।
+
+---
+
+## Implementation Steps
+
+1. **Edge Function Update:** `facebook-auth-login` मा scope array expand गर्ने
+2. **Deploy:** Edge function redeploy गर्ने
+3. **Test:** App admin/tester account ले "Continue with Facebook" test गर्ने
+4. **Verify:** OAuth dialog मा सबै permissions देखिन्छ कि check गर्ने
+
+---
+
+## Meta Console Requirement (Production को लागि)
+
+Production users को लागि यी permissions को Advanced Access चाहिन्छ:
+
+| Permission | Current Status | Required Status | Action |
+|------------|----------------|-----------------|--------|
+| email | Standard Access | Standard Access | Done |
+| pages_show_list | Ready for testing | Advanced Access | Submit App Review |
+| pages_read_engagement | Ready for testing | Advanced Access | Submit App Review |
+| pages_read_user_content | Ready for testing | Advanced Access | Submit App Review |
+| read_insights | Ready for testing | Advanced Access | Submit App Review |
+
+---
+
+## Expected Result After Implementation
+
+1. "Continue with Facebook" click गर्दा Facebook OAuth dialog खुल्छ
+2. Dialog मा सबै permissions देखिन्छ (email, pages_show_list, etc.)
+3. User approve गरेपछि login complete हुन्छ
+4. User को pages access token पनि पाइन्छ
+
