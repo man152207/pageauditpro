@@ -63,12 +63,11 @@ serve(async (req) => {
       .from("settings")
       .select("key, value_encrypted")
       .eq("scope", "global")
-      .in("key", ["facebook_app_id", "facebook_app_secret", "facebook_login_business_config_id"]);
+      .in("key", ["facebook_app_id", "facebook_app_secret"]);
 
     const settingsMap = new Map(settingsData?.map(s => [s.key, s.value_encrypted]) || []);
     const FB_APP_ID = settingsMap.get("facebook_app_id");
     const FB_APP_SECRET = settingsMap.get("facebook_app_secret");
-    const FB_LOGIN_BUSINESS_CONFIG_ID = settingsMap.get("facebook_login_business_config_id");
 
     // Action: Test Connection (for Super Admin integration settings)
     if (action === "test") {
@@ -115,33 +114,13 @@ serve(async (req) => {
 
     // Action: Get login URL
     if (action === "get-login-url") {
-      // Facebook Login for Business:
-      // - email + public_profile are typically default/auto-granted
-      // - Meta requires at least one additional supported permission
-      // - For our use case we include Page permissions so we can later call /me/accounts
-      // IMPORTANT: Page permissions require Advanced Access approval.
-      const scopes = [
-        "email",
-        "pages_show_list",
-        "pages_read_engagement",
-        "pages_read_user_content",
-        "read_insights",
-      ].join(",");
-
-      // Business Login requires config_id from Meta's "Facebook Login for Business" configuration
-      if (!FB_LOGIN_BUSINESS_CONFIG_ID || FB_LOGIN_BUSINESS_CONFIG_ID === "••••••••") {
-        console.error("[FB-AUTH-LOGIN] Facebook Login for Business config_id not configured");
-        return errorResponse(
-          'FACEBOOK_BUSINESS_LOGIN_NOT_CONFIGURED',
-          'Facebook Login for Business is not configured (missing config_id).',
-          [
-            'Go to Settings → Integrations → Facebook API',
-            'Set “Facebook Login for Business Config ID” (config_id from Meta Business Login config)',
-            'Save and try again'
-          ],
-          500
-        );
-      }
+      // Facebook Login scope - email requires Standard Access, public_profile is default
+      // IMPORTANT: These permissions must be approved in Facebook Developer Console
+      // App Review > Permissions and Features > email must have at least "Standard Access"
+      const scopes = ["email"].join(",");
+      
+      // URL encode the scope parameter properly
+      const encodedScopes = encodeURIComponent(scopes);
 
       const state = crypto.randomUUID(); // CSRF protection
 
@@ -157,7 +136,6 @@ serve(async (req) => {
       authUrl.searchParams.set("client_id", FB_APP_ID);
       authUrl.searchParams.set("redirect_uri", redirectUri);
       authUrl.searchParams.set("scope", scopes);
-      authUrl.searchParams.set("config_id", FB_LOGIN_BUSINESS_CONFIG_ID);
       authUrl.searchParams.set("state", state);
       authUrl.searchParams.set("response_type", "code");
       
@@ -166,7 +144,6 @@ serve(async (req) => {
       console.log(`[FB-AUTH-LOGIN] Generated auth URL: ${authUrlString}`);
       console.log(`[FB-AUTH-LOGIN] Redirect URI: ${redirectUri}`);
       console.log(`[FB-AUTH-LOGIN] Scopes: ${scopes}`);
-      console.log(`[FB-AUTH-LOGIN] config_id: ${FB_LOGIN_BUSINESS_CONFIG_ID}`);
 
       return new Response(
         JSON.stringify({ 
@@ -177,10 +154,7 @@ serve(async (req) => {
             client_id: FB_APP_ID,
             redirect_uri: redirectUri,
             scope: scopes,
-            scopes: scopes.split(","),
-            config_id: FB_LOGIN_BUSINESS_CONFIG_ID,
-            response_type: "code",
-            dialog_endpoint: "https://www.facebook.com/v19.0/dialog/oauth",
+            response_type: "code"
           }
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }

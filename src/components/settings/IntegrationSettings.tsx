@@ -213,7 +213,6 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
         onSave={() => saveSettings([
           { key: 'facebook_app_id', value: settings.facebook_app_id || '', is_sensitive: false },
           { key: 'facebook_app_secret', value: settings.facebook_app_secret || '', is_sensitive: true },
-          { key: 'facebook_login_business_config_id', value: settings.facebook_login_business_config_id || '', is_sensitive: false },
         ])}
         saving={saving}
         onTest={() => testConnection('facebook')}
@@ -233,20 +232,6 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
             <Input value={settings.facebook_app_id || ''} onChange={(e) => updateSetting('facebook_app_id', e.target.value)} placeholder="Enter Facebook App ID" />
           </div>
           <SecretInput id="fb-secret" label="App Secret" value={settings.facebook_app_secret || ''} onChange={(v) => updateSetting('facebook_app_secret', v)} helpText="From developers.facebook.com" />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 mt-4">
-          <div className="space-y-2">
-            <Label>Facebook Login for Business Config ID</Label>
-            <Input
-              value={settings.facebook_login_business_config_id || ''}
-              onChange={(e) => updateSetting('facebook_login_business_config_id', e.target.value)}
-              placeholder="config_id from Business Login"
-            />
-            <p className="text-xs text-muted-foreground">
-              Required for “Facebook Login for Business” flows (passed as <code>config_id</code> in the OAuth dialog URL).
-            </p>
-          </div>
         </div>
         <div className="p-3 rounded-lg bg-muted/50 text-sm mt-4">
           <p className="font-medium mb-1">Required Scopes:</p>
