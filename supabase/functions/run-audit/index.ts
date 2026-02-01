@@ -159,12 +159,24 @@ serve(async (req) => {
     const isPro = !!subscription && subscription.plan?.billing_type !== "free";
     logStep("Subscription check", { isPro });
 
-    // Check usage limits for free users
-    if (!isPro) {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+    // Check for free audit grant for this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const monthStr = startOfMonth.toISOString().split('T')[0];
 
+    const { data: freeGrant } = await supabase
+      .from("free_audit_grants")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("grant_month", monthStr)
+      .maybeSingle();
+
+    const hasFreeAuditGrant = !!freeGrant;
+    logStep("Free audit grant check", { hasFreeAuditGrant, month: monthStr });
+
+    // Check usage limits for free users (skip if they have a free grant)
+    if (!isPro && !hasFreeAuditGrant) {
       const { count } = await supabase
         .from("audits")
         .select("*", { count: "exact", head: true })

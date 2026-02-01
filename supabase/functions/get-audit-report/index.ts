@@ -101,9 +101,9 @@ serve(async (req) => {
       has_pro_access: hasProAccess,
     };
 
-    // FREE tier: Only basic data
+    // FREE tier: Only basic data + 10% metrics preview
     if (!hasProAccess) {
-      logStep("Returning FREE tier data");
+      logStep("Returning FREE tier data with metrics preview");
 
       // Only return first 2 recommendations for free users
       const allRecommendations = (audit.recommendations as any[]) || [];
@@ -118,13 +118,25 @@ serve(async (req) => {
         postsAnalyzed: inputData.postsAnalyzed || 0,
       };
 
+      // Fetch partial metrics for 10% preview (only engagement rate)
+      const { data: metrics } = await supabase
+        .from("audit_metrics")
+        .select("computed_metrics")
+        .eq("audit_id", auditId)
+        .maybeSingle();
+
+      const metricsPreview = metrics?.computed_metrics ? {
+        engagementRate: (metrics.computed_metrics as any).engagementRate || null,
+      } : null;
+
       return new Response(
         JSON.stringify({
           ...baseResponse,
           recommendations: freeRecommendations,
           input_summary: basicInputSummary,
+          detailed_metrics_preview: metricsPreview, // 10% preview - only engagement rate
           // Pro-only fields are NOT included
-          // No detailed_metrics
+          // No full detailed_metrics
           // No posts_analysis
           // No demographics
           // No ai_insights

@@ -5,8 +5,8 @@ export default function ManualAuditPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <PageHeader
-        title="Run Page Audit"
-        description="Connect your Facebook page to get personalized insights and recommendations."
+        title="Run Facebook Page Audit"
+        description="Connect your Facebook page to analyze engagement, content performance, and get personalized recommendations."
         className="mb-8"
       />
 

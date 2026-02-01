@@ -235,7 +235,7 @@ export default function AuditReportPage() {
 
       {/* PRO SECTIONS - Locked for Free Users */}
 
-      {/* Detailed Metrics */}
+      {/* Detailed Metrics - Show 10% preview for free users */}
       {hasProAccess && report.detailed_metrics ? (
         <ReportSection
           title="Detailed Metrics"
@@ -266,6 +266,49 @@ export default function AuditReportPage() {
               <p className="text-2xl font-bold">
                 {report.detailed_metrics.postsPerWeek?.toFixed(1)}
               </p>
+            </div>
+          </div>
+        </ReportSection>
+      ) : report.detailed_metrics_preview ? (
+        /* 10% Preview for Free Users - Show engagement rate, blur rest */
+        <ReportSection
+          title="Detailed Metrics"
+          description="In-depth engagement analysis"
+          icon={<BarChart3 className="h-5 w-5" />}
+        >
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* First metric visible (10%) */}
+            <div className="p-4 rounded-lg bg-muted/50 border-2 border-primary/20">
+              <p className="text-sm text-muted-foreground mb-1">Engagement Rate</p>
+              <p className="text-2xl font-bold text-primary">
+                {report.detailed_metrics_preview.engagementRate?.toFixed(2)}%
+              </p>
+            </div>
+            
+            {/* Remaining 90% blurred */}
+            <div className="col-span-1 sm:col-span-1 lg:col-span-3 relative">
+              <div className="grid gap-4 sm:grid-cols-3 blur-sm pointer-events-none select-none">
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground mb-1">Avg. Likes/Post</p>
+                  <p className="text-2xl font-bold">—</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground mb-1">Avg. Comments/Post</p>
+                  <p className="text-2xl font-bold">—</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground mb-1">Posts/Week</p>
+                  <p className="text-2xl font-bold">—</p>
+                </div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-lg">
+                <Button asChild size="sm">
+                  <Link to="/dashboard/billing">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Unlock All Metrics
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </ReportSection>
