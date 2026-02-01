@@ -114,13 +114,17 @@ serve(async (req) => {
 
     // Action: Get login URL
     if (action === "get-login-url") {
-      // Facebook Login scope - email requires Standard Access, public_profile is default
-      // IMPORTANT: These permissions must be approved in Facebook Developer Console
-      // App Review > Permissions and Features > email must have at least "Standard Access"
-      const scopes = ["email"].join(",");
-      
-      // URL encode the scope parameter properly
-      const encodedScopes = encodeURIComponent(scopes);
+      // Facebook Login scope - request all permissions upfront
+      // email: Standard Access (approved)
+      // pages_*: Ready for testing (only works for App Admins/Testers until App Review approved)
+      // read_insights: Ready for testing (requires App Review for production)
+      const scopes = [
+        "email",
+        "pages_show_list",
+        "pages_read_engagement",
+        "pages_read_user_content",
+        "read_insights"
+      ].join(",");
 
       const state = crypto.randomUUID(); // CSRF protection
 
