@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Loader2, RefreshCw, Lightbulb } from 'lucide-react';
+import { Sparkles, Loader2, Lightbulb } from 'lucide-react';
 import { useAiInsights } from '@/hooks/useAiInsights';
 import { cn } from '@/lib/utils';
 
@@ -90,19 +90,9 @@ export function AiInsightsSection({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span>AI-Generated Analysis</span>
-        </div>
-        <Button variant="ghost" size="sm" onClick={handleGenerate} disabled={isGenerating}>
-          {isGenerating ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          <span className="ml-2">Regenerate</span>
-        </Button>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span>AI-Generated Analysis</span>
       </div>
 
       <div className="space-y-4">
