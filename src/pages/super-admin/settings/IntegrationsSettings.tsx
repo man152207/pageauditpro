@@ -22,6 +22,7 @@ export default function IntegrationsSettings() {
     resend_api_key: '',
     email_from_address: '',
     email_from_name: '',
+    openai_api_key: '',
   });
 
   useEffect(() => {

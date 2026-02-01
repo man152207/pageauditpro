@@ -13,6 +13,7 @@ import {
 import {
   BarChart3,
   FileBarChart,
+  GitCompare,
   History,
   LayoutDashboard,
   LogOut,
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/audit', label: 'Run Audit', icon: Sparkles },
   { href: '/dashboard/reports', label: 'Reports', icon: FileBarChart },
+  { href: '/dashboard/compare', label: 'Compare', icon: GitCompare },
   { href: '/dashboard/history', label: 'History', icon: History },
   { href: '/dashboard/billing', label: 'Billing', icon: CreditCard },
 ];
