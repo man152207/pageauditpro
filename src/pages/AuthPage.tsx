@@ -163,6 +163,11 @@ export default function AuthPage() {
         // ignore
       }
 
+      // Debug: log the exact URL being opened + parameters returned by backend
+      // (Useful for verifying client_id, redirect_uri, scope format, config_id)
+      console.log('[FB-LOGIN] OAuth dialog URL:', data.authUrl);
+      if (data?.debug) console.log('[FB-LOGIN] OAuth debug:', data.debug);
+
       // Open popup for Facebook OAuth
       const width = 600;
       const height = 700;
