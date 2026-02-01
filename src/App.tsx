@@ -33,6 +33,7 @@ import ManualAuditPage from "@/pages/dashboard/ManualAuditPage";
 import AuditReportPage from "@/pages/dashboard/AuditReportPage";
 import ReportsListPage from "@/pages/dashboard/ReportsListPage";
 import HistoryPage from "@/pages/dashboard/HistoryPage";
+import AuditAnalyticsPage from "@/pages/dashboard/AuditAnalyticsPage";
 import CompareReportsPage from "@/pages/dashboard/CompareReportsPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
 import SettingsPage from "@/pages/dashboard/SettingsPage";
@@ -110,6 +111,7 @@ const App = () => (
               <Route path="audit" element={<ManualAuditPage />} />
               <Route path="reports" element={<ReportsListPage />} />
               <Route path="reports/:auditId" element={<AuditReportPage />} />
+              <Route path="analytics" element={<AuditAnalyticsPage />} />
               <Route path="history" element={<HistoryPage />} />
               <Route path="compare" element={<CompareReportsPage />} />
               <Route path="billing" element={<BillingPage />} />

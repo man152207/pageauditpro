@@ -76,6 +76,8 @@
     --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.06);
     --shadow-card-hover: 0 16px 32px -8px rgb(0 0 0 / 0.12);
     --shadow-glow: 0 0 32px -8px hsl(214 89% 52% / 0.4);
+    --shadow-button: 0 2px 4px 0 rgb(0 0 0 / 0.08);
+    --shadow-button-hover: 0 4px 12px -2px rgb(0 0 0 / 0.15);
 
     /* ========== SIDEBAR ========== */
     --sidebar-background: 0 0% 99%;
@@ -470,6 +472,69 @@
 }
 
 @layer utilities {
+  /* ========== PAGE TRANSITIONS ========== */
+  .page-enter {
+    animation: page-fade-in 0.3s ease-out forwards;
+  }
+
+  .page-exit {
+    animation: page-fade-out 0.2s ease-in forwards;
+  }
+
+  /* ========== MICRO-INTERACTIONS ========== */
+  .card-hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .card-hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  .card-hover-glow {
+    @apply transition-all duration-300;
+  }
+
+  .card-hover-glow:hover {
+    @apply border-primary/30;
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.15);
+  }
+
+  .icon-hover-pop {
+    @apply transition-transform duration-200;
+  }
+
+  .icon-hover-pop:hover {
+    transform: scale(1.15);
+  }
+
+  .link-underline {
+    @apply relative;
+  }
+
+  .link-underline::after {
+    content: '';
+    @apply absolute bottom-0 left-0 h-0.5 w-0 bg-primary transition-all duration-300;
+  }
+
+  .link-underline:hover::after {
+    @apply w-full;
+  }
+
+  .btn-ripple {
+    @apply relative overflow-hidden;
+  }
+
+  .btn-ripple::after {
+    content: '';
+    @apply absolute inset-0 bg-white/20 scale-0 rounded-full transition-transform duration-500;
+  }
+
+  .btn-ripple:active::after {
+    @apply scale-100;
+    transition: transform 0s;
+  }
+
   /* ========== ANIMATIONS ========== */
   .animate-float {
     animation: float 5s ease-in-out infinite;
@@ -484,39 +549,60 @@
   }
 
   .animate-fade-in {
-    animation: fade-in 0.5s ease-out forwards;
+    animation: fade-in 0.4s ease-out forwards;
     opacity: 0;
   }
 
   .animate-fade-in-up {
-    animation: fade-in-up 0.5s ease-out forwards;
+    animation: fade-in-up 0.4s ease-out forwards;
     opacity: 0;
   }
 
   .animate-slide-up {
-    animation: slide-up 0.4s ease-out forwards;
+    animation: slide-up 0.35s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-left 0.35s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.35s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.25s ease-out forwards;
   }
 
   .animate-bounce-soft {
     animation: bounce-soft 2s ease-in-out infinite;
   }
 
+  .animate-shimmer {
+    animation: shimmer 1.5s infinite;
+  }
+
+  .animate-count-up {
+    animation: count-pulse 0.6s ease-out;
+  }
+
   /* Stagger delays */
-  .stagger-1 { animation-delay: 0.08s; }
-  .stagger-2 { animation-delay: 0.16s; }
-  .stagger-3 { animation-delay: 0.24s; }
-  .stagger-4 { animation-delay: 0.32s; }
-  .stagger-5 { animation-delay: 0.4s; }
-  .stagger-6 { animation-delay: 0.48s; }
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
 
   /* Transitions */
   .transition-base { @apply transition-all duration-200 ease-out; }
   .transition-fast { @apply transition-all duration-150 ease-out; }
   .transition-slow { @apply transition-all duration-300 ease-out; }
+  .transition-smooth { @apply transition-all duration-200 cubic-bezier(0.4, 0, 0.2, 1); }
 
   /* Hovers */
   .hover-lift {
-    @apply transition-transform duration-250;
+    @apply transition-transform duration-200;
   }
   .hover-lift:hover {
     transform: translateY(-3px);
@@ -527,6 +613,35 @@
   }
   .hover-scale:hover {
     transform: scale(1.02);
+  }
+
+  .hover-brightness {
+    @apply transition-all duration-200;
+  }
+  .hover-brightness:hover {
+    filter: brightness(1.05);
+  }
+
+  /* Focus states */
+  .focus-ring {
+    @apply focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:outline-none;
+  }
+
+  /* Loading states */
+  .loading-pulse {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Chart animations */
+  .chart-bar-enter {
+    animation: chart-bar-grow 0.6s ease-out forwards;
+    transform-origin: bottom;
+  }
+
+  .chart-line-draw {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: chart-line-animate 1.5s ease-out forwards;
   }
 
   /* Containers */
@@ -579,7 +694,7 @@
 @keyframes fade-in-up {
   from { 
     opacity: 0; 
-    transform: translateY(16px); 
+    transform: translateY(12px); 
   }
   to { 
     opacity: 1; 
@@ -590,7 +705,7 @@
 @keyframes slide-up {
   from { 
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(20px);
   }
   to { 
     opacity: 1;
@@ -598,7 +713,77 @@
   }
 }
 
+@keyframes slide-in-left {
+  from { 
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from { 
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes bounce-soft {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
+}
+
+@keyframes page-fade-in {
+  from { 
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-fade-out {
+  from { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to { 
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes count-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes chart-bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes chart-line-animate {
+  to { stroke-dashoffset: 0; }
 }
