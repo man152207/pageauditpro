@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
+  Brain,
   CheckCircle2,
   Copy,
   CreditCard,
@@ -343,6 +344,35 @@ export function IntegrationSettings({ settings, updateSetting, saveSettings, sav
             <Input value={settings.email_from_name || ''} onChange={(e) => updateSetting('email_from_name', e.target.value)} placeholder="Pagelyzer" />
           </div>
         </div>
+      </IntegrationCard>
+
+      {/* OpenAI (ChatGPT) */}
+      <IntegrationCard
+        title="OpenAI (ChatGPT)"
+        icon={<Brain className="h-5 w-5 text-[#10A37F]" />}
+        isConfigured={isConfigured('openai_api_key')}
+        onSave={() => saveSettings([
+          { key: 'openai_api_key', value: settings.openai_api_key || '', is_sensitive: true },
+        ])}
+        saving={saving}
+      >
+        <div className="p-3 rounded-lg bg-muted/50 text-sm mb-4">
+          <p className="text-muted-foreground">
+            Get your API key from{' '}
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              OpenAI Platform
+            </a>
+            . Used for AI-Powered Insights in reports.
+          </p>
+        </div>
+        <SecretInput 
+          id="openai-key" 
+          label="OpenAI API Key" 
+          value={settings.openai_api_key || ''} 
+          onChange={(v) => updateSetting('openai_api_key', v)} 
+          placeholder="sk-..." 
+          helpText="From platform.openai.com/api-keys" 
+        />
       </IntegrationCard>
     </div>
   );

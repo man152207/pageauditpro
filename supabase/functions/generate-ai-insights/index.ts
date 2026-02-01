@@ -142,17 +142,39 @@ Provide exactly 5 strategic insights that go beyond the basic recommendations. F
 
 Format each insight with a clear title and 2-3 sentences of actionable advice. Be specific and actionable.`;
 
-    logStep("Calling Lovable AI Gateway");
+    // Fetch OpenAI API key from settings
+    const { data: apiKeySetting } = await supabase
+      .from("settings")
+      .select("value_encrypted")
+      .eq("scope", "global")
+      .eq("key", "openai_api_key")
+      .maybeSingle();
 
-    // Call Lovable AI Gateway
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const openaiApiKey = apiKeySetting?.value_encrypted;
+
+    if (!openaiApiKey || openaiApiKey === '••••••••') {
+      logStep("OpenAI API key not configured");
+      return new Response(
+        JSON.stringify({ 
+          error: "OpenAI API key not configured",
+          is_config_issue: true,
+          fix_steps: ["Go to Super Admin → Settings → Integrations", "Add your OpenAI API key"]
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Calling OpenAI API (ChatGPT)");
+
+    // Call OpenAI API
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+        Authorization: `Bearer ${openaiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
