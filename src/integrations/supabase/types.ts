@@ -52,25 +52,31 @@ export type Database = {
       }
       audit_metrics: {
         Row: {
+          ai_insights: string | null
           audit_id: string
           computed_metrics: Json | null
           data_availability: Json | null
+          demographics: Json | null
           fetched_at: string
           id: string
           raw_metrics: Json | null
         }
         Insert: {
+          ai_insights?: string | null
           audit_id: string
           computed_metrics?: Json | null
           data_availability?: Json | null
+          demographics?: Json | null
           fetched_at?: string
           id?: string
           raw_metrics?: Json | null
         }
         Update: {
+          ai_insights?: string | null
           audit_id?: string
           computed_metrics?: Json | null
           data_availability?: Json | null
+          demographics?: Json | null
           fetched_at?: string
           id?: string
           raw_metrics?: Json | null
@@ -81,6 +87,50 @@ export type Database = {
             columns: ["audit_id"]
             isOneToOne: false
             referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_schedules: {
+        Row: {
+          connection_id: string | null
+          created_at: string | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          next_run_at: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          connection_id?: string | null
+          created_at?: string | null
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          next_run_at: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          connection_id?: string | null
+          created_at?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          next_run_at?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_schedules_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "fb_connections"
             referencedColumns: ["id"]
           },
         ]

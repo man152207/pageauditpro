@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAudit } from '@/hooks/useAudits';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePdfExport } from '@/hooks/usePdfExport';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScoreCard } from '@/components/ui/score-card';
@@ -9,6 +10,9 @@ import { ProBadge } from '@/components/ui/pro-badge';
 import { PageHeader } from '@/components/ui/page-header';
 import { ReportSection } from '@/components/report/ReportSection';
 import { ReportFilters, ReportCategory, ReportPriority } from '@/components/report/ReportFilters';
+import { AiInsightsSection } from '@/components/report/AiInsightsSection';
+import { DemographicsSection } from '@/components/report/DemographicsSection';
+import { ShareReportDialog } from '@/components/report/ShareReportDialog';
 import {
   LockedSection,
   MetricsPlaceholder,
@@ -33,15 +37,19 @@ import {
   Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AuditReportPage() {
   const { auditId } = useParams<{ auditId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: report, isLoading, error } = useAudit(auditId);
   const { isPro } = useSubscription();
+  const { exportToPdf, isExporting } = usePdfExport();
 
   const [categoryFilter, setCategoryFilter] = useState<ReportCategory>('all');
   const [priorityFilter, setPriorityFilter] = useState<ReportPriority>('all');
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -90,6 +98,11 @@ export default function AuditReportPage() {
     }
   };
 
+  const handleInsightsGenerated = () => {
+    // Refetch the report to get the new insights
+    queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -104,12 +117,20 @@ export default function AuditReportPage() {
           <div className="flex items-center gap-3">
             {hasProAccess ? (
               <>
-                <Button variant="outline" disabled>
+                <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
                   <Share2 className="mr-2 h-4 w-4" />
                   Share
                 </Button>
-                <Button variant="outline" disabled>
-                  <Download className="mr-2 h-4 w-4" />
+                <Button 
+                  variant="outline" 
+                  onClick={() => exportToPdf(auditId!)}
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
                   Export PDF
                 </Button>
               </>
@@ -123,6 +144,15 @@ export default function AuditReportPage() {
             )}
           </div>
         }
+      />
+
+      {/* Share Dialog */}
+      <ShareReportDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        auditId={auditId!}
+        existingShareSlug={report.report?.share_slug}
+        existingIsPublic={report.report?.is_public}
       />
 
       {/* Score Cards */}
@@ -361,21 +391,45 @@ export default function AuditReportPage() {
         />
       )}
 
-      {/* AI Insights - Always locked for demo since we don't have real AI integration */}
-      <LockedSection
-        title="AI-Powered Insights"
-        description="Get personalized growth strategies powered by AI"
-        icon={<Sparkles className="h-5 w-5" />}
-        placeholderContent={<RecommendationsPlaceholder />}
-      />
+      {/* AI Insights */}
+      {hasProAccess ? (
+        <ReportSection
+          title="AI-Powered Insights"
+          description="Personalized growth strategies powered by AI"
+          icon={<Sparkles className="h-5 w-5" />}
+        >
+          <AiInsightsSection
+            auditId={auditId!}
+            existingInsights={report.ai_insights || null}
+            onInsightsGenerated={handleInsightsGenerated}
+          />
+        </ReportSection>
+      ) : (
+        <LockedSection
+          title="AI-Powered Insights"
+          description="Get personalized growth strategies powered by AI"
+          icon={<Sparkles className="h-5 w-5" />}
+          placeholderContent={<RecommendationsPlaceholder />}
+        />
+      )}
 
       {/* Demographics */}
-      <LockedSection
-        title="Audience Demographics"
-        description="Understand who your audience is"
-        icon={<Users className="h-5 w-5" />}
-        placeholderContent={<DemographicsPlaceholder />}
-      />
+      {hasProAccess ? (
+        <ReportSection
+          title="Audience Demographics"
+          description="Understand who your audience is"
+          icon={<Users className="h-5 w-5" />}
+        >
+          <DemographicsSection demographics={report.demographics || null} />
+        </ReportSection>
+      ) : (
+        <LockedSection
+          title="Audience Demographics"
+          description="Understand who your audience is"
+          icon={<Users className="h-5 w-5" />}
+          placeholderContent={<DemographicsPlaceholder />}
+        />
+      )}
 
       {/* Upgrade CTA for Free Users */}
       {!hasProAccess && (

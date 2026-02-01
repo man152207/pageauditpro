@@ -194,6 +194,8 @@ serve(async (req) => {
       detailed_metrics: metrics?.computed_metrics || null,
       raw_metrics: metrics?.raw_metrics || null,
       data_availability: metrics?.data_availability || null,
+      ai_insights: metrics?.ai_insights || null,
+      demographics: metrics?.demographics || null,
       report: report ? {
         id: report.id,
         is_public: report.is_public,
