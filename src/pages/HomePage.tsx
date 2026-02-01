@@ -171,57 +171,57 @@ export default function HomePage() {
   return (
     <div className="flex flex-col overflow-hidden">
       {/* ========== HERO ========== */}
-      <section className="relative py-12 sm:py-16 md:py-20 hero-pattern">
+      <section className="relative py-10 sm:py-12 md:py-16 hero-pattern">
         {/* Floating orbs */}
-        <div className="floating-orb w-[300px] h-[300px] bg-primary/20 -top-20 -left-20" />
-        <div className="floating-orb w-[250px] h-[250px] bg-accent/15 -bottom-10 -right-10" style={{ animationDelay: '2s' }} />
+        <div className="floating-orb w-[250px] h-[250px] bg-primary/15 -top-16 -left-16" />
+        <div className="floating-orb w-[200px] h-[200px] bg-accent/10 -bottom-8 -right-8" style={{ animationDelay: '2s' }} />
 
         <div className="container relative">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-center">
             {/* Left: Content */}
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5 animate-fade-in border border-primary/20">
-                <Facebook className="h-4 w-4" />
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4 animate-fade-in border border-primary/20">
+                <Facebook className="h-3.5 w-3.5" />
                 Free Facebook Page Audit
               </div>
 
-              <h1 className="mb-4 sm:mb-5 animate-fade-in-up text-balance">
+              <h1 className="mb-3 sm:mb-4 animate-fade-in-up text-balance">
                 Grow Your Page with{' '}
                 <span className="gradient-text">AI Insights</span>
               </h1>
 
-              <p className="text-muted-foreground mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0 animate-fade-in-up stagger-1 text-pretty">
+              <p className="text-muted-foreground mb-5 sm:mb-6 max-w-md mx-auto lg:mx-0 animate-fade-in-up stagger-1 text-pretty">
                 Get instant health scores, engagement analysis, and personalized recommendations to boost your Facebook presence.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start animate-fade-in-up stagger-2">
-                <Button size="lg" asChild className="btn-glow text-base h-12">
+                <Button size="lg" asChild className="btn-glow h-11">
                   <Link to="/dashboard/audit">
-                    <Facebook className="mr-2 h-5 w-5" />
+                    <Facebook className="mr-2 h-4 w-4" />
                     Connect & Run Audit
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild className="text-base h-12">
+                <Button size="lg" variant="outline" asChild className="h-11">
                   <Link to="/sample-report">
-                    <Play className="mr-2 h-4 w-4" />
+                    <Play className="mr-2 h-3.5 w-3.5" />
                     View Sample
                   </Link>
                 </Button>
               </div>
 
               {/* Trust badges */}
-              <div className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6 text-muted-foreground animate-fade-in stagger-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span className="text-sm font-medium">GDPR Ready</span>
+              <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-muted-foreground animate-fade-in stagger-3">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                  <span className="text-xs font-medium">GDPR Ready</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span className="text-sm font-medium">Secure</span>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                  <span className="text-xs font-medium">Secure</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span className="text-sm font-medium">Agency Friendly</span>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                  <span className="text-xs font-medium">Agency Friendly</span>
                 </div>
               </div>
             </div>
@@ -290,7 +290,7 @@ export default function HomePage() {
             <p>Powerful analytics and AI insights for your Facebook page.</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {benefits.map((benefit, index) => (
               <div
                 key={index}

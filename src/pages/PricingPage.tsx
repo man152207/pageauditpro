@@ -139,21 +139,21 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="py-20 lg:py-28">
+    <div className="py-12 sm:py-16 lg:py-20">
       <div className="container">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16 animate-fade-in">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
+        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 animate-fade-in">
+          <h1 className="mb-3">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-muted-foreground">
             Start free and upgrade when you need advanced insights and automation.
             No hidden fees, cancel anytime.
           </p>
         </div>
 
         {/* Pricing Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
           {plans.map((plan, index) => {
             const isPopular = isPlanPopular(plan);
             const isPro = isPlanPro(plan);
@@ -164,10 +164,10 @@ export default function PricingPage() {
               <div
                 key={plan.id}
                 className={cn(
-                  'relative rounded-2xl border p-6 transition-all duration-300 animate-fade-in-up',
+                  'relative rounded-xl border p-5 transition-all duration-200 animate-fade-in-up flex flex-col min-h-[420px]',
                   `stagger-${Math.min(index + 1, 5)}`,
                   isPopular
-                    ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10 hover:shadow-xl hover:shadow-primary/15 scale-[1.02]'
+                    ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10 hover:shadow-xl scale-[1.02]'
                     : 'border-border bg-card hover:border-primary/30 hover:shadow-card-hover hover:-translate-y-1'
                 )}
               >
@@ -180,29 +180,29 @@ export default function PricingPage() {
                   </div>
                 )}
 
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <h3 className="font-semibold text-lg">{plan.name}</h3>
+                <div className="mb-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="font-semibold">{plan.name}</h4>
                     {isPro && <ProBadge />}
                   </div>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-4xl font-bold tracking-tight">
+                  <div className="flex items-baseline gap-1 mb-1.5">
+                    <span className="text-3xl font-bold tracking-tight">
                       ${plan.price}
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       /{formatBillingType(plan.billing_type)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {plan.description || `Get started with ${plan.name}`}
                   </p>
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-2 mb-6 flex-1">
                   {features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-sm group">
-                      <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
-                      <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+                    <li key={i} className="flex items-start gap-2 text-xs group">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">
                         {feature}
                       </span>
                     </li>
@@ -233,18 +233,18 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ Link */}
-        <div className="text-center mt-16 animate-fade-in">
-          <p className="text-muted-foreground mb-6">
+        <div className="text-center mt-10 sm:mt-12 animate-fade-in">
+          <p className="text-sm text-muted-foreground mb-4">
             Have questions? Check out our FAQ or contact support.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Button variant="outline" asChild size="lg">
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Button variant="outline" asChild>
               <Link to="/faq">
                 View FAQ
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button variant="ghost" asChild size="lg">
+            <Button variant="ghost" asChild>
               <Link to="/contact">Contact Support</Link>
             </Button>
           </div>
