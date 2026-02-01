@@ -83,79 +83,79 @@ export default function SampleReportPage() {
   const scoreInfo = getScoreLabel(overallScore);
 
   return (
-    <div className="py-12 lg:py-20">
-      <div className="container max-w-5xl">
+    <div className="py-10 sm:py-14 lg:py-16">
+      <div className="container max-w-4xl">
         {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            <FileBarChart className="h-4 w-4" />
+        <div className="text-center mb-8 sm:mb-10 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-3">
+            <FileBarChart className="h-3.5 w-3.5" />
             Sample Report
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
+          <h1 className="mb-2">
             See What Your Audit Report Looks Like
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto">
             This is an example of the comprehensive audit report you'll receive 
             when you analyze your Facebook page with Pagelyzer.
           </p>
         </div>
 
         {/* Report Card */}
-        <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden animate-fade-in-up">
+        <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden animate-fade-in-up">
           {/* Report Header */}
-          <div className="bg-primary p-6 lg:p-8 text-primary-foreground">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/10">
-                  <BarChart3 className="h-7 w-7" />
+          <div className="bg-primary p-5 sm:p-6 text-primary-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
+                  <BarChart3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{pageData.name}</h2>
-                  <p className="text-sm opacity-80">{pageData.url}</p>
+                  <h3 className="font-bold text-primary-foreground">{pageData.name}</h3>
+                  <p className="text-xs opacity-80">{pageData.url}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm opacity-80">Audit Date</p>
-                <p className="font-medium">{pageData.auditDate}</p>
+                <p className="text-xs opacity-80">Audit Date</p>
+                <p className="text-sm font-medium">{pageData.auditDate}</p>
               </div>
             </div>
           </div>
 
           {/* Overall Score */}
-          <div className="p-6 lg:p-8 border-b border-border">
-            <div className="flex flex-col md:flex-row md:items-center gap-6">
+          <div className="p-5 sm:p-6 border-b border-border">
+            <div className="flex flex-col md:flex-row md:items-center gap-5">
               <div className="flex-shrink-0">
-                <div className="relative w-32 h-32 mx-auto md:mx-0">
+                <div className="relative w-24 h-24 mx-auto md:mx-0">
                   <svg className="w-full h-full transform -rotate-90">
                     <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
+                      cx="48"
+                      cy="48"
+                      r="42"
                       stroke="currentColor"
-                      strokeWidth="12"
+                      strokeWidth="8"
                       fill="none"
                       className="text-muted"
                     />
                     <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
+                      cx="48"
+                      cy="48"
+                      r="42"
                       stroke="currentColor"
-                      strokeWidth="12"
+                      strokeWidth="8"
                       fill="none"
-                      strokeDasharray={`${(overallScore / 100) * 352} 352`}
+                      strokeDasharray={`${(overallScore / 100) * 264} 264`}
                       className="text-primary transition-all duration-1000"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold">{overallScore}</span>
-                    <span className="text-sm text-muted-foreground">/100</span>
+                    <span className="text-2xl font-bold">{overallScore}</span>
+                    <span className="text-xs text-muted-foreground">/100</span>
                   </div>
                 </div>
               </div>
               <div className="flex-1 text-center md:text-left">
-                <h3 className="text-2xl font-bold mb-2">Overall Score: <span className={scoreInfo.color}>{scoreInfo.label}</span></h3>
-                <p className="text-muted-foreground">
+                <h3 className="mb-1">Overall Score: <span className={scoreInfo.color}>{scoreInfo.label}</span></h3>
+                <p className="text-sm text-muted-foreground">
                   Your page is performing well but there's room for improvement. 
                   Focus on the recommendations below to boost your score.
                 </p>
@@ -164,14 +164,14 @@ export default function SampleReportPage() {
           </div>
 
           {/* Metrics Grid */}
-          <div className="p-6 lg:p-8 border-b border-border bg-muted/30">
-            <h3 className="font-semibold mb-4">Key Metrics</h3>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-5 sm:p-6 border-b border-border bg-muted/30">
+            <h4 className="mb-3">Key Metrics</h4>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {metrics.map((metric, i) => (
-                <div key={i} className="p-4 rounded-xl bg-card border border-border">
-                  <p className="text-sm text-muted-foreground mb-1">{metric.label}</p>
-                  <p className="text-2xl font-bold">{metric.value}</p>
-                  <p className={cn('text-sm font-medium', metric.positive ? 'text-success' : 'text-destructive')}>
+                <div key={i} className="p-3 rounded-lg bg-card border border-border">
+                  <p className="text-xs text-muted-foreground mb-0.5">{metric.label}</p>
+                  <p className="text-xl font-bold">{metric.value}</p>
+                  <p className={cn('text-xs font-medium', metric.positive ? 'text-success' : 'text-destructive')}>
                     {metric.change}
                   </p>
                 </div>
@@ -180,43 +180,43 @@ export default function SampleReportPage() {
           </div>
 
           {/* Score Breakdown */}
-          <div className="p-6 lg:p-8 border-b border-border">
-            <h3 className="font-semibold mb-4">Score Breakdown</h3>
-            <div className="space-y-4">
+          <div className="p-5 sm:p-6 border-b border-border">
+            <h4 className="mb-3">Score Breakdown</h4>
+            <div className="space-y-3">
               {scoreBreakdown.map((item, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="w-40 text-sm font-medium">{item.category}</div>
-                  <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-32 sm:w-36 text-xs font-medium">{item.category}</div>
+                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                     <div
                       className={cn('h-full rounded-full transition-all duration-1000', item.color)}
                       style={{ width: `${item.score}%` }}
                     />
                   </div>
-                  <div className="w-16 text-right text-sm font-semibold">{item.score}/100</div>
+                  <div className="w-12 text-right text-xs font-semibold">{item.score}/100</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Recommendations */}
-          <div className="p-6 lg:p-8">
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="font-semibold">Recommendations</h3>
+          <div className="p-5 sm:p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <h4>Recommendations</h4>
               <ProBadge />
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-3">
               {recommendations.map((rec, i) => (
-                <div key={i} className="p-4 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start gap-3">
+                <div key={i} className="p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start gap-2.5">
                     <div className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-lg',
+                      'flex h-8 w-8 items-center justify-center rounded-lg shrink-0',
                       rec.priority === 'high' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
                     )}>
-                      <rec.icon className="h-5 w-5" />
+                      <rec.icon className="h-4 w-4" />
                     </div>
                     <div>
-                      <h4 className="font-medium mb-1">{rec.title}</h4>
-                      <p className="text-sm text-muted-foreground">{rec.description}</p>
+                      <h4 className="font-medium text-sm mb-0.5">{rec.title}</h4>
+                      <p className="text-xs text-muted-foreground">{rec.description}</p>
                     </div>
                   </div>
                 </div>
@@ -226,21 +226,21 @@ export default function SampleReportPage() {
         </div>
 
         {/* CTA */}
-        <div className="mt-12 text-center animate-fade-in-up">
-          <h3 className="text-xl font-semibold mb-3">Ready to Audit Your Page?</h3>
-          <p className="text-muted-foreground mb-6">
+        <div className="mt-8 sm:mt-10 text-center animate-fade-in-up">
+          <h3 className="mb-2">Ready to Audit Your Page?</h3>
+          <p className="text-sm text-muted-foreground mb-5">
             Get your personalized report with actionable recommendations.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" asChild>
               <Link to="/audit">
-                <Zap className="mr-2 h-5 w-5" />
+                <Zap className="mr-2 h-4 w-4" />
                 Run Free Audit
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link to="/pricing">
-                <Crown className="mr-2 h-5 w-5" />
+                <Crown className="mr-2 h-4 w-4" />
                 Upgrade to Pro
               </Link>
             </Button>

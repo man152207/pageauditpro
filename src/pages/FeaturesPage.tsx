@@ -86,41 +86,41 @@ export default function FeaturesPage() {
   ];
 
   return (
-    <div className="py-20">
+    <div className="py-12 sm:py-16">
       <div className="container">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
+          <h1 className="mb-3">
             Powerful Features for Every Need
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-muted-foreground">
             From basic audits to advanced AI-powered insights, we have everything 
             you need to grow your Facebook presence.
           </p>
         </div>
 
         {/* Free Features */}
-        <div className="mb-20">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success">
-              <Zap className="h-5 w-5" />
+        <div className="mb-12 sm:mb-14">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="feature-icon-success">
+              <Zap className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">Free Features</h2>
-              <p className="text-muted-foreground">Get started without a credit card</p>
+              <h2>Free Features</h2>
+              <p className="text-sm text-muted-foreground">Get started without a credit card</p>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {freeFeatures.map((feature, index) => (
               <div
                 key={index}
-                className="p-6 rounded-2xl border border-border bg-card hover:shadow-card-hover transition-all"
+                className="premium-card"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10 text-success mb-4">
-                  <feature.icon className="h-6 w-6" />
+                <div className="feature-icon-success mb-3">
+                  <feature.icon className="h-4 w-4" />
                 </div>
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
+                <h4 className="font-semibold mb-1.5">{feature.title}</h4>
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
             ))}
@@ -128,27 +128,27 @@ export default function FeaturesPage() {
         </div>
 
         {/* Pro Features */}
-        <div className="mb-20">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Crown className="h-5 w-5" />
+        <div className="mb-12 sm:mb-14">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="feature-icon-primary">
+              <Crown className="h-4 w-4" />
             </div>
             <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold">Pro Features</h2>
+              <h2>Pro Features</h2>
               <ProBadge />
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {proFeatures.map((feature, index) => (
               <div
                 key={index}
-                className="p-6 rounded-2xl border border-border bg-card hover:shadow-card-hover hover:border-primary/20 transition-all"
+                className="premium-card"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
-                  <feature.icon className="h-6 w-6" />
+                <div className="feature-icon-primary mb-3">
+                  <feature.icon className="h-4 w-4" />
                 </div>
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
+                <h4 className="font-semibold mb-1.5">{feature.title}</h4>
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
             ))}
@@ -156,22 +156,22 @@ export default function FeaturesPage() {
         </div>
 
         {/* CTA */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-muted-foreground mb-6">
+        <div className="text-center mt-10">
+          <h3 className="mb-2">Ready to Get Started?</h3>
+          <p className="text-muted-foreground mb-5">
             Try our free audit first, then upgrade when you need more.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
+          <div className="flex flex-wrap gap-3 justify-center">
             <Button size="lg" asChild>
               <Link to="/audit">
-                <Zap className="mr-2 h-5 w-5" />
+                <Zap className="mr-2 h-4 w-4" />
                 Run Free Audit
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link to="/pricing">
                 View Pricing
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>

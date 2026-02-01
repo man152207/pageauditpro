@@ -104,31 +104,31 @@ export default function FAQPage() {
   };
 
   return (
-    <div className="py-12 lg:py-20">
-      <div className="container max-w-4xl">
+    <div className="py-10 sm:py-14 lg:py-16">
+      <div className="container max-w-3xl">
         {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            <HelpCircle className="h-4 w-4" />
-            Frequently Asked Questions
+        <div className="text-center mb-8 sm:mb-10 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-3">
+            <HelpCircle className="h-3.5 w-3.5" />
+            FAQ
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
+          <h1 className="mb-2">
             Got Questions? We've Got Answers
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto">
             Find answers to common questions about Pagelyzer, pricing, features, and more.
           </p>
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-10 animate-fade-in-up">
+        <div className="flex flex-wrap justify-center gap-2 mb-6 animate-fade-in-up">
           {categories.map((category) => (
             <Button
               key={category}
               variant={activeCategory === category ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveCategory(category)}
-              className="transition-all duration-200"
+              className="text-xs h-8"
             >
               {category}
             </Button>
@@ -136,37 +136,37 @@ export default function FAQPage() {
         </div>
 
         {/* FAQ Items */}
-        <div className="space-y-4 animate-fade-in-up stagger-1">
+        <div className="space-y-3 animate-fade-in-up stagger-1">
           {filteredFAQs.map((faq, index) => {
             const isOpen = openItems.includes(index);
             return (
               <div
                 key={index}
                 className={cn(
-                  'rounded-xl border bg-card overflow-hidden transition-all duration-300',
-                  isOpen ? 'border-primary/30 shadow-card' : 'border-border hover:border-primary/20'
+                  'rounded-lg border bg-card overflow-hidden transition-all duration-200',
+                  isOpen ? 'border-primary/30 shadow-sm' : 'border-border hover:border-primary/20'
                 )}
               >
                 <button
                   onClick={() => toggleItem(index)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/30 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                       {faq.category}
                     </span>
-                    <span className="font-medium">{faq.question}</span>
+                    <span className="font-medium text-sm">{faq.question}</span>
                   </div>
                   <ChevronDown className={cn(
-                    'h-5 w-5 text-muted-foreground transition-transform duration-300',
+                    'h-4 w-4 text-muted-foreground transition-transform duration-200 shrink-0',
                     isOpen && 'rotate-180'
                   )} />
                 </button>
                 <div className={cn(
-                  'overflow-hidden transition-all duration-300',
+                  'overflow-hidden transition-all duration-200',
                   isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                 )}>
-                  <div className="px-5 pb-5 text-muted-foreground border-t border-border pt-4">
+                  <div className="px-4 pb-4 text-sm text-muted-foreground border-t border-border pt-3">
                     {faq.answer}
                   </div>
                 </div>
@@ -176,20 +176,20 @@ export default function FAQPage() {
         </div>
 
         {/* Still have questions */}
-        <div className="mt-16 text-center p-8 rounded-2xl bg-muted/50 border border-border animate-fade-in-up">
-          <MessageSquare className="h-10 w-10 mx-auto mb-4 text-primary" />
-          <h3 className="text-xl font-semibold mb-2">Still Have Questions?</h3>
-          <p className="text-muted-foreground mb-6">
+        <div className="mt-10 text-center p-6 rounded-xl bg-muted/50 border border-border animate-fade-in-up">
+          <MessageSquare className="h-8 w-8 mx-auto mb-3 text-primary" />
+          <h3 className="mb-1.5">Still Have Questions?</h3>
+          <p className="text-sm text-muted-foreground mb-4">
             Can't find what you're looking for? Our support team is here to help.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button asChild>
               <Link to="/contact">
                 Contact Support
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild>
+            <Button variant="outline" asChild>
               <Link to="/audit">
                 <Zap className="mr-2 h-4 w-4" />
                 Try Free Audit
