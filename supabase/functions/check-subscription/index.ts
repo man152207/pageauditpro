@@ -101,7 +101,25 @@ serve(async (req) => {
       .eq("user_id", userId)
       .gte("created_at", startOfMonth.toISOString());
 
-    const usageStats = {
+    // Check for free audit grant for this month
+    const monthStr = startOfMonth.toISOString().split('T')[0];
+
+    const { data: freeGrant } = await supabase
+      .from("free_audit_grants")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("grant_month", monthStr)
+      .maybeSingle();
+
+    const hasFreeAuditGrant = !!freeGrant;
+    logStep("Free audit grant check", { hasFreeAuditGrant, month: monthStr });
+
+    // For users with free audit grants, show unlimited audits
+    const usageStats = hasFreeAuditGrant ? {
+      auditsUsed: auditsThisMonth || 0,
+      auditsLimit: 999999, // Use large number instead of Infinity for JSON serialization
+      auditsRemaining: 999999,
+    } : {
       auditsUsed: auditsThisMonth || 0,
       auditsLimit: limits.audits_per_month || 3,
       auditsRemaining: Math.max(0, (limits.audits_per_month || 3) - (auditsThisMonth || 0)),
@@ -109,9 +127,13 @@ serve(async (req) => {
 
     logStep("Usage stats", usageStats);
 
+    // For users with free grants, give them Pro-like features
+    const hasProAccess = isPro || hasFreeAuditGrant;
+
     const response = {
       subscribed: hasActiveSubscription,
       isPro,
+      hasFreeAuditGrant,
       subscription: subscription ? {
         id: subscription.id,
         status: subscription.status,
@@ -133,18 +155,18 @@ serve(async (req) => {
         currency: "USD",
       },
       features: {
-        canAutoAudit: isPro || featureFlags.auto_audit === true,
-        canExportPdf: isPro || featureFlags.pdf_export === true,
-        canShareReport: isPro || featureFlags.share_report === true,
-        canViewFullMetrics: isPro || featureFlags.full_metrics === true,
-        canViewDemographics: isPro || featureFlags.demographics === true,
-        canViewAIInsights: isPro || featureFlags.ai_insights === true,
+        canAutoAudit: hasProAccess || featureFlags.auto_audit === true,
+        canExportPdf: hasProAccess || featureFlags.pdf_export === true,
+        canShareReport: hasProAccess || featureFlags.share_report === true,
+        canViewFullMetrics: hasProAccess || featureFlags.full_metrics === true,
+        canViewDemographics: hasProAccess || featureFlags.demographics === true,
+        canViewAIInsights: hasProAccess || featureFlags.ai_insights === true,
       },
       limits,
       usage: usageStats,
     };
 
-    logStep("Response prepared", { isPro, planName: response.plan.name });
+    logStep("Response prepared", { isPro, hasFreeAuditGrant, planName: response.plan.name });
 
     return new Response(
       JSON.stringify(response),

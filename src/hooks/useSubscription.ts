@@ -58,7 +58,8 @@ export function useSubscription() {
   };
 
   const hasReachedLimit = (limitType: 'audits' | 'pdf_exports'): boolean => {
-    if (isPro) return false;
+    // Users with Pro or free audit grants have no limits
+    if (isPro || subscription?.hasFreeAuditGrant) return false;
     
     if (limitType === 'audits') {
       return usage.auditsRemaining <= 0;
