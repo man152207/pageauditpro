@@ -84,8 +84,11 @@ serve(async (req) => {
       );
     }
 
-    // Action: Get OAuth URL
+    // Action: Get OAuth URL for Page Connection
     if (action === "get-auth-url") {
+      // Page permissions - these require Advanced Access approval
+      // IMPORTANT: All these must be approved in Facebook Developer Console
+      // App Review > Permissions and Features
       const scopes = [
         "pages_show_list",
         "pages_read_engagement",
@@ -101,17 +104,32 @@ serve(async (req) => {
         url.searchParams.get("redirect_uri") ||
         defaultRedirectUri;
 
-      const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
-        `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `scope=${scopes}&` +
-        `state=${state}&` +
-        `response_type=code`;
+      // Build OAuth URL with properly encoded parameters using URL API
+      const authUrl = new URL("https://www.facebook.com/v19.0/dialog/oauth");
+      authUrl.searchParams.set("client_id", FB_APP_ID);
+      authUrl.searchParams.set("redirect_uri", redirectUri);
+      authUrl.searchParams.set("scope", scopes);
+      authUrl.searchParams.set("state", state);
+      authUrl.searchParams.set("response_type", "code");
 
-      console.log(`[FB-OAUTH] Generated auth URL with redirect: ${redirectUri}`);
+      const authUrlString = authUrl.toString();
+
+      console.log(`[FB-OAUTH] Generated auth URL: ${authUrlString}`);
+      console.log(`[FB-OAUTH] Redirect URI: ${redirectUri}`);
+      console.log(`[FB-OAUTH] Scopes: ${scopes}`);
 
       return new Response(
-        JSON.stringify({ authUrl, state, redirectUri }),
+        JSON.stringify({ 
+          authUrl: authUrlString, 
+          state, 
+          redirectUri,
+          debug: {
+            client_id: FB_APP_ID,
+            redirect_uri: redirectUri,
+            scope: scopes,
+            response_type: "code"
+          }
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

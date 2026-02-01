@@ -114,10 +114,13 @@ serve(async (req) => {
 
     // Action: Get login URL
     if (action === "get-login-url") {
-      const scopes = [
-        "email",
-        "public_profile",
-      ].join(",");
+      // Facebook Login scope - email requires Standard Access, public_profile is default
+      // IMPORTANT: These permissions must be approved in Facebook Developer Console
+      // App Review > Permissions and Features > email must have at least "Standard Access"
+      const scopes = ["email"].join(",");
+      
+      // URL encode the scope parameter properly
+      const encodedScopes = encodeURIComponent(scopes);
 
       const state = crypto.randomUUID(); // CSRF protection
 
@@ -128,17 +131,32 @@ serve(async (req) => {
         url.searchParams.get("redirect_uri") ||
         defaultRedirectUri;
 
-      const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
-        `client_id=${FB_APP_ID}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `scope=${scopes}&` +
-        `state=${state}&` +
-        `response_type=code`;
+      // Build OAuth URL with properly encoded parameters
+      const authUrl = new URL("https://www.facebook.com/v19.0/dialog/oauth");
+      authUrl.searchParams.set("client_id", FB_APP_ID);
+      authUrl.searchParams.set("redirect_uri", redirectUri);
+      authUrl.searchParams.set("scope", scopes);
+      authUrl.searchParams.set("state", state);
+      authUrl.searchParams.set("response_type", "code");
+      
+      const authUrlString = authUrl.toString();
 
-      console.log(`[FB-AUTH-LOGIN] Generated auth URL with redirect: ${redirectUri}`);
+      console.log(`[FB-AUTH-LOGIN] Generated auth URL: ${authUrlString}`);
+      console.log(`[FB-AUTH-LOGIN] Redirect URI: ${redirectUri}`);
+      console.log(`[FB-AUTH-LOGIN] Scopes: ${scopes}`);
 
       return new Response(
-        JSON.stringify({ authUrl, state, redirectUri }),
+        JSON.stringify({ 
+          authUrl: authUrlString, 
+          state, 
+          redirectUri,
+          debug: {
+            client_id: FB_APP_ID,
+            redirect_uri: redirectUri,
+            scope: scopes,
+            response_type: "code"
+          }
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
