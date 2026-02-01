@@ -40,18 +40,18 @@ export function StatCard({
   }
 
   return (
-    <div className={cn('stat-card group', className)}>
+    <div className={cn('stat-card group transition-all duration-200', className)}>
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
         {Icon && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-200 group-hover:bg-primary/15">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
             <Icon className="h-4 w-4" />
           </div>
         )}
       </div>
       
       <div className="mt-4">
-        <p className="text-3xl font-bold tracking-tight">{value}</p>
+        <p className="text-3xl font-bold tracking-tight group-hover:text-primary transition-colors">{value}</p>
         {description && (
           <p className="text-sm text-muted-foreground mt-1">{description}</p>
         )}

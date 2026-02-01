@@ -126,13 +126,13 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-enter">
       <PageHeader
         title="Audit History"
         description="Track your audit activity and performance trends over time."
         actions={
           audits.length > 0 && (
-            <Button variant="outline" onClick={exportToCSV}>
+            <Button variant="outline" onClick={exportToCSV} className="btn-ripple">
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
@@ -148,6 +148,7 @@ export default function HistoryPage() {
           icon={FileBarChart}
           description="All time"
           loading={isLoading}
+          className="card-hover-lift"
         />
         <StatCard
           title="This Month"
@@ -155,6 +156,7 @@ export default function HistoryPage() {
           icon={Calendar}
           description={format(thisMonthStart, 'MMMM yyyy')}
           loading={isLoading}
+          className="card-hover-lift"
         />
         <StatCard
           title="Avg Score (This Month)"
@@ -166,6 +168,7 @@ export default function HistoryPage() {
               : undefined
           }
           loading={isLoading}
+          className="card-hover-lift"
         />
         <StatCard
           title="Best Score"
@@ -173,6 +176,7 @@ export default function HistoryPage() {
           icon={TrendingUp}
           description="All time high"
           loading={isLoading}
+          className="card-hover-lift"
         />
       </div>
 
@@ -216,9 +220,9 @@ export default function HistoryPage() {
                       <Link
                         key={audit.id}
                         to={`/dashboard/reports/${audit.id}`}
-                        className="flex items-center gap-4 p-3 rounded-lg bg-card border border-border hover:border-primary/30 hover:shadow-sm transition-all group"
+                        className="flex items-center gap-4 p-3 rounded-lg bg-card border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 group card-hover-lift"
                       >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/15 transition-colors">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200 group-hover:scale-105">
                           <FileBarChart className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -231,11 +235,11 @@ export default function HistoryPage() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xl font-bold">
+                          <span className="text-xl font-bold group-hover:text-primary transition-colors">
                             {audit.score_total ?? '—'}
                           </span>
                           <span className="text-sm text-muted-foreground">/ 100</span>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
                         </div>
                       </Link>
                     ))}
