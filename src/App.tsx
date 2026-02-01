@@ -20,6 +20,7 @@ import ContactPage from "@/pages/ContactPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "@/pages/TermsOfServicePage";
 import DataDeletionPage from "@/pages/DataDeletionPage";
+import PublicReportPage from "@/pages/PublicReportPage";
 import NotFound from "@/pages/NotFound";
 
 // OAuth Callback Pages
@@ -32,6 +33,7 @@ import ManualAuditPage from "@/pages/dashboard/ManualAuditPage";
 import AuditReportPage from "@/pages/dashboard/AuditReportPage";
 import ReportsListPage from "@/pages/dashboard/ReportsListPage";
 import HistoryPage from "@/pages/dashboard/HistoryPage";
+import CompareReportsPage from "@/pages/dashboard/CompareReportsPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
 import SettingsPage from "@/pages/dashboard/SettingsPage";
 import BillingPage from "@/pages/dashboard/BillingPage";
@@ -76,6 +78,9 @@ const App = () => (
             <Route path="/api/auth/facebook/login/callback" element={<FacebookLoginCallback />} />
             <Route path="/api/auth/facebook/page/callback" element={<FacebookPageCallback />} />
 
+            {/* Public Shared Report (no auth required) */}
+            <Route path="/r/:shareSlug" element={<PublicReportPage />} />
+
             {/* Marketing Pages */}
             <Route element={<MarketingLayout />}>
               <Route path="/" element={<HomePage />} />
@@ -106,6 +111,7 @@ const App = () => (
               <Route path="reports" element={<ReportsListPage />} />
               <Route path="reports/:auditId" element={<AuditReportPage />} />
               <Route path="history" element={<HistoryPage />} />
+              <Route path="compare" element={<CompareReportsPage />} />
               <Route path="billing" element={<BillingPage />} />
               <Route path="paypal-callback" element={<PayPalCallback />} />
               <Route path="profile" element={<ProfilePage />} />

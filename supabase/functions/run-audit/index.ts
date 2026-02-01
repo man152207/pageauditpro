@@ -271,6 +271,9 @@ serve(async (req) => {
       dataAvailability.posts = false;
     }
 
+    // Demographics will be fetched later after hasProAccess is calculated
+    let demographics: any = null;
+
     // Calculate metrics
     const followers = pageInfo.followers_count || pageInfo.fan_count || 1000;
     let totalLikes = 0;
@@ -327,6 +330,37 @@ serve(async (req) => {
     const hasProAccess = isPro || hasFreeAuditGrant;
     const recommendations = generateRecommendations(scores, metrics, hasProAccess);
 
+    // Fetch demographics for Pro users (now that hasProAccess is defined)
+    if (hasProAccess) {
+      try {
+        const demoUrl = `https://graph.facebook.com/v19.0/${pageId}/insights?` +
+          `metric=page_fans_gender_age,page_fans_city,page_fans_country&` +
+          `period=lifetime&access_token=${pageToken}`;
+        
+        const demoRes = await fetch(demoUrl);
+        const demoData = await demoRes.json();
+        
+        if (!demoData.error && demoData.data) {
+          const genderAge = demoData.data.find((d: any) => d.name === 'page_fans_gender_age');
+          const cities = demoData.data.find((d: any) => d.name === 'page_fans_city');
+          const countries = demoData.data.find((d: any) => d.name === 'page_fans_country');
+          
+          demographics = {
+            genderAge: genderAge?.values?.[0]?.value || null,
+            cities: cities?.values?.[0]?.value || null,
+            countries: countries?.values?.[0]?.value || null,
+          };
+          dataAvailability.demographics = true;
+        } else {
+          dataAvailability.demographics = false;
+        }
+        logStep("Demographics fetched", { success: !!demographics });
+      } catch (e) {
+        logStep("Demographics fetch failed", { error: e });
+        dataAvailability.demographics = false;
+      }
+    }
+
     // Create audit record
     const { data: audit, error: auditError } = await supabase
       .from("audits")
@@ -380,6 +414,7 @@ serve(async (req) => {
         },
         computed_metrics: metrics,
         data_availability: dataAvailability,
+        demographics: demographics,
       });
       logStep("Metrics stored for Pro/Grant user");
     }

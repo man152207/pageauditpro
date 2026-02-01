@@ -9,17 +9,19 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   History,
   TrendingUp,
-  TrendingDown,
   Calendar,
   BarChart3,
   FileBarChart,
   ArrowRight,
+  Download,
 } from 'lucide-react';
 import { format, formatDistanceToNow, startOfMonth, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function HistoryPage() {
   const { user } = useAuth();
@@ -86,11 +88,56 @@ export default function HistoryPage() {
   const displayDates = isPro ? sortedDates : sortedDates.slice(0, 7);
   const hasMoreHistory = !isPro && sortedDates.length > 7;
 
+  // Export to CSV function
+  const exportToCSV = () => {
+    if (audits.length === 0) {
+      toast.error('No audits to export');
+      return;
+    }
+
+    const headers = ['Date', 'Time', 'Page Name', 'Overall Score', 'Engagement', 'Consistency', 'Readiness', 'Audit Type'];
+    const rows = audits.map(a => {
+      const scoreBreakdown = a.score_breakdown as any || {};
+      return [
+        format(new Date(a.created_at), 'yyyy-MM-dd'),
+        format(new Date(a.created_at), 'HH:mm'),
+        `"${a.page_name || 'Untitled'}"`,
+        a.score_total || 0,
+        scoreBreakdown.engagement || 0,
+        scoreBreakdown.consistency || 0,
+        scoreBreakdown.readiness || 0,
+        a.audit_type,
+      ];
+    });
+    
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-history-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('History exported successfully!');
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Audit History"
         description="Track your audit activity and performance trends over time."
+        actions={
+          audits.length > 0 && (
+            <Button variant="outline" onClick={exportToCSV}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          )
+        }
       />
 
       {/* Stats */}
