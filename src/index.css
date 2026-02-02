@@ -3,45 +3,45 @@
 @tailwind utilities;
 
 /* =====================================================
-   PAGELYZER DESIGN SYSTEM v3.0
-   Premium SaaS - Iconosquare-inspired cleanliness
-   Strong hierarchy, generous whitespace, tasteful depth
+   PAGELYZER DESIGN SYSTEM v4.0
+   Premium SaaS - Yoast-inspired purple/green aesthetic
+   Bold typography, pill buttons, gradient hero sections
    ===================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @layer base {
   :root {
-    /* ========== PREMIUM BRAND COLORS ========== */
-    /* Primary - Facebook Blue (slightly refined) */
-    --primary: 214 89% 52%;
+    /* ========== YOAST-INSPIRED BRAND COLORS ========== */
+    /* Primary - Magenta/Purple */
+    --primary: 326 55% 42%;
     --primary-foreground: 0 0% 100%;
     
-    /* Background - Subtle warmth */
-    --background: 220 14% 98%;
-    --foreground: 222 47% 11%;
+    /* Background - Clean white */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 15%;
 
-    /* Cards - Pure white for contrast */
+    /* Cards - Pure white */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 240 10% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 240 10% 15%;
 
-    /* Secondary - Cool gray */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary - Light gray */
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 15%;
 
     /* Muted */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 5% 45%;
 
-    /* Accent - Vibrant teal */
-    --accent: 168 76% 42%;
+    /* Accent - Yoast Green for trust/success */
+    --accent: 86 66% 43%;
     --accent-foreground: 0 0% 100%;
 
     /* ========== SEMANTIC COLORS ========== */
-    --success: 142 71% 45%;
+    --success: 86 66% 43%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
@@ -50,71 +50,76 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Pro/Premium - Gold gradient base */
-    --pro: 38 100% 50%;
-    --pro-foreground: 0 0% 0%;
+    /* Pro/Premium - Purple gradient */
+    --pro: 326 55% 42%;
+    --pro-foreground: 0 0% 100%;
 
     /* ========== UI ELEMENTS ========== */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 214 89% 52%;
-    --radius: 0.75rem;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 326 55% 42%;
+    --radius: 1.25rem;
 
     /* ========== CHART COLORS ========== */
-    --chart-1: 214 89% 52%;
-    --chart-2: 168 76% 42%;
-    --chart-3: 142 71% 45%;
-    --chart-4: 38 92% 50%;
+    --chart-1: 326 55% 42%;
+    --chart-2: 86 66% 43%;
+    --chart-3: 287 55% 36%;
+    --chart-4: 78 65% 52%;
     --chart-5: 262 83% 58%;
+
+    /* ========== YOAST GRADIENT COLORS ========== */
+    --gradient-start: 287 55% 36%;
+    --gradient-mid: 326 55% 42%;
+    --gradient-end: 78 65% 52%;
 
     /* ========== PREMIUM SHADOWS ========== */
     --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.03);
-    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.03);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.03);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.03);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.03);
-    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.15);
-    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.02);
-    --shadow-card-hover: 0 10px 20px -5px rgb(0 0 0 / 0.08), 0 4px 8px -4px rgb(0 0 0 / 0.04);
-    --shadow-glow: 0 0 40px -10px hsl(214 89% 52% / 0.35);
-    --shadow-glow-accent: 0 0 40px -10px hsl(168 76% 42% / 0.35);
-    --shadow-button: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-button-hover: 0 4px 8px -2px rgb(0 0 0 / 0.1);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    --shadow-md: 0 4px 8px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+    --shadow-lg: 0 12px 20px -4px rgb(0 0 0 / 0.1), 0 4px 8px -4px rgb(0 0 0 / 0.05);
+    --shadow-xl: 0 24px 32px -6px rgb(0 0 0 / 0.12), 0 10px 12px -6px rgb(0 0 0 / 0.05);
+    --shadow-2xl: 0 32px 56px -12px rgb(0 0 0 / 0.2);
+    --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.03);
+    --shadow-card-hover: 0 16px 32px -8px rgb(0 0 0 / 0.12), 0 6px 12px -6px rgb(0 0 0 / 0.06);
+    --shadow-glow: 0 0 50px -12px hsl(326 55% 42% / 0.4);
+    --shadow-glow-accent: 0 0 50px -12px hsl(86 66% 43% / 0.4);
+    --shadow-button: 0 2px 4px 0 rgb(0 0 0 / 0.08);
+    --shadow-button-hover: 0 6px 12px -2px rgb(0 0 0 / 0.15);
 
     /* ========== SIDEBAR ========== */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 214 89% 52%;
+    --sidebar-foreground: 240 10% 15%;
+    --sidebar-primary: 326 55% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 93%;
-    --sidebar-ring: 214 89% 52%;
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 240 10% 15%;
+    --sidebar-border: 240 6% 93%;
+    --sidebar-ring: 326 55% 42%;
   }
 
   .dark {
-    --background: 224 47% 6%;
-    --foreground: 210 40% 96%;
+    --background: 240 10% 6%;
+    --foreground: 0 0% 95%;
 
-    --card: 224 47% 8%;
-    --card-foreground: 210 40% 96%;
+    --card: 240 10% 9%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 224 47% 8%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 240 10% 9%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 214 89% 58%;
+    --primary: 326 60% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 14%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 240 8% 15%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 217 33% 14%;
-    --muted-foreground: 215 20% 60%;
+    --muted: 240 8% 15%;
+    --muted-foreground: 240 5% 60%;
 
-    --accent: 168 76% 45%;
+    --accent: 86 66% 48%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 142 71% 50%;
+    --success: 86 66% 48%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 55%;
@@ -123,25 +128,25 @@
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --pro: 38 100% 55%;
-    --pro-foreground: 0 0% 0%;
+    --pro: 326 60% 52%;
+    --pro-foreground: 0 0% 100%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 214 89% 58%;
+    --border: 240 8% 18%;
+    --input: 240 8% 18%;
+    --ring: 326 60% 52%;
 
-    --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.4);
-    --shadow-card-hover: 0 16px 32px -8px rgb(0 0 0 / 0.5);
-    --shadow-glow: 0 0 40px -10px hsl(214 89% 58% / 0.25);
+    --shadow-card: 0 2px 10px -2px rgb(0 0 0 / 0.5);
+    --shadow-card-hover: 0 20px 40px -10px rgb(0 0 0 / 0.6);
+    --shadow-glow: 0 0 50px -12px hsl(326 60% 52% / 0.3);
 
-    --sidebar-background: 224 47% 7%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 214 89% 58%;
+    --sidebar-background: 240 10% 7%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 326 60% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 14%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 214 89% 58%;
+    --sidebar-accent: 240 8% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 8% 18%;
+    --sidebar-ring: 326 60% 52%;
   }
 }
 
@@ -156,33 +161,33 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* ========== PREMIUM TYPOGRAPHY ========== */
+  /* ========== YOAST-STYLE BOLD TYPOGRAPHY ========== */
   h1 {
-    @apply text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    @apply text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] font-extrabold tracking-tight;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
     color: hsl(var(--foreground));
   }
 
   h2 {
-    @apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight;
-    line-height: 1.15;
-    letter-spacing: -0.015em;
+    @apply text-3xl sm:text-4xl md:text-[2.75rem] font-extrabold tracking-tight;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
   }
 
   h3 {
-    @apply text-xl sm:text-2xl font-semibold;
-    line-height: 1.25;
+    @apply text-2xl sm:text-[1.75rem] font-bold;
+    line-height: 1.2;
     letter-spacing: -0.01em;
   }
 
   h4 {
-    @apply text-lg sm:text-xl font-semibold;
-    line-height: 1.3;
+    @apply text-xl sm:text-[1.375rem] font-bold;
+    line-height: 1.25;
   }
 
   p {
-    @apply text-base leading-relaxed;
+    @apply text-base sm:text-lg leading-relaxed;
     color: hsl(var(--muted-foreground));
   }
 
@@ -316,10 +321,10 @@
     @apply feature-icon bg-muted text-muted-foreground;
   }
 
-  /* ========== GRADIENTS ========== */
+  /* ========== YOAST-STYLE GRADIENTS ========== */
   .gradient-text {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    background-image: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--primary)) 50%, hsl(var(--accent)) 100%);
   }
 
   .gradient-bg-primary {
@@ -327,11 +332,19 @@
   }
 
   .gradient-bg-subtle {
-    @apply bg-gradient-to-b from-muted/30 to-transparent;
+    @apply bg-gradient-to-b from-muted/20 to-transparent;
   }
 
   .gradient-bg-hero {
-    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(220 14% 96%) 100%);
+    background: linear-gradient(135deg, hsl(287 55% 36% / 0.95) 0%, hsl(326 55% 42%) 40%, hsl(78 65% 52% / 0.8) 100%);
+  }
+
+  .gradient-bg-hero-soft {
+    background: linear-gradient(135deg, hsl(287 55% 36% / 0.1) 0%, hsl(326 55% 42% / 0.08) 40%, hsl(78 65% 52% / 0.06) 100%);
+  }
+
+  .gradient-border {
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--primary)), hsl(var(--accent)));
   }
 
   /* ========== BADGES ========== */
@@ -425,15 +438,15 @@
     @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full;
   }
 
-  /* ========== BUTTONS ========== */
+  /* ========== YOAST-STYLE BUTTONS ========== */
   .btn-interactive {
-    @apply transition-all duration-200;
+    @apply transition-all duration-250;
     box-shadow: var(--shadow-xs);
   }
 
   .btn-interactive:hover:not(:disabled) {
-    box-shadow: var(--shadow-sm);
-    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
   }
 
   .btn-interactive:active:not(:disabled) {
@@ -446,17 +459,28 @@
   }
 
   .btn-glow:hover {
-    box-shadow: 0 0 50px -10px hsl(var(--primary) / 0.45);
+    box-shadow: 0 0 60px -12px hsl(var(--primary) / 0.5);
   }
 
   .btn-premium {
-    @apply relative overflow-hidden;
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(214 89% 48%) 100%);
-    box-shadow: var(--shadow-button), inset 0 1px 0 0 rgb(255 255 255 / 0.1);
+    @apply relative overflow-hidden rounded-full;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--primary)) 100%);
+    box-shadow: var(--shadow-button), inset 0 1px 0 0 rgb(255 255 255 / 0.15);
   }
 
   .btn-premium:hover {
-    box-shadow: var(--shadow-button-hover), inset 0 1px 0 0 rgb(255 255 255 / 0.15);
+    box-shadow: var(--shadow-button-hover), inset 0 1px 0 0 rgb(255 255 255 / 0.2);
+    transform: translateY(-3px);
+  }
+
+  .btn-success {
+    @apply rounded-full bg-accent text-accent-foreground;
+    box-shadow: var(--shadow-button);
+  }
+
+  .btn-success:hover {
+    @apply bg-accent/90;
+    box-shadow: var(--shadow-button-hover);
     transform: translateY(-2px);
   }
 
@@ -527,36 +551,53 @@
     @apply flex-1 h-0.5 bg-border mx-4;
   }
 
-  /* ========== HERO PATTERNS ========== */
+  /* ========== YOAST-STYLE HERO PATTERNS ========== */
   .hero-pattern {
     background-image: 
-      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(214 89% 52% / 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse 60% 40% at 80% 50%, hsl(168 76% 42% / 0.05) 0%, transparent 50%);
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(326 55% 42% / 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 50%, hsl(86 66% 43% / 0.08) 0%, transparent 50%);
   }
 
   .hero-pattern-premium {
+    background: linear-gradient(135deg, 
+      hsl(287 55% 36% / 0.95) 0%, 
+      hsl(326 55% 42% / 0.9) 35%, 
+      hsl(326 55% 42% / 0.85) 60%,
+      hsl(78 65% 52% / 0.7) 100%
+    );
+  }
+
+  .hero-pattern-soft {
     background-image: 
-      radial-gradient(ellipse 100% 80% at 50% 0%, hsl(214 89% 52% / 0.1) 0%, transparent 60%),
-      radial-gradient(circle at 20% 50%, hsl(214 89% 52% / 0.04) 0%, transparent 30%),
-      radial-gradient(circle at 80% 70%, hsl(168 76% 42% / 0.03) 0%, transparent 30%);
+      radial-gradient(ellipse 120% 80% at 50% 0%, hsl(326 55% 42% / 0.12) 0%, transparent 60%),
+      radial-gradient(circle at 15% 60%, hsl(287 55% 36% / 0.08) 0%, transparent 35%),
+      radial-gradient(circle at 85% 40%, hsl(86 66% 43% / 0.08) 0%, transparent 35%);
   }
 
   .floating-orb {
-    @apply absolute rounded-full blur-3xl opacity-50;
-    animation: float-slow 10s ease-in-out infinite;
+    @apply absolute rounded-full blur-3xl opacity-40;
+    animation: float-slow 12s ease-in-out infinite;
+  }
+
+  .floating-orb-purple {
+    background: linear-gradient(135deg, hsl(287 55% 36% / 0.5), hsl(326 55% 42% / 0.3));
+  }
+
+  .floating-orb-green {
+    background: linear-gradient(135deg, hsl(78 65% 52% / 0.4), hsl(86 66% 43% / 0.2));
   }
 
   /* Vector decorations */
   .vector-dots {
-    background-image: radial-gradient(circle at 1px 1px, hsl(var(--primary) / 0.08) 1px, transparent 0);
-    background-size: 28px 28px;
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--primary) / 0.1) 1px, transparent 0);
+    background-size: 32px 32px;
   }
 
   .vector-grid {
     background-image: 
-      linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px);
-    background-size: 48px 48px;
+      linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: 56px 56px;
   }
 
   /* ========== SCORE RING ========== */
@@ -609,23 +650,39 @@
     @apply h-10 w-24;
   }
 
-  /* ========== MOST POPULAR BADGE ========== */
+  /* ========== YOAST-STYLE MOST POPULAR BADGE ========== */
   .popular-badge {
-    @apply absolute -top-3 left-1/2 -translate-x-1/2 z-10;
-    @apply px-4 py-1.5 text-xs font-bold rounded-full uppercase tracking-wide;
-    @apply bg-primary text-primary-foreground;
-    box-shadow: var(--shadow-md);
+    @apply absolute -top-3.5 left-1/2 -translate-x-1/2 z-10;
+    @apply px-5 py-2 text-xs font-bold rounded-full uppercase tracking-wide;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--primary)));
+    color: hsl(var(--primary-foreground));
+    box-shadow: var(--shadow-lg), 0 0 30px -8px hsl(var(--primary) / 0.5);
   }
 
   .popular-card {
-    @apply border-primary/40 relative;
-    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.2), var(--shadow-lg);
+    @apply relative;
+    border: 2px solid hsl(var(--primary) / 0.5);
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.1), var(--shadow-xl), 0 0 50px -20px hsl(var(--primary) / 0.3);
   }
 
   .popular-card::before {
     content: '';
-    @apply absolute inset-0 rounded-2xl pointer-events-none;
-    box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.15);
+    @apply absolute inset-0 rounded-[1.5rem] pointer-events-none;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 50%);
+  }
+
+  /* Trust rating stars */
+  .trust-stars {
+    @apply inline-flex items-center gap-0.5;
+  }
+
+  .trust-stars svg {
+    @apply h-4 w-4 text-yellow-400 fill-yellow-400;
+  }
+
+  /* Pill button override */
+  .btn-pill {
+    @apply rounded-full px-8;
   }
 }
 

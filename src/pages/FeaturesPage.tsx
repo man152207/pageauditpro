@@ -86,85 +86,91 @@ export default function FeaturesPage() {
   ];
 
   return (
-    <div className="py-12 sm:py-16">
+    <div className="py-16 sm:py-20 lg:py-24">
       <div className="container">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-          <h1 className="mb-3">
+        <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-16 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-5">
+            <Sparkles className="h-4 w-4" />
+            Features
+          </div>
+          <h1 className="mb-4">
             Powerful Features for Every Need
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-lg text-muted-foreground">
             From basic audits to advanced AI-powered insights, we have everything 
             you need to grow your Facebook presence.
           </p>
         </div>
 
         {/* Free Features */}
-        <div className="mb-12 sm:mb-14">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="feature-icon-success">
-              <Zap className="h-4 w-4" />
+        <div className="mb-16 sm:mb-20">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-14 w-14 rounded-2xl bg-accent/10 flex items-center justify-center">
+              <Zap className="h-7 w-7 text-accent" />
             </div>
             <div>
-              <h2>Free Features</h2>
-              <p className="text-sm text-muted-foreground">Get started without a credit card</p>
+              <h2 className="text-2xl">Free Features</h2>
+              <p className="text-muted-foreground">Get started without a credit card</p>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {freeFeatures.map((feature, index) => (
               <div
                 key={index}
-                className="premium-card"
+                className="premium-card p-7 animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.08}s` }}
               >
-                <div className="feature-icon-success mb-3">
-                  <feature.icon className="h-4 w-4" />
+                <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center mb-5">
+                  <feature.icon className="h-6 w-6 text-accent" />
                 </div>
-                <h4 className="font-semibold mb-1.5">{feature.title}</h4>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                <h4 className="font-bold mb-2">{feature.title}</h4>
+                <p className="text-muted-foreground">{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Pro Features */}
-        <div className="mb-12 sm:mb-14">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="feature-icon-primary">
-              <Crown className="h-4 w-4" />
+        <div className="mb-16 sm:mb-20">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Crown className="h-7 w-7 text-primary" />
             </div>
-            <div className="flex items-center gap-2">
-              <h2>Pro Features</h2>
-              <ProBadge />
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl">Pro Features</h2>
+              <ProBadge size="md" />
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {proFeatures.map((feature, index) => (
               <div
                 key={index}
-                className="premium-card"
+                className="premium-card p-7 animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.06}s` }}
               >
-                <div className="feature-icon-primary mb-3">
-                  <feature.icon className="h-4 w-4" />
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
+                  <feature.icon className="h-6 w-6 text-primary" />
                 </div>
-                <h4 className="font-semibold mb-1.5">{feature.title}</h4>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                <h4 className="font-bold mb-2">{feature.title}</h4>
+                <p className="text-muted-foreground">{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* CTA */}
-        <div className="text-center mt-10">
-          <h3 className="mb-2">Ready to Get Started?</h3>
-          <p className="text-muted-foreground mb-5">
+        <div className="text-center mt-12 p-10 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20">
+          <h3 className="mb-3">Ready to Get Started?</h3>
+          <p className="text-muted-foreground mb-6 text-lg">
             Try our free audit first, then upgrade when you need more.
           </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Button size="lg" asChild>
-              <Link to="/audit">
-                <Zap className="mr-2 h-4 w-4" />
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Button size="lg" variant="success" asChild>
+              <Link to="/dashboard/audit">
+                <Zap className="mr-2 h-5 w-5" />
                 Run Free Audit
               </Link>
             </Button>

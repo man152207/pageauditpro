@@ -14,19 +14,23 @@ export const ProBadge = React.forwardRef<HTMLSpanElement, ProBadgeProps>(
       <span
         ref={ref}
         className={cn(
-          'pro-badge relative overflow-hidden inline-flex items-center gap-1',
+          'relative overflow-hidden inline-flex items-center gap-1 rounded-full font-bold uppercase tracking-wide',
+          'bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground',
           {
-            'text-xs px-2 py-0.5': size === 'sm',
-            'text-sm px-2.5 py-1': size === 'md',
-            'text-base px-3 py-1.5': size === 'lg',
+            'text-[10px] px-2.5 py-1': size === 'sm',
+            'text-xs px-3 py-1.5': size === 'md',
+            'text-sm px-4 py-2': size === 'lg',
           },
-          glow && 'animate-pulse-glow',
+          glow && 'animate-glow-pulse',
           className
         )}
+        style={{
+          boxShadow: '0 2px 10px hsl(var(--primary) / 0.4)',
+        }}
       >
         {/* Shimmer effect */}
         <span className="absolute inset-0 overflow-hidden">
-          <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/25 to-transparent" />
         </span>
         
         <Crown className={cn('relative z-10', {
