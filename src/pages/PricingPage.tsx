@@ -139,21 +139,22 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="py-12 sm:py-16 lg:py-20">
+    <div className="py-16 sm:py-20 lg:py-24">
       <div className="container">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 animate-fade-in">
-          <h1 className="mb-3">
+        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 animate-fade-in">
+          <div className="badge-primary mb-4">Pricing</div>
+          <h1 className="mb-4">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-lg text-muted-foreground">
             Start free and upgrade when you need advanced insights and automation.
             No hidden fees, cancel anytime.
           </p>
         </div>
 
         {/* Pricing Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
           {plans.map((plan, index) => {
             const isPopular = isPlanPopular(plan);
             const isPro = isPlanPro(plan);
@@ -164,44 +165,44 @@ export default function PricingPage() {
               <div
                 key={plan.id}
                 className={cn(
-                  'relative rounded-xl border p-5 transition-all duration-200 animate-fade-in-up flex flex-col min-h-[420px]',
+                  'relative rounded-2xl border p-6 transition-all duration-300 animate-fade-in-up flex flex-col',
                   `stagger-${Math.min(index + 1, 5)}`,
                   isPopular
-                    ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10 hover:shadow-xl scale-[1.02]'
-                    : 'border-border bg-card hover:border-primary/30 hover:shadow-card-hover hover:-translate-y-1'
+                    ? 'border-primary bg-gradient-to-b from-primary/5 to-transparent shadow-xl shadow-primary/10 scale-[1.03] z-10'
+                    : 'border-border bg-card hover:border-primary/30 hover:shadow-lg hover:-translate-y-1'
                 )}
               >
                 {isPopular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-glow animate-pulse-glow">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg animate-glow-pulse">
                       <Sparkles className="h-3.5 w-3.5" />
                       Most Popular
                     </span>
                   </div>
                 )}
 
-                <div className="mb-5">
+                <div className="mb-6 pt-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-semibold">{plan.name}</h4>
-                    {isPro && <ProBadge />}
+                    <h3 className="font-bold text-lg">{plan.name}</h3>
+                    {isPro && <ProBadge size="sm" />}
                   </div>
-                  <div className="flex items-baseline gap-1 mb-1.5">
-                    <span className="text-3xl font-bold tracking-tight">
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {plan.description || `Get started with ${plan.name}`}
+                  </p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold tracking-tight">
                       ${plan.price}
                     </span>
                     <span className="text-sm text-muted-foreground">
                       /{formatBillingType(plan.billing_type)}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {plan.description || `Get started with ${plan.name}`}
-                  </p>
                 </div>
 
-                <ul className="space-y-2 mb-6 flex-1">
+                <ul className="space-y-3 mb-8 flex-1">
                   {features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs group">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
+                    <li key={i} className="flex items-start gap-2.5 text-sm">
+                      <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
                       <span className="text-muted-foreground">
                         {feature}
                       </span>
@@ -210,7 +211,10 @@ export default function PricingPage() {
                 </ul>
 
                 <Button
-                  className="w-full"
+                  className={cn(
+                    'w-full',
+                    isPopular && 'btn-premium shadow-lg'
+                  )}
                   variant={isPopular ? 'default' : 'outline'}
                   size="lg"
                   onClick={() => handlePlanClick(plan)}
@@ -232,8 +236,42 @@ export default function PricingPage() {
           })}
         </div>
 
+        {/* Comparison Table */}
+        <div className="mt-16 sm:mt-20 max-w-4xl mx-auto animate-fade-in-up">
+          <h3 className="text-center text-xl font-bold mb-8">Compare Plans</h3>
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 border-b border-border font-semibold text-sm">
+              <div>Feature</div>
+              <div className="text-center">Free</div>
+              <div className="text-center">Pro</div>
+            </div>
+            {[
+              { feature: 'Manual Page Audits', free: '3/month', pro: 'Unlimited' },
+              { feature: 'Health Score', free: '✓', pro: '✓' },
+              { feature: 'Basic Recommendations', free: '✓', pro: '✓' },
+              { feature: 'Facebook Auto-Connect', free: '—', pro: '✓' },
+              { feature: 'AI-Powered Insights', free: '—', pro: '✓' },
+              { feature: 'PDF Export', free: '—', pro: '✓' },
+              { feature: 'Shareable Links', free: '—', pro: '✓' },
+              { feature: 'Historical Comparisons', free: '—', pro: '✓' },
+            ].map((row, i) => (
+              <div 
+                key={i} 
+                className={cn(
+                  'grid grid-cols-3 gap-4 p-4 text-sm',
+                  i % 2 === 0 ? 'bg-card' : 'bg-muted/30'
+                )}
+              >
+                <div className="font-medium">{row.feature}</div>
+                <div className="text-center text-muted-foreground">{row.free}</div>
+                <div className="text-center text-primary font-medium">{row.pro}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* FAQ Link */}
-        <div className="text-center mt-10 sm:mt-12 animate-fade-in">
+        <div className="text-center mt-12 sm:mt-16 animate-fade-in">
           <p className="text-sm text-muted-foreground mb-4">
             Have questions? Check out our FAQ or contact support.
           </p>

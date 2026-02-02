@@ -1,18 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAudit } from '@/hooks/useAudits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePdfExport } from '@/hooks/usePdfExport';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScoreCard } from '@/components/ui/score-card';
 import { ProBadge } from '@/components/ui/pro-badge';
-import { PageHeader } from '@/components/ui/page-header';
 import { ReportSection } from '@/components/report/ReportSection';
+import { HeroScoreSection } from '@/components/report/HeroScoreSection';
+import { ActionCard, ImpactLevel, EffortLevel } from '@/components/report/ActionCard';
+import { EngagementChart, PostTypeChart, BestTimeHeatmap } from '@/components/report/EngagementChart';
 import { ReportFilters, ReportCategory, ReportPriority } from '@/components/report/ReportFilters';
 import { AiInsightsSection } from '@/components/report/AiInsightsSection';
 import { DemographicsSection } from '@/components/report/DemographicsSection';
 import { ShareReportDialog } from '@/components/report/ShareReportDialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   LockedSection,
   MetricsPlaceholder,
@@ -24,20 +26,20 @@ import {
   AlertCircle,
   ArrowLeft,
   BarChart3,
-  CheckCircle2,
   Download,
   FileBarChart,
   Loader2,
   MessageSquare,
+  RefreshCw,
   Share2,
   Sparkles,
-  ThumbsUp,
-  TrendingUp,
   Users,
-  Zap,
+  Facebook,
+  Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 
 export default function AuditReportPage() {
   const { auditId } = useParams<{ auditId: string }>();
@@ -50,13 +52,39 @@ export default function AuditReportPage() {
   const [categoryFilter, setCategoryFilter] = useState<ReportCategory>('all');
   const [priorityFilter, setPriorityFilter] = useState<ReportPriority>('all');
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Track scroll for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 120);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your report...</p>
+      <div className="space-y-8 animate-pulse">
+        {/* Skeleton header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        
+        {/* Skeleton hero score */}
+        <Skeleton className="h-72 w-full rounded-2xl" />
+        
+        {/* Skeleton sections */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Skeleton className="h-48 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
         </div>
       </div>
     );
@@ -89,40 +117,95 @@ export default function AuditReportPage() {
     return true;
   });
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-destructive bg-destructive/10';
-      case 'medium': return 'text-warning bg-warning/10';
-      case 'low': return 'text-muted-foreground bg-muted';
-      default: return 'bg-muted';
-    }
+  const handleInsightsGenerated = () => {
+    queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
   };
 
-  const handleInsightsGenerated = () => {
-    // Refetch the report to get the new insights
-    queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
+  // Generate mock chart data (in production, this would come from the API)
+  const generateEngagementData = () => {
+    const data = [];
+    for (let i = 30; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      data.push({
+        date: format(date, 'MMM d'),
+        value: Math.floor(Math.random() * 500) + 100,
+        previousValue: Math.floor(Math.random() * 400) + 80,
+      });
+    }
+    return data;
+  };
+
+  const postTypeData = [
+    { type: 'Photos', engagement: 450, posts: 12 },
+    { type: 'Videos', engagement: 820, posts: 5 },
+    { type: 'Links', engagement: 180, posts: 8 },
+    { type: 'Status', engagement: 95, posts: 15 },
+  ];
+
+  const heatmapData = (() => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const hours = [9, 12, 15, 18, 21];
+    const data: { day: string; hour: number; value: number }[] = [];
+    days.forEach(day => {
+      hours.forEach(hour => {
+        data.push({
+          day,
+          hour,
+          value: Math.floor(Math.random() * 100),
+        });
+      });
+    });
+    return data;
+  })();
+
+  const mapPriorityToImpact = (priority: string): ImpactLevel => {
+    switch (priority) {
+      case 'high': return 'high';
+      case 'medium': return 'medium';
+      default: return 'low';
+    }
   };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <PageHeader
-        title={report.page_name || 'Audit Report'}
-        description={`Analyzed on ${new Date(report.created_at).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })}`}
-        actions={
-          <div className="flex items-center gap-3">
+      {/* Sticky Header */}
+      <div
+        className={cn(
+          'sticky top-0 z-30 -mx-6 px-6 py-4 transition-all duration-300',
+          isScrolled && 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm'
+        )}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {/* Page Avatar */}
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1877F2]/10 text-[#1877F2]">
+              <Facebook className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+                {report.page_name || 'Audit Report'}
+              </h1>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>
+                  Analyzed on {format(new Date(report.created_at), 'MMMM d, yyyy')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
             {hasProAccess ? (
               <>
-                <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
+                <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
                   <Share2 className="mr-2 h-4 w-4" />
                   Share
                 </Button>
                 <Button 
-                  variant="outline" 
+                  variant="outline"
+                  size="sm"
                   onClick={() => exportToPdf(auditId!)}
                   disabled={isExporting}
                 >
@@ -133,9 +216,13 @@ export default function AuditReportPage() {
                   )}
                   Export PDF
                 </Button>
+                <Button size="sm">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Re-run
+                </Button>
               </>
             ) : (
-              <Button asChild>
+              <Button size="sm" asChild>
                 <Link to="/dashboard/billing">
                   <Sparkles className="mr-2 h-4 w-4" />
                   Upgrade for Full Report
@@ -143,8 +230,8 @@ export default function AuditReportPage() {
               </Button>
             )}
           </div>
-        }
-      />
+        </div>
+      </div>
 
       {/* Share Dialog */}
       <ShareReportDialog
@@ -155,29 +242,17 @@ export default function AuditReportPage() {
         existingIsPublic={report.report?.is_public}
       />
 
-      {/* Score Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ScoreCard
-          title="Overall Score"
-          score={report.score_total || 0}
-          icon={BarChart3}
-        />
-        <ScoreCard
-          title="Engagement"
-          score={scores.engagement || 0}
-          icon={ThumbsUp}
-        />
-        <ScoreCard
-          title="Consistency"
-          score={scores.consistency || 0}
-          icon={TrendingUp}
-        />
-        <ScoreCard
-          title="Readiness"
-          score={scores.readiness || 0}
-          icon={Zap}
-        />
-      </div>
+      {/* Hero Score Section */}
+      <HeroScoreSection
+        overallScore={report.score_total || 0}
+        breakdown={{
+          engagement: scores.engagement || 0,
+          consistency: scores.consistency || 0,
+          readiness: scores.readiness || 0,
+          growth: scores.growth || scores.readiness || 0,
+        }}
+        previousScore={undefined}
+      />
 
       {/* Filters */}
       <ReportFilters
@@ -188,56 +263,81 @@ export default function AuditReportPage() {
         showProFilters={hasProAccess}
       />
 
-      {/* Recommendations (visible to all, but limited for free) */}
+      {/* Recommendations with ActionCards */}
       <ReportSection
-        title="Recommendations"
-        description={hasProAccess ? 'All personalized recommendations' : 'Top recommendations for your page'}
+        title="Action Plan"
+        description={hasProAccess ? 'Personalized recommendations to improve your page' : 'Top recommendations for your page'}
         icon={<MessageSquare className="h-5 w-5" />}
       >
-        <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           {filteredRecommendations.length > 0 ? (
-            filteredRecommendations.map((rec: any, index: number) => (
-              <div
+            filteredRecommendations.slice(0, hasProAccess ? undefined : 3).map((rec: any, index: number) => (
+              <ActionCard
                 key={index}
-                className={cn(
-                  'flex items-start gap-4 p-4 rounded-lg border border-border',
-                  'transition-colors hover:bg-muted/30'
-                )}
-              >
-                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium">{rec.title}</h4>
-                    <Badge variant="outline" className={cn('text-xs', getPriorityColor(rec.priority))}>
-                      {rec.priority}
-                    </Badge>
-                    {rec.isPro && <ProBadge size="sm" />}
-                  </div>
-                  <p className="text-sm text-muted-foreground">{rec.description}</p>
-                </div>
-              </div>
+                title={rec.title}
+                description={rec.description}
+                impact={mapPriorityToImpact(rec.priority)}
+                effort={rec.effort || 'medium'}
+                category={rec.category}
+                steps={rec.steps || []}
+                isPro={rec.isPro}
+              />
             ))
           ) : (
-            <p className="text-center text-muted-foreground py-8">
+            <div className="col-span-2 text-center py-12 text-muted-foreground">
               No recommendations match your filters.
-            </p>
-          )}
-
-          {!hasProAccess && recommendations.length > 2 && (
-            <div className="pt-4 border-t border-border text-center">
-              <p className="text-sm text-muted-foreground mb-3">
-                +{recommendations.length - 2} more recommendations available with Pro
-              </p>
-              <Button asChild variant="outline">
-                <Link to="/dashboard/billing">
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Unlock All Recommendations
-                </Link>
-              </Button>
             </div>
           )}
         </div>
+
+        {!hasProAccess && recommendations.length > 3 && (
+          <div className="mt-6 pt-6 border-t border-border text-center">
+            <p className="text-sm text-muted-foreground mb-3">
+              +{recommendations.length - 3} more recommendations available with Pro
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/dashboard/billing">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Unlock All Recommendations
+              </Link>
+            </Button>
+          </div>
+        )}
       </ReportSection>
+
+      {/* Performance Charts (Pro) */}
+      {hasProAccess ? (
+        <ReportSection
+          title="Performance Analytics"
+          description="Detailed engagement trends and content analysis"
+          icon={<BarChart3 className="h-5 w-5" />}
+        >
+          <div className="grid gap-6 lg:grid-cols-2">
+            <EngagementChart
+              data={generateEngagementData()}
+              title="Engagement Over Time"
+              showComparison={true}
+            />
+            <PostTypeChart
+              data={postTypeData}
+              title="Post Type Performance"
+            />
+          </div>
+          <div className="mt-6">
+            <BestTimeHeatmap
+              data={heatmapData}
+              title="Best Time to Post"
+            />
+          </div>
+        </ReportSection>
+      ) : (
+        <LockedSection
+          title="Performance Analytics"
+          description="Unlock detailed charts and trend analysis"
+          icon={<BarChart3 className="h-5 w-5" />}
+          placeholderContent={<MetricsPlaceholder />}
+        />
+      )}
 
       {/* Basic Metrics (visible to all) */}
       {report.input_summary && (
@@ -247,13 +347,13 @@ export default function AuditReportPage() {
           icon={<Users className="h-5 w-5" />}
         >
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="p-4 rounded-lg bg-muted/50">
+            <div className="p-4 rounded-xl bg-muted/50 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Followers</p>
               <p className="text-2xl font-bold">
                 {report.input_summary.followers?.toLocaleString() || '—'}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50">
+            <div className="p-4 rounded-xl bg-muted/50 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Posts Analyzed</p>
               <p className="text-2xl font-bold">
                 {report.input_summary.postsAnalyzed || '—'}
@@ -273,25 +373,25 @@ export default function AuditReportPage() {
           icon={<BarChart3 className="h-5 w-5" />}
         >
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="p-4 rounded-lg bg-muted/50">
+            <div className="p-4 rounded-xl bg-muted/50 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Engagement Rate</p>
               <p className="text-2xl font-bold text-primary">
                 {report.detailed_metrics.engagementRate?.toFixed(2)}%
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50">
+            <div className="p-4 rounded-xl bg-muted/50 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Avg. Likes/Post</p>
               <p className="text-2xl font-bold">
                 {Math.round((report.detailed_metrics.totalLikes || 0) / (report.detailed_metrics.postsCount || 1))}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50">
+            <div className="p-4 rounded-xl bg-muted/50 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Avg. Comments/Post</p>
               <p className="text-2xl font-bold">
                 {Math.round((report.detailed_metrics.totalComments || 0) / (report.detailed_metrics.postsCount || 1))}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50">
+            <div className="p-4 rounded-xl bg-muted/50 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Posts/Week</p>
               <p className="text-2xl font-bold">
                 {report.detailed_metrics.postsPerWeek?.toFixed(1)}
@@ -300,33 +400,30 @@ export default function AuditReportPage() {
           </div>
         </ReportSection>
       ) : report.detailed_metrics_preview ? (
-        /* 10% Preview for Free Users - Show engagement rate, blur rest */
         <ReportSection
           title="Detailed Metrics"
           description="In-depth engagement analysis"
           icon={<BarChart3 className="h-5 w-5" />}
         >
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {/* First metric visible (10%) */}
-            <div className="p-4 rounded-lg bg-muted/50 border-2 border-primary/20">
+            <div className="p-4 rounded-xl bg-muted/50 border-2 border-primary/20">
               <p className="text-sm text-muted-foreground mb-1">Engagement Rate</p>
               <p className="text-2xl font-bold text-primary">
                 {report.detailed_metrics_preview.engagementRate?.toFixed(2)}%
               </p>
             </div>
             
-            {/* Remaining 90% blurred */}
             <div className="col-span-1 sm:col-span-1 lg:col-span-3 relative">
               <div className="grid gap-4 sm:grid-cols-3 blur-sm pointer-events-none select-none">
-                <div className="p-4 rounded-lg bg-muted/50">
+                <div className="p-4 rounded-xl bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground mb-1">Avg. Likes/Post</p>
                   <p className="text-2xl font-bold">—</p>
                 </div>
-                <div className="p-4 rounded-lg bg-muted/50">
+                <div className="p-4 rounded-xl bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground mb-1">Avg. Comments/Post</p>
                   <p className="text-2xl font-bold">—</p>
                 </div>
-                <div className="p-4 rounded-lg bg-muted/50">
+                <div className="p-4 rounded-xl bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground mb-1">Posts/Week</p>
                   <p className="text-2xl font-bold">—</p>
                 </div>
@@ -360,7 +457,7 @@ export default function AuditReportPage() {
         >
           <div className="space-y-3">
             {report.raw_metrics.posts.slice(0, 5).map((post: any, i: number) => (
-              <div key={post.id || i} className="flex items-center gap-4 p-4 rounded-lg bg-muted/30">
+              <div key={post.id || i} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border hover:border-primary/20 transition-colors">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
                   #{i + 1}
                 </div>
@@ -433,7 +530,7 @@ export default function AuditReportPage() {
 
       {/* Upgrade CTA for Free Users */}
       {!hasProAccess && (
-        <div className="rounded-2xl p-8 text-center bg-primary">
+        <div className="rounded-2xl p-8 text-center bg-gradient-to-br from-primary to-primary/80">
           <div className="max-w-2xl mx-auto text-primary-foreground">
             <ProBadge size="md" className="mb-4" glow />
             <h2 className="text-2xl font-bold mb-3">

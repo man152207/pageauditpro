@@ -7,11 +7,11 @@ import { useRunAudit } from '@/hooks/useAudits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { ConnectedPagesList } from './ConnectedPagesList';
 import { BasicReportPreview } from './BasicReportPreview';
+import { AuditProgress, AuditStep } from './AuditProgress';
 import {
   Facebook,
   Loader2,
   Plus,
-  Zap,
 } from 'lucide-react';
 
 interface FBConnection {
@@ -272,35 +272,27 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
     );
   }
 
-  // Running state overlay
+  // Running state with premium progress UI
   if (runningAuditId) {
     const runningConnection = connections.find(c => c.id === runningAuditId);
     return (
       <div className="space-y-8">
-        {/* Show pages list in background */}
-        <ConnectedPagesList
-          connections={connections}
-          onRunAudit={handleRunAudit}
-          onDisconnect={handleDisconnect}
-          runningAuditId={runningAuditId}
-          disconnectingId={disconnectingId}
-        />
-
-        {/* Running indicator */}
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-8 text-center">
-          <div className="relative mb-6">
-            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-pulse-glow">
-              <Zap className="h-10 w-10 text-primary animate-pulse" />
-            </div>
-          </div>
-          <h3 className="text-xl font-bold mb-2">Analyzing Your Page...</h3>
-          <p className="text-muted-foreground mb-1">
-            Fetching data from <strong>{runningConnection?.page_name}</strong>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            This usually takes 10-20 seconds
-          </p>
+        {/* Show pages list in background (dimmed) */}
+        <div className="opacity-50 pointer-events-none">
+          <ConnectedPagesList
+            connections={connections}
+            onRunAudit={handleRunAudit}
+            onDisconnect={handleDisconnect}
+            runningAuditId={runningAuditId}
+            disconnectingId={disconnectingId}
+          />
         </div>
+
+        {/* Premium progress panel */}
+        <AuditProgress 
+          currentStep="fetching" 
+          pageName={runningConnection?.page_name}
+        />
       </div>
     );
   }
