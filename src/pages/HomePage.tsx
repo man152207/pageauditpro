@@ -26,6 +26,7 @@ import {
   Play,
   Star,
   Award,
+  Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -74,16 +75,19 @@ export default function HomePage() {
       step: 1,
       title: 'Connect Your Page',
       description: 'Securely link your Facebook page with read-only access',
+      icon: Facebook,
     },
     {
       step: 2,
       title: 'Get AI Analysis',
       description: 'Our AI analyzes engagement patterns and content performance',
+      icon: Sparkles,
     },
     {
       step: 3,
       title: 'Take Action',
       description: 'Follow personalized recommendations to grow faster',
+      icon: TrendingUp,
     },
   ];
 
@@ -175,138 +179,70 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col overflow-hidden">
-      {/* ========== HERO ========== */}
-      <section className="relative py-16 sm:py-20 md:py-24 hero-pattern-premium overflow-hidden">
+      {/* ========== YOAST-STYLE HERO ========== */}
+      <section className="relative py-20 sm:py-28 md:py-32 hero-pattern-premium overflow-hidden">
         {/* Floating orbs */}
-        <div className="floating-orb w-[400px] h-[400px] bg-primary/10 -top-32 -left-32" />
-        <div className="floating-orb w-[300px] h-[300px] bg-accent/8 -bottom-20 -right-20" style={{ animationDelay: '3s' }} />
+        <div className="floating-orb floating-orb-purple w-[500px] h-[500px] -top-40 -left-40" />
+        <div className="floating-orb floating-orb-green w-[400px] h-[400px] -bottom-32 -right-32" style={{ animationDelay: '4s' }} />
+        <div className="floating-orb floating-orb-purple w-[300px] h-[300px] top-1/2 right-1/4 opacity-20" style={{ animationDelay: '2s' }} />
 
         <div className="container relative">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left: Content */}
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 text-primary text-sm font-medium mb-6 animate-fade-in border border-primary/15">
-                <Facebook className="h-4 w-4" />
-                <span>Free Facebook Page Audit Tool</span>
-              </div>
-
-              <h1 className="mb-5 animate-fade-in-up text-balance">
-                Grow Your Page with{' '}
-                <span className="gradient-text">AI-Powered Insights</span>
-              </h1>
-
-              <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto lg:mx-0 animate-fade-in-up stagger-1 text-pretty">
-                Get instant health scores, engagement analysis, and personalized action plans to boost your Facebook presence.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up stagger-2">
-                <Button size="lg" asChild className="btn-premium h-12 px-8 text-base">
-                  <Link to="/dashboard/audit">
-                    <Zap className="mr-2 h-5 w-5" />
-                    Run Free Audit
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild className="h-12 px-6 text-base">
-                  <Link to="/sample-report">
-                    <Play className="mr-2 h-4 w-4" />
-                    View Sample Report
-                  </Link>
-                </Button>
-              </div>
-
-              {/* Trust badges */}
-              <div className="mt-10 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-muted-foreground animate-fade-in stagger-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                  </div>
-                  <span className="text-sm font-medium">GDPR Compliant</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10">
-                    <Shield className="h-3.5 w-3.5 text-success" />
-                  </div>
-                  <span className="text-sm font-medium">256-bit SSL</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10">
-                    <Star className="h-3.5 w-3.5 text-success" />
-                  </div>
-                  <span className="text-sm font-medium">10K+ Audits</span>
-                </div>
-              </div>
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-sm font-semibold mb-8 animate-fade-in border border-white/20">
+              <Facebook className="h-4 w-4" />
+              <span>#1 Facebook Page Audit Tool</span>
             </div>
 
-            {/* Right: Visual */}
-            <div className="relative animate-fade-in-up stagger-2 hidden lg:block">
-              <div className="relative rounded-2xl border border-border bg-card p-4 shadow-2xl">
-                <div className="rounded-xl bg-muted/30 p-6 vector-dots">
-                  {/* Mock dashboard header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                        <BarChart3 className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="h-4 w-28 bg-muted rounded mb-1.5" />
-                        <div className="h-3 w-20 bg-muted/70 rounded" />
-                      </div>
-                    </div>
-                    <div className="badge-success text-xs py-1">
-                      <span className="w-1.5 h-1.5 bg-success rounded-full mr-1.5" />
-                      Live
-                    </div>
-                  </div>
-                  
-                  {/* Score cards */}
-                  <div className="grid grid-cols-3 gap-3 mb-5">
-                    {[
-                      { score: 85, label: 'Overall', color: 'text-primary' },
-                      { score: 72, label: 'Engagement', color: 'text-accent' },
-                      { score: 91, label: 'Growth', color: 'text-success' }
-                    ].map((item, i) => (
-                      <div key={i} className="rounded-xl bg-card border border-border p-4 text-center shadow-sm">
-                        <div className={cn('text-2xl font-bold mb-1', item.color)}>{item.score}</div>
-                        <div className="text-xs text-muted-foreground font-medium">{item.label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Chart placeholder */}
-                  <div className="h-28 bg-gradient-to-br from-primary/8 to-accent/5 rounded-xl flex items-end justify-around p-4 border border-border/50">
-                    {[45, 70, 50, 85, 60, 95, 75].map((h, i) => (
-                      <div 
-                        key={i} 
-                        className="w-5 bg-primary/30 rounded-t-md transition-all duration-300 hover:bg-primary chart-bar-enter"
-                        style={{ 
-                          height: `${h}%`,
-                          animationDelay: `${i * 0.1}s`
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Floating badge */}
-              <div className="absolute -bottom-4 -left-4 bg-card border border-border rounded-xl p-4 shadow-xl animate-bounce-soft">
-                <div className="flex items-center gap-3">
-                  <div className="h-11 w-11 rounded-xl bg-success/10 flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-success">+23%</div>
-                    <div className="text-xs text-muted-foreground">This month</div>
-                  </div>
-                </div>
-              </div>
+            {/* Headline */}
+            <h1 className="mb-6 text-white animate-fade-in-up text-balance">
+              Boost Your Page with{' '}
+              <span className="relative">
+                <span className="relative z-10">AI-Powered Insights</span>
+                <span className="absolute bottom-2 left-0 w-full h-3 bg-accent/40 -z-0 rounded" />
+              </span>
+            </h1>
 
-              {/* Floating score */}
-              <div className="absolute -top-3 -right-3 bg-card border border-border rounded-xl px-4 py-3 shadow-xl animate-float" style={{ animationDelay: '1s' }}>
-                <div className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-pro" />
-                  <span className="text-sm font-bold">A+ Score</span>
+            {/* Subheadline */}
+            <p className="text-xl sm:text-2xl text-white/90 mb-10 max-w-2xl mx-auto animate-fade-in-up stagger-1 text-pretty leading-relaxed">
+              Get instant health scores, engagement analysis, and personalized action plans to grow your Facebook presence.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-2">
+              <Button size="xl" variant="success" asChild className="shadow-xl">
+                <Link to="/dashboard/audit">
+                  <Zap className="mr-2 h-5 w-5" />
+                  Start Free Audit
+                </Link>
+              </Button>
+              <Button size="xl" variant="outline" asChild className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:border-white/40">
+                <Link to="/sample-report">
+                  <Play className="mr-2 h-5 w-5" />
+                  View Sample Report
+                </Link>
+              </Button>
+            </div>
+
+            {/* Trust signals */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-white/80 animate-fade-in stagger-3">
+              <div className="flex items-center gap-2">
+                <div className="trust-stars">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                  ))}
                 </div>
+                <span className="text-sm font-semibold">4.8/5 Rating</span>
+              </div>
+              <div className="h-5 w-px bg-white/30 hidden sm:block" />
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                <span className="text-sm font-semibold">GDPR Compliant</span>
+              </div>
+              <div className="h-5 w-px bg-white/30 hidden sm:block" />
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                <span className="text-sm font-semibold">10K+ Audits Run</span>
               </div>
             </div>
           </div>
@@ -314,26 +250,29 @@ export default function HomePage() {
       </section>
 
       {/* ========== BENEFITS ========== */}
-      <section className="section bg-muted/30">
+      <section className="section bg-background">
         <div className="container">
           <div className="section-header">
-            <div className="badge-primary mb-4">Why Pagelyzer</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
+              <Sparkles className="h-4 w-4" />
+              Why Pagelyzer
+            </div>
             <h2>Everything You Need to Grow</h2>
             <p>Powerful analytics and AI insights designed for Facebook pages of all sizes.</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {benefits.map((benefit, index) => (
               <div
                 key={index}
-                className="group premium-card animate-fade-in-up"
+                className="group premium-card p-7 animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.08}s` }}
               >
-                <div className="feature-icon-primary mb-5">
-                  <benefit.icon className="h-5 w-5" />
+                <div className="feature-icon-primary mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <benefit.icon className="h-6 w-6" />
                 </div>
-                <h4 className="font-semibold text-lg mb-2">{benefit.title}</h4>
-                <p className="text-muted-foreground text-sm leading-relaxed">{benefit.description}</p>
+                <h4 className="mb-3">{benefit.title}</h4>
+                <p className="text-muted-foreground text-base leading-relaxed">{benefit.description}</p>
               </div>
             ))}
           </div>
@@ -341,24 +280,34 @@ export default function HomePage() {
       </section>
 
       {/* ========== HOW IT WORKS ========== */}
-      <section className="section">
+      <section className="section hero-pattern-soft">
         <div className="container">
           <div className="section-header">
-            <div className="badge-primary mb-4">Simple Process</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-4">
+              <Target className="h-4 w-4" />
+              Simple Process
+            </div>
             <h2>How It Works</h2>
             <p>Get your first audit in under 2 minutes. No credit card required.</p>
           </div>
 
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8 md:gap-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-10 md:gap-6 relative">
+              {/* Connection lines */}
+              <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-1">
+                <div className="w-full h-full bg-gradient-to-r from-primary via-primary/50 to-accent rounded-full" />
+              </div>
+
               {howItWorks.map((step, index) => (
-                <div key={index} className="relative text-center animate-fade-in-up" style={{ animationDelay: `${index * 0.12}s` }}>
-                  {index < howItWorks.length - 1 && (
-                    <div className="hidden md:block absolute top-6 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-border to-transparent" />
-                  )}
-                  <div className="step-number mx-auto mb-5 relative z-10">{step.step}</div>
-                  <h4 className="font-semibold text-lg mb-2">{step.title}</h4>
-                  <p className="text-muted-foreground text-sm">{step.description}</p>
+                <div key={index} className="relative text-center animate-fade-in-up" style={{ animationDelay: `${index * 0.15}s` }}>
+                  <div className="relative z-10 mx-auto mb-6 w-32 h-32 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center border border-primary/20 shadow-lg">
+                    <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg shadow-md">
+                      {step.step}
+                    </div>
+                    <step.icon className="h-12 w-12 text-primary" />
+                  </div>
+                  <h4 className="mb-2">{step.title}</h4>
+                  <p className="text-muted-foreground">{step.description}</p>
                 </div>
               ))}
             </div>
@@ -367,25 +316,28 @@ export default function HomePage() {
       </section>
 
       {/* ========== WHAT WE ANALYZE ========== */}
-      <section className="section-tight bg-muted/30">
+      <section className="section-tight bg-muted/50">
         <div className="container">
           <div className="section-header">
-            <div className="badge-primary mb-4">Comprehensive Analysis</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
+              <BarChart3 className="h-4 w-4" />
+              Comprehensive Analysis
+            </div>
             <h2>What We Analyze</h2>
             <p>Deep dive into every aspect of your Facebook page performance.</p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5">
             {metrics.map((metric, index) => (
               <div
                 key={index}
-                className="group interactive-card p-5 text-center animate-fade-in-up"
+                className="group interactive-card p-6 text-center animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <div className="feature-icon-primary mx-auto mb-3">
+                <div className="feature-icon-primary mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <metric.icon className="h-5 w-5" />
                 </div>
-                <div className="font-medium text-sm">{metric.label}</div>
+                <div className="font-semibold text-sm">{metric.label}</div>
               </div>
             ))}
           </div>
@@ -396,7 +348,10 @@ export default function HomePage() {
       <section className="section">
         <div className="container">
           <div className="section-header">
-            <div className="badge-primary mb-4">Actionable Insights</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-4">
+              <Lightbulb className="h-4 w-4" />
+              Actionable Insights
+            </div>
             <h2>Sample Recommendations</h2>
             <p>Every audit includes specific, actionable recommendations like these.</p>
           </div>
@@ -409,7 +364,7 @@ export default function HomePage() {
                 style={{ animationDelay: `${index * 0.08}s` }}
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
-                  <h4 className="font-medium text-sm leading-snug">{rec.title}</h4>
+                  <h4 className="font-semibold text-sm leading-snug">{rec.title}</h4>
                   <Lightbulb className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 </div>
                 <div className="flex gap-2">
@@ -438,10 +393,13 @@ export default function HomePage() {
       </section>
 
       {/* ========== USE CASES ========== */}
-      <section className="section-tight bg-muted/30">
+      <section className="section-tight bg-muted/50">
         <div className="container">
           <div className="section-header">
-            <div className="badge-primary mb-4">Built For You</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
+              <Users className="h-4 w-4" />
+              Built For You
+            </div>
             <h2>Who Uses Pagelyzer</h2>
             <p>Trusted by agencies, brands, and creators worldwide.</p>
           </div>
@@ -450,18 +408,18 @@ export default function HomePage() {
             {useCases.map((useCase, index) => (
               <div
                 key={index}
-                className="premium-card animate-fade-in-up"
+                className="premium-card p-7 animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="feature-icon-primary mb-5">
-                  <useCase.icon className="h-5 w-5" />
+                <div className="feature-icon-primary mb-6">
+                  <useCase.icon className="h-6 w-6" />
                 </div>
-                <h4 className="font-semibold text-lg mb-2">{useCase.title}</h4>
-                <p className="text-muted-foreground text-sm mb-4">{useCase.description}</p>
-                <ul className="space-y-2">
+                <h4 className="mb-3">{useCase.title}</h4>
+                <p className="text-muted-foreground mb-5">{useCase.description}</p>
+                <ul className="space-y-2.5">
                   {useCase.outcomes.map((outcome, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                    <li key={i} className="flex items-center gap-2.5 text-sm">
+                      <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
                       <span>{outcome}</span>
                     </li>
                   ))}
@@ -477,21 +435,24 @@ export default function HomePage() {
         <div className="container">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="badge-primary mb-4">Security First</div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-4">
+                <Shield className="h-4 w-4" />
+                Security First
+              </div>
               <h2 className="mb-4">Your Data is Safe With Us</h2>
               <p className="text-muted-foreground mb-8 text-lg">
                 We take security seriously. Your data is encrypted, never shared, and you can delete it anytime.
               </p>
               
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {securityFeatures.map((feature, index) => (
                   <div key={index} className="flex gap-4 animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                    <div className="feature-icon-primary shrink-0">
+                    <div className="feature-icon-accent shrink-0">
                       <feature.icon className="h-5 w-5" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-base mb-1">{feature.title}</h4>
-                      <p className="text-muted-foreground text-sm">{feature.description}</p>
+                      <p className="text-muted-foreground">{feature.description}</p>
                     </div>
                   </div>
                 ))}
@@ -499,11 +460,11 @@ export default function HomePage() {
             </div>
             
             <div className="relative hidden lg:flex items-center justify-center">
-              <div className="aspect-square w-80 rounded-3xl bg-gradient-to-br from-primary/6 to-accent/6 p-10 flex items-center justify-center vector-dots border border-border/50">
-                <Shield className="h-28 w-28 text-primary/20" />
+              <div className="aspect-square w-80 rounded-[2rem] bg-gradient-to-br from-primary/8 to-accent/8 p-10 flex items-center justify-center vector-dots border border-border/50">
+                <Shield className="h-32 w-32 text-primary/15" />
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-40 w-40 rounded-full border-4 border-primary/20 animate-pulse-slow" />
+                <div className="h-44 w-44 rounded-full border-4 border-primary/15 animate-pulse-slow" />
               </div>
             </div>
           </div>
@@ -511,43 +472,46 @@ export default function HomePage() {
       </section>
 
       {/* ========== FREE VS PRO ========== */}
-      <section className="section-tight bg-muted/30">
+      <section className="section-tight bg-muted/50">
         <div className="container">
           <div className="section-header">
-            <div className="badge-primary mb-4">Simple Pricing</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
+              <Crown className="h-4 w-4" />
+              Simple Pricing
+            </div>
             <h2>Free vs Pro</h2>
             <p>Start free and upgrade when you need more power.</p>
           </div>
 
           <div className="max-w-2xl mx-auto">
-            <div className="rounded-2xl border border-border overflow-hidden bg-card shadow-lg">
-              <div className="grid grid-cols-3 bg-muted/50">
-                <div className="p-4 sm:p-5 font-semibold text-sm">Feature</div>
-                <div className="p-4 sm:p-5 text-center font-semibold text-sm">Free</div>
-                <div className="p-4 sm:p-5 text-center font-semibold text-sm flex items-center justify-center gap-2">
+            <div className="rounded-3xl border border-border overflow-hidden bg-card shadow-xl">
+              <div className="grid grid-cols-3 bg-muted/70">
+                <div className="p-5 sm:p-6 font-bold">Feature</div>
+                <div className="p-5 sm:p-6 text-center font-bold">Free</div>
+                <div className="p-5 sm:p-6 text-center font-bold flex items-center justify-center gap-2">
                   <ProBadge /> Pro
                 </div>
               </div>
 
               {comparisonData.map((row, index) => (
                 <div key={index} className="grid grid-cols-3 border-t border-border hover:bg-muted/30 transition-colors">
-                  <div className="p-4 sm:p-5 text-sm font-medium">{row.feature}</div>
-                  <div className="p-4 sm:p-5 text-center">
+                  <div className="p-5 sm:p-6 text-sm font-medium">{row.feature}</div>
+                  <div className="p-5 sm:p-6 text-center">
                     {row.free ? (
-                      <CheckCircle2 className="h-5 w-5 text-success mx-auto" />
+                      <CheckCircle2 className="h-5 w-5 text-accent mx-auto" />
                     ) : (
-                      <span className="text-muted-foreground/50">—</span>
+                      <span className="text-muted-foreground/40">—</span>
                     )}
                   </div>
-                  <div className="p-4 sm:p-5 text-center">
-                    <CheckCircle2 className="h-5 w-5 text-success mx-auto" />
+                  <div className="p-5 sm:p-6 text-center">
+                    <CheckCircle2 className="h-5 w-5 text-accent mx-auto" />
                   </div>
                 </div>
               ))}
             </div>
 
             <div className="mt-10 text-center">
-              <Button size="lg" asChild className="h-12 px-8">
+              <Button size="lg" asChild className="h-12 px-10">
                 <Link to="/pricing">
                   View Full Pricing
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -562,7 +526,10 @@ export default function HomePage() {
       <section className="section">
         <div className="container">
           <div className="section-header">
-            <div className="badge-primary mb-4">FAQ</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-4">
+              <MessageSquare className="h-4 w-4" />
+              FAQ
+            </div>
             <h2>Common Questions</h2>
             <p>Got questions? We've got answers.</p>
           </div>
@@ -573,25 +540,25 @@ export default function HomePage() {
                 <AccordionItem
                   key={index}
                   value={`faq-${index}`}
-                  className="border border-border rounded-xl px-5 sm:px-6 bg-card data-[state=open]:shadow-md transition-all duration-200"
+                  className="border border-border rounded-2xl px-6 bg-card data-[state=open]:shadow-lg transition-all duration-300"
                 >
-                  <AccordionTrigger className="text-left font-semibold py-5 hover:no-underline text-base">
+                  <AccordionTrigger className="text-left font-bold py-5 hover:no-underline text-base">
                     {faq.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground pb-5 text-sm leading-relaxed">
+                  <AccordionContent className="text-muted-foreground pb-5 text-base leading-relaxed">
                     {faq.a}
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
 
-            <div className="mt-10 p-6 rounded-2xl bg-muted/50 border border-border text-center">
-              <p className="text-muted-foreground mb-4">Still have questions?</p>
+            <div className="mt-10 p-8 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 text-center">
+              <p className="text-muted-foreground mb-5 text-lg">Still have questions?</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button variant="outline" asChild>
+                <Button variant="outline" size="lg" asChild>
                   <Link to="/contact">Contact Support</Link>
                 </Button>
-                <Button asChild>
+                <Button size="lg" asChild>
                   <Link to="/dashboard/audit">Try Free Audit</Link>
                 </Button>
               </div>
@@ -601,36 +568,36 @@ export default function HomePage() {
       </section>
 
       {/* ========== FINAL CTA ========== */}
-      <section className="py-20 sm:py-24 relative overflow-hidden bg-primary">
-        <div className="absolute inset-0 vector-dots opacity-10" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-primary/90" />
+      <section className="py-24 sm:py-32 relative overflow-hidden hero-pattern-premium">
+        <div className="floating-orb floating-orb-purple w-[400px] h-[400px] -top-32 -left-32 opacity-30" />
+        <div className="floating-orb floating-orb-green w-[300px] h-[300px] -bottom-20 -right-20 opacity-30" style={{ animationDelay: '3s' }} />
         
         <div className="container relative">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary-foreground/10 mb-6">
-              <Zap className="h-8 w-8 text-primary-foreground" />
+            <div className="inline-flex items-center justify-center h-20 w-20 rounded-3xl bg-white/10 backdrop-blur-sm mb-8">
+              <Zap className="h-10 w-10 text-white" />
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-primary-foreground">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-5 text-white">
               Ready to Grow Your Page?
             </h2>
-            <p className="text-primary-foreground/80 mb-8 text-lg max-w-lg mx-auto">
+            <p className="text-white/85 mb-10 text-xl max-w-lg mx-auto">
               Join thousands of marketers who use Pagelyzer to boost their Facebook presence.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="secondary" asChild className="h-12 px-8 text-base shadow-xl">
+              <Button size="xl" variant="success" asChild className="shadow-2xl">
                 <Link to="/dashboard/audit">
                   <Zap className="mr-2 h-5 w-5" />
-                  Run Free Audit
+                  Start Free Audit
                 </Link>
               </Button>
               <Button
-                size="lg"
+                size="xl"
                 asChild
-                className="bg-primary-foreground/10 text-primary-foreground border border-primary-foreground/25 hover:bg-primary-foreground/20 h-12 px-8 text-base"
+                className="bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 hover:bg-white/20"
               >
                 <Link to="/features">
                   Learn More
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
             </div>
@@ -640,27 +607,27 @@ export default function HomePage() {
 
       {/* ========== FOOTER ========== */}
       <footer className="border-t border-border bg-card">
-        <div className="container py-14 sm:py-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10">
+        <div className="container py-16 sm:py-20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 sm:gap-12">
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
-              <Link to="/" className="flex items-center gap-2.5 font-bold text-xl mb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <BarChart3 className="h-5 w-5" />
+              <Link to="/" className="flex items-center gap-3 font-bold text-xl mb-5">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                  <BarChart3 className="h-6 w-6" />
                 </div>
                 Pagelyzer
               </Link>
-              <p className="text-muted-foreground text-sm leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 Free Facebook Page Audit Tool. Get actionable insights to grow your audience.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-sm">Product</h4>
+              <h4 className="font-bold mb-5">Product</h4>
               <ul className="space-y-3">
                 {footerLinks.product.map((link) => (
                   <li key={link.href}>
-                    <Link to={link.href} className="text-muted-foreground text-sm hover:text-foreground transition-colors">
+                    <Link to={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
                       {link.label}
                     </Link>
                   </li>
@@ -669,11 +636,11 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-sm">Resources</h4>
+              <h4 className="font-bold mb-5">Resources</h4>
               <ul className="space-y-3">
                 {footerLinks.resources.map((link) => (
                   <li key={link.href}>
-                    <Link to={link.href} className="text-muted-foreground text-sm hover:text-foreground transition-colors">
+                    <Link to={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
                       {link.label}
                     </Link>
                   </li>
@@ -682,11 +649,11 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-sm">Legal</h4>
+              <h4 className="font-bold mb-5">Legal</h4>
               <ul className="space-y-3">
                 {footerLinks.company.map((link) => (
                   <li key={link.href}>
-                    <Link to={link.href} className="text-muted-foreground text-sm hover:text-foreground transition-colors">
+                    <Link to={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
                       {link.label}
                     </Link>
                   </li>
@@ -695,7 +662,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+          <div className="mt-14 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
             <p>© {new Date().getFullYear()} Pagelyzer. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <Link to="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>

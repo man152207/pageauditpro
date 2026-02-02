@@ -1,7 +1,7 @@
 import { Link, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { BarChart3, Menu, X, ArrowRight } from 'lucide-react';
+import { BarChart3, Menu, X, ArrowRight, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -19,12 +19,12 @@ export function MarketingLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+        <div className="container flex h-18 items-center justify-between py-3">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 font-bold text-xl group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform duration-200 group-hover:scale-105">
-              <BarChart3 className="h-5 w-5" />
+          <Link to="/" className="flex items-center gap-3 font-bold text-xl group">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-all duration-300 group-hover:scale-105 group-hover:shadow-glow">
+              <BarChart3 className="h-6 w-6" />
             </div>
             <span className="hidden sm:inline">Pagelyzer</span>
           </Link>
@@ -35,7 +35,7 @@ export function MarketingLayout() {
               <Link
                 key={link.href}
                 to={link.href}
-                className="nav-link text-sm font-medium py-1"
+                className="nav-link text-sm font-semibold py-1"
               >
                 {link.label}
               </Link>
@@ -48,18 +48,18 @@ export function MarketingLayout() {
               <Button asChild>
                 <Link to="/dashboard">
                   Dashboard
-                  <ArrowRight className="ml-1 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             ) : (
               <>
-                <Button variant="ghost" asChild className="hidden sm:inline-flex">
+                <Button variant="ghost" asChild className="hidden sm:inline-flex font-semibold">
                   <Link to="/auth">Login</Link>
                 </Button>
-                <Button asChild>
+                <Button variant="success" asChild className="shadow-md">
                   <Link to="/auth?mode=signup">
-                    Start Free Audit
-                    <ArrowRight className="ml-1 h-4 w-4" />
+                    <Zap className="mr-2 h-4 w-4" />
+                    Start Free
                   </Link>
                 </Button>
               </>
@@ -82,7 +82,7 @@ export function MarketingLayout() {
         <div
           className={cn(
             'md:hidden border-t border-border overflow-hidden transition-all duration-300',
-            mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+            mobileMenuOpen ? 'max-h-72 opacity-100' : 'max-h-0 opacity-0'
           )}
         >
           <nav className="container py-4 flex flex-col gap-1">
@@ -91,7 +91,7 @@ export function MarketingLayout() {
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  'text-sm font-medium text-muted-foreground hover:text-foreground py-2.5 px-3 rounded-lg hover:bg-muted transition-all duration-200',
+                  'text-sm font-semibold text-muted-foreground hover:text-foreground py-3 px-4 rounded-xl hover:bg-muted transition-all duration-200',
                   'animate-fade-in',
                   `stagger-${index + 1}`
                 )}
@@ -111,23 +111,23 @@ export function MarketingLayout() {
 
       {/* Footer */}
       <footer className="border-t border-border bg-muted/30">
-        <div className="container py-12 lg:py-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
+        <div className="container py-14 lg:py-18">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-14">
             <div className="col-span-2 md:col-span-1">
-              <Link to="/" className="flex items-center gap-2 font-bold text-lg mb-4 group">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform duration-200 group-hover:scale-105">
-                  <BarChart3 className="h-4 w-4" />
+              <Link to="/" className="flex items-center gap-2.5 font-bold text-lg mb-5 group">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform duration-200 group-hover:scale-105">
+                  <BarChart3 className="h-5 w-5" />
                 </div>
                 Pagelyzer
               </Link>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 Smart Facebook Page audit platform with AI-powered recommendations.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-3 text-sm text-muted-foreground">
+              <h4 className="font-bold mb-5">Product</h4>
+              <ul className="space-y-3 text-muted-foreground">
                 <li>
                   <Link to="/features" className="hover:text-foreground transition-colors duration-200">
                     Features
@@ -147,8 +147,8 @@ export function MarketingLayout() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Resources</h4>
-              <ul className="space-y-3 text-sm text-muted-foreground">
+              <h4 className="font-bold mb-5">Resources</h4>
+              <ul className="space-y-3 text-muted-foreground">
                 <li>
                   <Link to="/faq" className="hover:text-foreground transition-colors duration-200">
                     FAQ
@@ -168,8 +168,8 @@ export function MarketingLayout() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
-              <ul className="space-y-3 text-sm text-muted-foreground">
+              <h4 className="font-bold mb-5">Legal</h4>
+              <ul className="space-y-3 text-muted-foreground">
                 <li>
                   <Link to="/privacy" className="hover:text-foreground transition-colors duration-200">
                     Privacy Policy
@@ -184,7 +184,7 @@ export function MarketingLayout() {
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+          <div className="mt-14 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
             <p>© {new Date().getFullYear()} Pagelyzer. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <a href="#" className="hover:text-foreground transition-colors duration-200">
