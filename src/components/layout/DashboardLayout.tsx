@@ -111,7 +111,7 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-muted/30">
+    <div className="min-h-screen flex bg-background">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -123,16 +123,16 @@ export function DashboardLayout() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-60 bg-card border-r border-border transition-transform duration-300 ease-out lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transition-transform duration-300 ease-out lg:static lg:translate-x-0 shadow-sm',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex h-full flex-col">
           {/* Sidebar header */}
-          <div className="flex h-16 items-center justify-between border-b border-border px-4">
-            <Link to="/" className="flex items-center gap-2.5 font-bold group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform duration-200 group-hover:scale-105">
-                <BarChart3 className="h-4 w-4" />
+          <div className="flex h-16 items-center justify-between border-b border-border px-5">
+            <Link to="/" className="flex items-center gap-3 font-bold text-lg group">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-primary/25">
+                <BarChart3 className="h-5 w-5" />
               </div>
               <span>Pagelyzer</span>
             </Link>
@@ -150,17 +150,17 @@ export function DashboardLayout() {
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-8">
             {/* User Navigation */}
-            <div className="space-y-1">
-              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                User
+            <div className="space-y-1.5">
+              <p className="px-3 text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">
+                Dashboard
               </p>
               {renderNavItems(navItems)}
             </div>
 
             {/* Admin Navigation */}
             {isAdmin && (
-              <div className="space-y-1">
-                <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <div className="space-y-1.5">
+                <p className="px-3 text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">
                   Admin
                 </p>
                 {renderNavItems(adminNavItems)}
@@ -169,8 +169,8 @@ export function DashboardLayout() {
 
             {/* Super Admin Navigation */}
             {isSuperAdmin && (
-              <div className="space-y-1">
-                <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <div className="space-y-1.5">
+                <p className="px-3 text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">
                   Super Admin
                 </p>
                 {renderNavItems(superAdminNavItems)}
@@ -180,15 +180,15 @@ export function DashboardLayout() {
 
           {/* Sidebar footer */}
           <div className="border-t border-border p-4">
-            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors duration-200">
-              <Avatar className="h-9 w-9 ring-2 ring-background">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 transition-colors duration-200 hover:bg-muted">
+              <Avatar className="h-10 w-10 ring-2 ring-background shadow-sm">
                 <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                   {getInitials(profile?.full_name)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
+                <p className="text-sm font-semibold truncate">
                   {profile?.full_name || 'User'}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
@@ -203,7 +203,7 @@ export function DashboardLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/80 backdrop-blur-lg px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card/80 backdrop-blur-xl px-5 lg:px-8">
           <Button
             variant="ghost"
             size="icon"
@@ -219,10 +219,10 @@ export function DashboardLayout() {
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-offset-background transition-all hover:ring-2 hover:ring-primary/20 hover:ring-offset-2">
-                <Avatar className="h-10 w-10">
+              <Button variant="ghost" className="relative h-11 w-11 rounded-full ring-offset-background transition-all hover:ring-2 hover:ring-primary/20 hover:ring-offset-2">
+                <Avatar className="h-11 w-11 shadow-sm">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                     {getInitials(profile?.full_name)}
                   </AvatarFallback>
                 </Avatar>
@@ -231,7 +231,7 @@ export function DashboardLayout() {
             <DropdownMenuContent align="end" className="w-56" sideOffset={8}>
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
+                  <p className="text-sm font-semibold">{profile?.full_name || 'User'}</p>
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                 </div>
               </DropdownMenuLabel>
@@ -261,8 +261,8 @@ export function DashboardLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <div className="mx-auto max-w-7xl">
+        <main className="flex-1 overflow-y-auto p-5 lg:p-8 bg-muted/30">
+          <div className="mx-auto max-w-7xl page-enter">
             <Outlet />
           </div>
         </main>
