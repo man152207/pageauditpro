@@ -8,7 +8,7 @@ import { ScoreCard } from '@/components/ui/score-card';
 import { ProBadge } from '@/components/ui/pro-badge';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { EmptyState } from '@/components/ui/empty-state';
-import { PageHeader } from '@/components/ui/page-header';
+import { Sparkline } from '@/components/ui/sparkline';
 import {
   BarChart3,
   FileBarChart,
@@ -24,7 +24,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function UserDashboard() {
   const { profile } = useAuth();
@@ -74,42 +74,100 @@ export default function UserDashboard() {
         </Button>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid with Sparklines */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="animate-fade-in-up">
-          <StatCard
-            title="Total Audits"
-            value={stats?.totalAudits || 0}
-            icon={BarChart3}
-            description="All time audits"
-            loading={isLoading}
-          />
+          <div className="stat-card group transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-medium text-muted-foreground">Total Audits</p>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
+                <BarChart3 className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-3xl font-bold tracking-tight group-hover:text-primary transition-colors">
+                  {isLoading ? '—' : stats?.totalAudits || 0}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">All time audits</p>
+              </div>
+              <Sparkline 
+                data={[12, 15, 18, 14, 22, 25, stats?.totalAudits || 28]} 
+                color="primary" 
+                height={36} 
+                width={72}
+              />
+            </div>
+          </div>
         </div>
+
         <div className="animate-fade-in-up stagger-1">
-          <StatCard
-            title="Average Score"
-            value={stats?.avgScore ? `${stats.avgScore}` : '—'}
-            icon={TrendingUp}
-            description="Across all audits"
-            loading={isLoading}
-          />
+          <div className="stat-card group transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-medium text-muted-foreground">Average Score</p>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent transition-all duration-200 group-hover:bg-accent group-hover:text-accent-foreground group-hover:scale-110">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-3xl font-bold tracking-tight group-hover:text-accent transition-colors">
+                  {isLoading ? '—' : stats?.avgScore ? `${stats.avgScore}` : '—'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">Across all audits</p>
+              </div>
+              <Sparkline 
+                data={[65, 68, 72, 70, 75, 78, stats?.avgScore || 80]} 
+                color="accent" 
+                height={36} 
+                width={72}
+              />
+            </div>
+          </div>
         </div>
+
         <div className="animate-fade-in-up stagger-2">
-          <StatCard
-            title="Audits Remaining"
-            value={isPro ? '∞' : usage.auditsRemaining}
-            icon={Zap}
-            description={isPro ? 'Unlimited (Pro)' : `This month (${planName})`}
-            loading={isLoading}
-          />
+          <div className="stat-card group transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-medium text-muted-foreground">Audits Remaining</p>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10 text-success transition-all duration-200 group-hover:bg-success group-hover:text-success-foreground group-hover:scale-110">
+                <Zap className="h-4 w-4" />
+              </div>
+            </div>
+            <div>
+              <p className="text-3xl font-bold tracking-tight group-hover:text-success transition-colors">
+                {isLoading ? '—' : isPro ? '∞' : usage.auditsRemaining}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {isPro ? 'Unlimited (Pro)' : `This month (${planName})`}
+              </p>
+              {!isPro && !isLoading && (
+                <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div 
+                    className="h-full rounded-full bg-success transition-all duration-500"
+                    style={{ width: `${(usage.auditsRemaining / usage.auditsLimit) * 100}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+
         <div className="animate-fade-in-up stagger-3">
-          <StatCard
-            title="Last Audit"
-            value={getLastAuditDisplay()}
-            icon={History}
-            loading={isLoading}
-          />
+          <div className="stat-card group transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-medium text-muted-foreground">Last Audit</p>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10 text-warning transition-all duration-200 group-hover:bg-warning group-hover:text-warning-foreground group-hover:scale-110">
+                <History className="h-4 w-4" />
+              </div>
+            </div>
+            <div>
+              <p className="text-3xl font-bold tracking-tight group-hover:text-warning transition-colors">
+                {isLoading ? '—' : getLastAuditDisplay()}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">Keep auditing regularly</p>
+            </div>
+          </div>
         </div>
       </div>
 

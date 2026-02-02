@@ -104,31 +104,34 @@ export default function FAQPage() {
   };
 
   return (
-    <div className="py-10 sm:py-14 lg:py-16">
-      <div className="container max-w-3xl">
+    <div className="py-16 sm:py-20 lg:py-24">
+      <div className="container max-w-4xl">
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-10 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-3">
+        <div className="text-center mb-12 sm:mb-16 animate-fade-in">
+          <div className="badge-primary mb-4">
             <HelpCircle className="h-3.5 w-3.5" />
             FAQ
           </div>
-          <h1 className="mb-2">
+          <h1 className="mb-4">
             Got Questions? We've Got Answers
           </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Find answers to common questions about Pagelyzer, pricing, features, and more.
           </p>
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-6 animate-fade-in-up">
+        <div className="flex flex-wrap justify-center gap-2 mb-10 animate-fade-in-up">
           {categories.map((category) => (
             <Button
               key={category}
               variant={activeCategory === category ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveCategory(category)}
-              className="text-xs h-8"
+              className={cn(
+                'transition-all duration-200',
+                activeCategory === category && 'shadow-md'
+              )}
             >
               {category}
             </Button>
@@ -136,37 +139,37 @@ export default function FAQPage() {
         </div>
 
         {/* FAQ Items */}
-        <div className="space-y-3 animate-fade-in-up stagger-1">
+        <div className="space-y-4 animate-fade-in-up stagger-1">
           {filteredFAQs.map((faq, index) => {
             const isOpen = openItems.includes(index);
             return (
               <div
                 key={index}
                 className={cn(
-                  'rounded-lg border bg-card overflow-hidden transition-all duration-200',
-                  isOpen ? 'border-primary/30 shadow-sm' : 'border-border hover:border-primary/20'
+                  'rounded-xl border bg-card overflow-hidden transition-all duration-200',
+                  isOpen ? 'border-primary/30 shadow-md' : 'border-border hover:border-primary/20'
                 )}
               >
                 <button
                   onClick={() => toggleItem(index)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/30 transition-colors"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-1 rounded-md uppercase tracking-wider">
                       {faq.category}
                     </span>
-                    <span className="font-medium text-sm">{faq.question}</span>
+                    <span className="font-semibold">{faq.question}</span>
                   </div>
                   <ChevronDown className={cn(
-                    'h-4 w-4 text-muted-foreground transition-transform duration-200 shrink-0',
+                    'h-5 w-5 text-muted-foreground transition-transform duration-200 shrink-0 ml-4',
                     isOpen && 'rotate-180'
                   )} />
                 </button>
                 <div className={cn(
-                  'overflow-hidden transition-all duration-200',
+                  'overflow-hidden transition-all duration-300 ease-out',
                   isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                 )}>
-                  <div className="px-4 pb-4 text-sm text-muted-foreground border-t border-border pt-3">
+                  <div className="px-5 pb-5 text-muted-foreground border-t border-border pt-4">
                     {faq.answer}
                   </div>
                 </div>
@@ -175,22 +178,24 @@ export default function FAQPage() {
           })}
         </div>
 
-        {/* Still have questions */}
-        <div className="mt-10 text-center p-6 rounded-xl bg-muted/50 border border-border animate-fade-in-up">
-          <MessageSquare className="h-8 w-8 mx-auto mb-3 text-primary" />
-          <h3 className="mb-1.5">Still Have Questions?</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Can't find what you're looking for? Our support team is here to help.
+        {/* Still have questions - Enhanced CTA */}
+        <div className="mt-16 text-center p-8 sm:p-10 rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5 border border-border animate-fade-in-up">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary mx-auto mb-5">
+            <MessageSquare className="h-8 w-8" />
+          </div>
+          <h3 className="text-xl font-bold mb-2">Still Have Questions?</h3>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Can't find what you're looking for? Our support team is here to help you get the most out of Pagelyzer.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild>
+            <Button size="lg" asChild>
               <Link to="/contact">
                 Contact Support
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button variant="outline" asChild>
-              <Link to="/audit">
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/dashboard/audit">
                 <Zap className="mr-2 h-4 w-4" />
                 Try Free Audit
               </Link>
