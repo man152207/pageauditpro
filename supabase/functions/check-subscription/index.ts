@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +19,21 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Validate environment variables
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      logStep("Missing environment variables", { 
+        hasUrl: !!supabaseUrl, 
+        hasKey: !!serviceRoleKey 
+      });
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       logStep("No auth header");
@@ -28,11 +43,9 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false } }
-    );
+    const supabase = createClient(supabaseUrl, serviceRoleKey, { 
+      auth: { persistSession: false } 
+    });
 
     const token = authHeader.replace("Bearer ", "");
     
@@ -117,7 +130,7 @@ serve(async (req) => {
     // For users with free audit grants, show unlimited audits
     const usageStats = hasFreeAuditGrant ? {
       auditsUsed: auditsThisMonth || 0,
-      auditsLimit: 999999, // Use large number instead of Infinity for JSON serialization
+      auditsLimit: 999999,
       auditsRemaining: 999999,
     } : {
       auditsUsed: auditsThisMonth || 0,
