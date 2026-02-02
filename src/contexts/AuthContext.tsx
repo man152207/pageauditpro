@@ -148,10 +148,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fetchSubscription = useCallback(async (accessToken: string) => {
+  const fetchSubscription = useCallback(async (accessToken: string, retryCount = 0) => {
     if (!accessToken) return;
     
-    setIsSubscriptionLoading(true);
+    // Only show loading on first attempt to avoid flickering
+    if (retryCount === 0) {
+      setIsSubscriptionLoading(true);
+    }
+    
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`,
@@ -166,46 +170,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setSubscription(data);
-      } else if (response.status === 401) {
-        // Token expired - try to refresh session
-        console.log('Token expired, attempting refresh...');
+      } else if (response.status === 401 && retryCount < 2) {
+        // Token expired - try to refresh session silently
+        console.log('Token expired, attempting silent refresh...');
+        
+        // Keep existing subscription while refreshing to prevent blank screen
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         
         if (refreshError || !refreshData.session) {
           console.error('Failed to refresh session:', refreshError);
-          setSubscription(defaultSubscription);
+          // Only fall back to default if we have no existing subscription
+          if (!subscription) {
+            setSubscription(defaultSubscription);
+          }
           return;
         }
         
-        // Retry with new token
-        const retryResponse = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`,
-          {
-            headers: {
-              Authorization: `Bearer ${refreshData.session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        
-        if (retryResponse.ok) {
-          const data = await retryResponse.json();
-          setSubscription(data);
-        } else {
-          console.error('Failed after refresh:', await retryResponse.text());
-          setSubscription(defaultSubscription);
-        }
+        // Retry with new token (recursive call with incremented retry count)
+        await fetchSubscription(refreshData.session.access_token, retryCount + 1);
+        return; // Exit early, the recursive call handles setting subscription
       } else {
         console.error('Failed to fetch subscription:', await response.text());
-        setSubscription(defaultSubscription);
+        // Only fall back to default if we have no existing subscription
+        if (!subscription) {
+          setSubscription(defaultSubscription);
+        }
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);
-      setSubscription(defaultSubscription);
+      // Only fall back to default if we have no existing subscription
+      if (!subscription) {
+        setSubscription(defaultSubscription);
+      }
     } finally {
-      setIsSubscriptionLoading(false);
+      if (retryCount === 0) {
+        setIsSubscriptionLoading(false);
+      }
     }
-  }, []);
+  }, [subscription]);
 
   const refreshSubscription = useCallback(async () => {
     if (session?.access_token) {
