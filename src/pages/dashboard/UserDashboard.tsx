@@ -19,9 +19,12 @@ import {
   Users,
   Zap,
   ArrowRight,
+  ArrowUpRight,
+  ChevronRight,
+  Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 
 export default function UserDashboard() {
   const { profile } = useAuth();
@@ -43,24 +46,36 @@ export default function UserDashboard() {
     }
   };
 
+  const getScoreColor = (score: number | null | undefined) => {
+    if (!score) return 'text-muted-foreground';
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-accent';
+    if (score >= 40) return 'text-warning';
+    return 'text-destructive';
+  };
+
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
-      <PageHeader
-        title={`Welcome back, ${profile?.full_name?.split(' ')[0] || 'User'}! 👋`}
-        description="Here's an overview of your page audits and performance."
-        actions={
-          <Button asChild>
-            <Link to="/dashboard/audit">
-              <Plus className="mr-2 h-4 w-4" />
-              New Audit
-            </Link>
-          </Button>
-        }
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1">
+            Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}! 👋
+          </h1>
+          <p className="text-muted-foreground">
+            Here's an overview of your page audits and performance.
+          </p>
+        </div>
+        <Button asChild size="lg" className="btn-premium shrink-0">
+          <Link to="/dashboard/audit">
+            <Plus className="mr-2 h-4 w-4" />
+            New Audit
+          </Link>
+        </Button>
+      </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="animate-fade-in-up">
           <StatCard
             title="Total Audits"
@@ -73,8 +88,9 @@ export default function UserDashboard() {
         <div className="animate-fade-in-up stagger-1">
           <StatCard
             title="Average Score"
-            value={stats?.avgScore ? `${stats.avgScore}/100` : '—'}
+            value={stats?.avgScore ? `${stats.avgScore}` : '—'}
             icon={TrendingUp}
+            description="Across all audits"
             loading={isLoading}
           />
         </div>
@@ -100,23 +116,28 @@ export default function UserDashboard() {
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Audits */}
-        <div className="interactive-card animate-fade-in-up stagger-4">
-          <div className="flex items-center justify-between p-6 pb-4">
-            <h2 className="font-semibold text-lg">Recent Audits</h2>
+        <div className="rounded-2xl border border-border bg-card shadow-sm animate-fade-in-up stagger-4">
+          <div className="flex items-center justify-between p-6 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="feature-icon-primary">
+                <FileBarChart className="h-5 w-5" />
+              </div>
+              <h2 className="font-semibold text-lg">Recent Audits</h2>
+            </div>
             {recentAudits.length > 0 && (
-              <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground gap-1">
                 <Link to="/dashboard/reports">
                   View all
-                  <ArrowRight className="ml-1 h-4 w-4" />
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
             )}
           </div>
-          <div className="px-6 pb-6">
+          <div className="p-6">
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-20 bg-muted/50 rounded-lg animate-pulse" />
+                  <div key={i} className="h-20 bg-muted/50 rounded-xl animate-pulse" />
                 ))}
               </div>
             ) : recentAudits.length > 0 ? (
@@ -126,27 +147,34 @@ export default function UserDashboard() {
                     key={audit.id}
                     to={`/dashboard/reports/${audit.id}`}
                     className={cn(
-                      'flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-all duration-200 group hover:translate-x-1',
+                      'flex items-center justify-between p-4 rounded-xl border border-border bg-muted/30',
+                      'hover:bg-muted/60 hover:border-primary/20 transition-all duration-200 group',
                       'animate-fade-in',
                       `stagger-${Math.min(index + 1, 5)}`
                     )}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all duration-200 group-hover:bg-primary/15 group-hover:scale-105">
                         <FileBarChart className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-medium group-hover:text-primary transition-colors">
+                        <p className="font-semibold group-hover:text-primary transition-colors">
                           {audit.page_name || 'Untitled Audit'}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                          <Calendar className="h-3 w-3" />
                           {formatDistanceToNow(new Date(audit.created_at), { addSuffix: true })}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{audit.score_total || '—'}/100</p>
-                      <p className="text-xs text-muted-foreground capitalize">{audit.audit_type}</p>
+                    <div className="text-right flex items-center gap-3">
+                      <div>
+                        <p className={cn('text-xl font-bold', getScoreColor(audit.score_total))}>
+                          {audit.score_total || '—'}
+                        </p>
+                        <p className="text-xs text-muted-foreground capitalize">{audit.audit_type}</p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
                   </Link>
                 ))}
@@ -166,7 +194,7 @@ export default function UserDashboard() {
         </div>
 
         {/* Quick Score Summary */}
-        <div className="space-y-4 animate-fade-in-up stagger-5">
+        <div className="space-y-5 animate-fade-in-up stagger-5">
           <ScoreCard
             title="Latest Page Score"
             score={recentAudits[0]?.score_total || stats?.avgScore || 0}
@@ -181,31 +209,27 @@ export default function UserDashboard() {
               title="Facebook Auto-Connect"
               description="Connect your Facebook account to automatically fetch insights and run advanced audits."
             >
-              <div className="rounded-xl border border-border bg-card p-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#1877F2]/10 text-[#1877F2]">
-                    <Users className="h-6 w-6" />
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#1877F2]/10 text-[#1877F2]">
+                    <Users className="h-7 w-7" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Connect Facebook</h3>
+                    <h3 className="font-semibold text-lg">Connect Facebook</h3>
                     <p className="text-sm text-muted-foreground">
                       Get automatic insights from your page
                     </p>
                   </div>
                 </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span>Automatic reach & impressions</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span>Top performing posts analysis</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span>Audience demographics</span>
-                  </div>
+                <div className="space-y-3 text-sm">
+                  {['Automatic reach & impressions', 'Top performing posts analysis', 'Audience demographics'].map((feature, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <span className="text-muted-foreground">{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </LockedFeature>
@@ -213,14 +237,14 @@ export default function UserDashboard() {
 
           {/* Pro user: Show connected pages status */}
           {isPro && (
-            <div className="rounded-xl border border-border bg-card p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-success/10 text-success">
-                  <Users className="h-6 w-6" />
+            <div className="rounded-2xl border border-success/20 bg-success/5 p-6">
+              <div className="flex items-center gap-4 mb-5">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-success/10 text-success">
+                  <Users className="h-7 w-7" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">Pro Features Active</h3>
+                    <h3 className="font-semibold text-lg">Pro Features Active</h3>
                     <ProBadge size="sm" />
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -228,7 +252,7 @@ export default function UserDashboard() {
                   </p>
                 </div>
               </div>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full btn-premium">
                 <Link to="/dashboard/audit">
                   <Sparkles className="mr-2 h-4 w-4" />
                   Run Pro Audit
@@ -242,25 +266,27 @@ export default function UserDashboard() {
       {/* Upgrade CTA - Only for non-Pro users */}
       {!isPro && (
         <div 
-          className="rounded-2xl p-8 lg:p-10 text-center relative overflow-hidden animate-fade-in-up bg-primary" 
+          className="rounded-2xl p-8 lg:p-10 text-center relative overflow-hidden animate-fade-in-up bg-gradient-to-br from-primary to-primary/90" 
         >
           {/* Animated background shapes */}
-          <div className="absolute top-4 left-4 w-20 h-20 rounded-full bg-primary-foreground/10 animate-float" />
-          <div className="absolute bottom-4 right-4 w-16 h-16 rounded-2xl bg-primary-foreground/10 animate-float stagger-2" />
+          <div className="absolute top-6 left-6 w-24 h-24 rounded-full bg-primary-foreground/10 animate-float" />
+          <div className="absolute bottom-6 right-6 w-20 h-20 rounded-2xl bg-primary-foreground/10 animate-float stagger-2" />
+          <div className="absolute top-1/2 right-1/4 w-12 h-12 rounded-full bg-primary-foreground/5 animate-float stagger-3" />
           
           <div className="max-w-2xl mx-auto text-primary-foreground relative z-10">
-            <ProBadge size="md" className="mb-4" glow />
-            <h2 className="text-2xl lg:text-3xl font-bold mb-3">
+            <ProBadge size="md" className="mb-5" glow />
+            <h2 className="text-2xl lg:text-3xl font-bold mb-4">
               Unlock Advanced Insights with Pro
             </h2>
-            <p className="opacity-90 mb-6 max-w-lg mx-auto">
-              Connect your Facebook account, get automatic insights, detailed action plans, 
+            <p className="opacity-90 mb-8 max-w-lg mx-auto text-lg">
+              Connect your Facebook account, get AI-powered insights, detailed action plans, 
               and export professional PDF reports.
             </p>
-            <Button size="xl" variant="secondary" asChild className="shadow-lg">
+            <Button size="lg" variant="secondary" asChild className="shadow-xl h-12 px-8 text-base">
               <Link to="/dashboard/billing">
                 <Sparkles className="mr-2 h-5 w-5" />
                 Upgrade to Pro
+                <ArrowUpRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>
