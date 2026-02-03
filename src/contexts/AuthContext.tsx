@@ -272,7 +272,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isMounted = false;
       authSubscription.unsubscribe();
     };
-  }, [fetchSubscription, initialFetchDone]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Refresh subscription periodically (every 5 minutes)
   useEffect(() => {
