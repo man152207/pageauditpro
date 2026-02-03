@@ -102,20 +102,20 @@ export function ActionCard({
         className
       )}
     >
-      <div className="p-5">
-        {/* Header */}
-        <div className="flex items-start gap-4">
+      <div className="p-4">
+        {/* Header - Compact */}
+        <div className="flex items-start gap-3">
           <div className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
             completed ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'
           )}>
-            {completed ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+            {completed ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
           </div>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex items-start justify-between gap-2 mb-1.5">
               <h4 className={cn(
-                'font-semibold text-base leading-tight',
+                'font-semibold text-sm leading-tight',
                 completed && 'line-through text-muted-foreground'
               )}>
                 {title}
@@ -123,20 +123,20 @@ export function ActionCard({
               {isPro && <ProBadge size="sm" />}
             </div>
             
-            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
               {description}
             </p>
             
-            {/* Badges */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Badges - Compact */}
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className={cn(
-                'inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md border',
+                'inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-md border',
                 impactStyle.color
               )}>
                 {impactStyle.label}
               </span>
               <span className={cn(
-                'inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md border',
+                'inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-md border',
                 effortStyle.color
               )}>
                 {effortStyle.label}
@@ -145,23 +145,23 @@ export function ActionCard({
           </div>
         </div>
 
-        {/* Steps (Collapsible) */}
+        {/* Steps (Collapsible) - Compact */}
         {steps.length > 0 && (
           <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <CollapsibleTrigger asChild>
-              <button className="flex items-center gap-2 mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <button className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDown className={cn(
-                  'h-4 w-4 transition-transform duration-200',
+                  'h-3.5 w-3.5 transition-transform duration-200',
                   isOpen && 'rotate-180'
                 )} />
                 <span>{isOpen ? 'Hide steps' : `Show ${steps.length} steps`}</span>
               </button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3">
-              <div className="pl-4 border-l-2 border-primary/20 space-y-2">
+            <CollapsibleContent className="mt-2">
+              <div className="pl-3 border-l-2 border-primary/20 space-y-1.5">
                 {steps.map((step, index) => (
-                  <div key={index} className="flex items-start gap-3 text-sm">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  <div key={index} className="flex items-start gap-2 text-xs">
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-medium">
                       {index + 1}
                     </span>
                     <span className="text-muted-foreground">{step}</span>
@@ -172,24 +172,24 @@ export function ActionCard({
           </Collapsible>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+        {/* Actions - Compact */}
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
           <Button
             variant={completed ? 'default' : 'outline'}
             size="sm"
             onClick={handleComplete}
-            className={cn(completed && 'bg-success hover:bg-success/90')}
+            className={cn('h-7 text-xs', completed && 'bg-success hover:bg-success/90')}
           >
-            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-            {completed ? 'Completed' : 'Mark Done'}
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            {completed ? 'Done' : 'Mark Done'}
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleSave}
-            className={cn(saved && 'text-primary')}
+            className={cn('h-7 text-xs', saved && 'text-primary')}
           >
-            <Bookmark className={cn('mr-1.5 h-3.5 w-3.5', saved && 'fill-current')} />
+            <Bookmark className={cn('mr-1 h-3 w-3', saved && 'fill-current')} />
             {saved ? 'Saved' : 'Save'}
           </Button>
         </div>
@@ -218,15 +218,15 @@ export function ActionCardCompact({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:border-primary/20 hover:bg-muted/30 transition-all text-left group"
+      className="w-full flex items-center gap-2 p-2.5 rounded-lg border border-border bg-card hover:border-primary/20 hover:bg-muted/30 transition-all text-left group"
     >
-      <CheckCircle2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-      <span className="flex-1 text-sm font-medium truncate">{title}</span>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <span className={cn('px-1.5 py-0.5 text-[10px] font-medium rounded', impactStyle.color)}>
+      <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+      <span className="flex-1 text-xs font-medium truncate">{title}</span>
+      <div className="flex items-center gap-1 shrink-0">
+        <span className={cn('px-1 py-0.5 text-[9px] font-medium rounded', impactStyle.color)}>
           {impact.charAt(0).toUpperCase()}
         </span>
-        <span className={cn('px-1.5 py-0.5 text-[10px] font-medium rounded', effortStyle.color)}>
+        <span className={cn('px-1 py-0.5 text-[9px] font-medium rounded', effortStyle.color)}>
           {effort.charAt(0).toUpperCase()}
         </span>
         {isPro && <ProBadge size="sm" />}

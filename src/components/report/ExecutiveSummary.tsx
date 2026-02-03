@@ -28,7 +28,7 @@ interface ExecutiveSummaryProps {
 }
 
 /**
- * Executive Summary Card (B2)
+ * Executive Summary Card (B2) - Compact Version
  * Always visible at top of report with Top Wins, Key Issues, Next Actions
  */
 export function ExecutiveSummary({
@@ -131,18 +131,18 @@ Powered by Pagelyzer
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-accent/5 p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-9 w-32" />
+      <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-accent/5 p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-8 w-28" />
         </div>
-        <div className="grid sm:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="h-5 w-24" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-5/6" />
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-5/6" />
             </div>
           ))}
         </div>
@@ -152,50 +152,50 @@ Powered by Pagelyzer
 
   return (
     <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-background/50 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Sparkles className="h-4 w-4" />
+      {/* Header - Compact */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-background/50 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
           </div>
-          <h3 className="font-semibold text-lg">Executive Summary</h3>
+          <h3 className="font-semibold text-base">Executive Summary</h3>
         </div>
         <Button
           variant="outline"
           size="sm"
           onClick={handleCopySummary}
-          className="gap-2"
+          className="gap-1.5 h-8 text-xs"
         >
           {copied ? (
             <>
-              <Check className="h-4 w-4 text-success" />
+              <Check className="h-3.5 w-3.5 text-success" />
               Copied!
             </>
           ) : (
             <>
-              <Copy className="h-4 w-4" />
-              Copy Summary
+              <Copy className="h-3.5 w-3.5" />
+              Copy
             </>
           )}
         </Button>
       </div>
 
-      {/* Content Grid */}
-      <div className="p-6 sm:p-8">
-        <div className="grid sm:grid-cols-3 gap-6 sm:gap-8">
+      {/* Content Grid - Tighter spacing */}
+      <div className="p-4 sm:p-5">
+        <div className="grid sm:grid-cols-3 gap-4 sm:gap-5">
           {/* Top Wins */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-success/10 text-success">
-                <TrendingUp className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 mb-3">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10 text-success">
+                <TrendingUp className="h-3.5 w-3.5" />
               </div>
-              <h4 className="font-semibold text-success">Top Wins</h4>
+              <h4 className="font-semibold text-sm text-success">Top Wins</h4>
             </div>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2">
               {summary.wins.map((win, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <span className="text-success mt-0.5">•</span>
-                  <span className="text-muted-foreground">{win}</span>
+                <li key={i} className="flex items-start gap-1.5 text-sm">
+                  <span className="text-success mt-0.5 text-xs">•</span>
+                  <span className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{win}</span>
                 </li>
               ))}
             </ul>
@@ -203,17 +203,17 @@ Powered by Pagelyzer
 
           {/* Key Issues */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-warning/10 text-warning">
-                <AlertTriangle className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 mb-3">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-warning/10 text-warning">
+                <AlertTriangle className="h-3.5 w-3.5" />
               </div>
-              <h4 className="font-semibold text-warning">Key Issues</h4>
+              <h4 className="font-semibold text-sm text-warning">Key Issues</h4>
             </div>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2">
               {summary.issues.map((issue, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <span className="text-warning mt-0.5">•</span>
-                  <span className="text-muted-foreground">{issue}</span>
+                <li key={i} className="flex items-start gap-1.5 text-sm">
+                  <span className="text-warning mt-0.5 text-xs">•</span>
+                  <span className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{issue}</span>
                 </li>
               ))}
             </ul>
@@ -221,17 +221,17 @@ Powered by Pagelyzer
 
           {/* Next Actions */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Target className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 mb-3">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Target className="h-3.5 w-3.5" />
               </div>
-              <h4 className="font-semibold text-primary">Next Actions</h4>
+              <h4 className="font-semibold text-sm text-primary">Next Actions</h4>
             </div>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2">
               {summary.actions.map((action, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span className="text-muted-foreground">{action}</span>
+                <li key={i} className="flex items-start gap-1.5 text-sm">
+                  <span className="text-primary mt-0.5 text-xs">•</span>
+                  <span className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{action}</span>
                 </li>
               ))}
             </ul>

@@ -34,7 +34,7 @@ function getGradeInfo(score: number): { grade: string; label: string; colorClass
 }
 
 /**
- * Individual Score Explanation Card with "Why this score?" accordion
+ * Individual Score Explanation Card - Compact version
  * Requirement B3
  */
 export function ScoreExplanationCard({
@@ -50,20 +50,20 @@ export function ScoreExplanationCard({
 
   return (
     <div className={cn(
-      'rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/20 hover:shadow-md',
+      'rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/20 hover:shadow-md',
       className
     )}>
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Icon className="h-5 w-5" />
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Icon className="h-4 w-4" />
           </div>
           <div>
-            <h4 className="font-semibold">{title}</h4>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-3xl font-bold tracking-tight">{score}</span>
-              <span className={cn('px-2 py-0.5 rounded-md text-xs font-semibold', colorClass)}>
+            <h4 className="font-semibold text-sm">{title}</h4>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-2xl font-bold tracking-tight">{score}</span>
+              <span className={cn('px-1.5 py-0.5 rounded-md text-xs font-semibold', colorClass)}>
                 {grade}
               </span>
             </div>
@@ -71,31 +71,31 @@ export function ScoreExplanationCard({
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground mb-3">{label}</p>
+      <p className="text-xs text-muted-foreground mb-2">{label}</p>
 
       {/* Why this score? Accordion */}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors font-medium w-full">
-          <HelpCircle className="h-4 w-4" />
+        <CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors font-medium w-full">
+          <HelpCircle className="h-3.5 w-3.5" />
           <span>Why this score?</span>
           <ChevronDown className={cn(
-            'h-4 w-4 ml-auto transition-transform duration-200',
+            'h-3.5 w-3.5 ml-auto transition-transform duration-200',
             isOpen && 'rotate-180'
           )} />
         </CollapsibleTrigger>
-        <CollapsibleContent className="mt-3">
-          <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <CollapsibleContent className="mt-2">
+          <div className="p-2.5 rounded-lg bg-muted/50 border border-border space-y-1.5">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
               {explanationTitle}
             </p>
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {explanationItems.map((item, index) => (
-                <li key={index} className="flex items-center justify-between text-sm">
+                <li key={index} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{item.label}</span>
                   {item.available !== false ? (
                     <span className="font-medium">{item.value ?? '—'}</span>
                   ) : (
-                    <span className="text-muted-foreground/50 text-xs">Not available</span>
+                    <span className="text-muted-foreground/50 text-[10px]">Not available</span>
                   )}
                 </li>
               ))}
@@ -129,7 +129,7 @@ interface ScoreExplanationGridProps {
 }
 
 /**
- * Grid of Score Explanation Cards
+ * Grid of Score Explanation Cards - Mobile responsive
  */
 export function ScoreExplanationGrid({
   breakdown,
@@ -141,7 +141,7 @@ export function ScoreExplanationGrid({
   const postsCount = detailedMetrics?.postsCount || inputSummary?.postsAnalyzed;
 
   return (
-    <div className="grid sm:grid-cols-3 gap-4">
+    <div className="grid gap-3 sm:grid-cols-3">
       <ScoreExplanationCard
         title="Engagement"
         score={engagement}

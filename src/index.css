@@ -238,11 +238,20 @@
   }
 
   .report-section {
-    @apply mt-4 sm:mt-5;
+    @apply mt-3 sm:mt-4;
   }
 
   .report-section-card {
-    @apply p-4 sm:p-5 rounded-2xl border border-border bg-card;
+    @apply p-3 sm:p-4 rounded-xl border border-border bg-card;
+  }
+
+  /* Report-specific compact utilities */
+  .report-grid-tight {
+    @apply gap-3 sm:gap-4;
+  }
+
+  .report-space-tight > * + * {
+    @apply mt-3 sm:mt-4;
   }
 
   /* ========== COMPACT DENSITY MODE ========== */

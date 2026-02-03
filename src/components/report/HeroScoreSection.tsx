@@ -34,7 +34,8 @@ function getScoreColor(score: number): string {
   return 'stroke-destructive';
 }
 
-function ScoreRing({ score, size = 180, strokeWidth = 12 }: { score: number; size?: number; strokeWidth?: number }) {
+// Compact score ring - reduced from 180px to 140px (120px on mobile)
+function ScoreRing({ score, size = 140, strokeWidth = 10 }: { score: number; size?: number; strokeWidth?: number }) {
   const [animatedScore, setAnimatedScore] = useState(0);
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -72,8 +73,8 @@ function ScoreRing({ score, size = 180, strokeWidth = 12 }: { score: number; siz
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-4xl sm:text-5xl font-bold tracking-tight">{Math.round(animatedScore)}</span>
-        <span className={cn('text-lg font-bold', color)}>{grade}</span>
+        <span className="text-3xl sm:text-4xl font-bold tracking-tight">{Math.round(animatedScore)}</span>
+        <span className={cn('text-base font-bold', color)}>{grade}</span>
       </div>
     </div>
   );
@@ -85,18 +86,19 @@ interface BreakdownCardProps {
   icon: React.ElementType;
 }
 
+// Compact breakdown card with reduced padding
 function BreakdownCard({ title, score, icon: Icon }: BreakdownCardProps) {
   return (
-    <div className="interactive-card p-4 group">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+    <div className="interactive-card p-3 group">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
           <Icon className="h-4 w-4" />
         </div>
       </div>
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-sm text-muted-foreground mb-1">{title}</p>
-          <p className="text-2xl font-bold tracking-tight">{score}</p>
+          <p className="text-xs text-muted-foreground mb-0.5">{title}</p>
+          <p className="text-xl font-bold tracking-tight">{score}</p>
         </div>
         <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', {
           'bg-success/10 text-success': score >= 80,
@@ -120,21 +122,21 @@ export function HeroScoreSection({
 }: HeroScoreSectionProps) {
   if (loading) {
     return (
-      <div className={cn('rounded-2xl border border-border bg-card p-6 sm:p-8', className)}>
-        <div className="grid lg:grid-cols-[1fr_2fr] gap-8 items-center">
+      <div className={cn('rounded-2xl border border-border bg-card p-4 sm:p-5', className)}>
+        <div className="grid lg:grid-cols-[auto_1fr] gap-6 items-center">
           <div className="flex flex-col items-center text-center">
-            <Skeleton variant="circular" className="h-44 w-44 mb-4" />
-            <Skeleton className="h-5 w-32" />
+            <Skeleton variant="circular" className="h-36 w-36 mb-3" />
+            <Skeleton className="h-4 w-28" />
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <Skeleton variant="circular" className="h-9 w-9" />
-                  <Skeleton className="h-7 w-16" />
+              <div key={i} className="rounded-xl border border-border bg-card p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Skeleton variant="circular" className="h-8 w-8" />
+                  <Skeleton className="h-5 w-12" />
                 </div>
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-3 w-16 mb-1" />
+                <Skeleton className="h-6 w-10" />
               </div>
             ))}
           </div>
@@ -147,39 +149,45 @@ export function HeroScoreSection({
 
   return (
     <div className={cn('rounded-2xl border border-border bg-card overflow-hidden', className)}>
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <BarChart3 className="h-5 w-5" />
+      {/* Header - Compact */}
+      <div className="px-4 py-3 border-b border-border bg-muted/30">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <BarChart3 className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">Health Summary</h3>
-            <p className="text-sm text-muted-foreground">Overall page performance score</p>
+            <h3 className="font-semibold text-base">Health Summary</h3>
+            <p className="text-xs text-muted-foreground">Overall page performance score</p>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-6 sm:p-8">
-        <div className="grid lg:grid-cols-[auto_1fr] gap-8 items-center">
-          {/* Score Ring */}
+      {/* Content - Tighter padding */}
+      <div className="p-4 sm:p-5">
+        <div className="grid lg:grid-cols-[auto_1fr] gap-5 items-center">
+          {/* Score Ring - Centered on mobile */}
           <div className="flex flex-col items-center text-center">
-            <ScoreRing score={overallScore} />
+            {/* Mobile: 120px, Desktop: 140px */}
+            <div className="sm:hidden">
+              <ScoreRing score={overallScore} size={120} strokeWidth={8} />
+            </div>
+            <div className="hidden sm:block">
+              <ScoreRing score={overallScore} />
+            </div>
             
             {scoreDiff !== null && (
               <div className={cn(
-                'flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full text-sm font-medium',
+                'flex items-center gap-1 mt-3 px-2 py-1 rounded-full text-xs font-medium',
                 scoreDiff > 0 ? 'bg-success/10 text-success' : 
                 scoreDiff < 0 ? 'bg-destructive/10 text-destructive' : 
                 'bg-muted text-muted-foreground'
               )}>
                 {scoreDiff > 0 ? (
-                  <TrendingUp className="h-4 w-4" />
+                  <TrendingUp className="h-3 w-3" />
                 ) : scoreDiff < 0 ? (
-                  <TrendingDown className="h-4 w-4" />
+                  <TrendingDown className="h-3 w-3" />
                 ) : (
-                  <Minus className="h-4 w-4" />
+                  <Minus className="h-3 w-3" />
                 )}
                 <span>
                   {scoreDiff > 0 ? '+' : ''}{scoreDiff} vs previous
@@ -188,8 +196,8 @@ export function HeroScoreSection({
             )}
           </div>
 
-          {/* Breakdown Cards */}
-          <div className="grid sm:grid-cols-2 gap-4">
+          {/* Breakdown Cards - 2x2 grid on all screens */}
+          <div className="grid grid-cols-2 gap-3">
             <BreakdownCard
               title="Engagement"
               score={breakdown.engagement || 0}

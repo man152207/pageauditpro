@@ -78,184 +78,184 @@ export function ReportSidebar({
   return (
     <aside
       className={cn(
-        'w-full lg:w-80 xl:w-96 shrink-0 space-y-4',
+        'w-full lg:w-72 xl:w-80 shrink-0 space-y-3',
         isSticky && 'lg:sticky lg:top-24',
         className
       )}
     >
-      {/* Quick Score Overview */}
-      <div className="p-4 rounded-2xl border border-border bg-card">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Target className="h-5 w-5" />
+      {/* Quick Score Overview - Compact */}
+      <div className="p-3 rounded-xl border border-border bg-card">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Target className="h-4 w-4" />
           </div>
           <div>
-            <h4 className="font-semibold text-sm">Health Score</h4>
-            <p className={cn('text-2xl font-bold', getScoreColor(overallScore))}>
+            <h4 className="font-semibold text-xs">Health Score</h4>
+            <p className={cn('text-xl font-bold', getScoreColor(overallScore))}>
               {overallScore}/100
             </p>
           </div>
         </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Engagement</span>
             <span className={cn('font-medium', getScoreColor(breakdown.engagement))}>
               {breakdown.engagement}
             </span>
           </div>
-          <Progress value={breakdown.engagement} className="h-1.5" />
+          <Progress value={breakdown.engagement} className="h-1" />
           
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Consistency</span>
             <span className={cn('font-medium', getScoreColor(breakdown.consistency))}>
               {breakdown.consistency}
             </span>
           </div>
-          <Progress value={breakdown.consistency} className="h-1.5" />
+          <Progress value={breakdown.consistency} className="h-1" />
           
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Readiness</span>
             <span className={cn('font-medium', getScoreColor(breakdown.readiness))}>
               {breakdown.readiness}
             </span>
           </div>
-          <Progress value={breakdown.readiness} className="h-1.5" />
+          <Progress value={breakdown.readiness} className="h-1" />
         </div>
       </div>
 
-      {/* Next Actions */}
+      {/* Next Actions - Compact */}
       {nextActions.length > 0 && (
-        <div className="p-4 rounded-2xl border border-border bg-card">
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-            <h4 className="font-semibold text-sm">Next Actions</h4>
+        <div className="p-3 rounded-xl border border-border bg-card">
+          <div className="flex items-center gap-1.5 mb-2">
+            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+            <h4 className="font-semibold text-xs">Next Actions</h4>
           </div>
-          <ul className="space-y-2">
+          <ul className="space-y-1.5">
             {nextActions.slice(0, 3).map((action, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <ArrowRight className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span className="text-muted-foreground">{action}</span>
+              <li key={i} className="flex items-start gap-1.5 text-xs">
+                <ArrowRight className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+                <span className="text-muted-foreground leading-relaxed">{action}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Paid vs Organic Snapshot */}
+      {/* Paid vs Organic Snapshot - Compact */}
       {hasProAccess ? (
         paidVsOrganic?.available === true ? (
           // Data is available - show percentages
           paidVsOrganic.paid === 0 && paidVsOrganic.organic === 100 ? (
-            <div className="p-4 rounded-2xl border border-border bg-card">
-              <div className="flex items-center gap-2 mb-3">
-                <PieChart className="h-4 w-4 text-primary" />
-                <h4 className="font-semibold text-sm">Paid vs Organic</h4>
+            <div className="p-3 rounded-xl border border-border bg-card">
+              <div className="flex items-center gap-1.5 mb-2">
+                <PieChart className="h-3.5 w-3.5 text-primary" />
+                <h4 className="font-semibold text-xs">Paid vs Organic</h4>
               </div>
-              <div className="text-center py-2">
-                <p className="text-xl font-bold text-accent">100%</p>
-                <p className="text-xs text-muted-foreground">Organic Reach</p>
+              <div className="text-center py-1">
+                <p className="text-lg font-bold text-accent">100%</p>
+                <p className="text-[10px] text-muted-foreground">Organic Reach</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 text-center italic">
-                {paidVsOrganic.message || 'No paid impressions detected in this period'}
+              <p className="text-[10px] text-muted-foreground mt-1.5 text-center italic">
+                {paidVsOrganic.message || 'No paid impressions detected'}
               </p>
             </div>
           ) : (
-            <div className="p-4 rounded-2xl border border-border bg-card">
-              <div className="flex items-center gap-2 mb-3">
-                <PieChart className="h-4 w-4 text-primary" />
-                <h4 className="font-semibold text-sm">Paid vs Organic</h4>
+            <div className="p-3 rounded-xl border border-border bg-card">
+              <div className="flex items-center gap-1.5 mb-2">
+                <PieChart className="h-3.5 w-3.5 text-primary" />
+                <h4 className="font-semibold text-xs">Paid vs Organic</h4>
               </div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1.5">
                 <div className="text-center flex-1">
-                  <p className="text-xl font-bold text-primary">{paidVsOrganic.paid}%</p>
-                  <p className="text-xs text-muted-foreground">Paid</p>
+                  <p className="text-lg font-bold text-primary">{paidVsOrganic.paid}%</p>
+                  <p className="text-[10px] text-muted-foreground">Paid</p>
                 </div>
-                <div className="h-8 w-px bg-border" />
+                <div className="h-6 w-px bg-border" />
                 <div className="text-center flex-1">
-                  <p className="text-xl font-bold text-accent">{paidVsOrganic.organic}%</p>
-                  <p className="text-xs text-muted-foreground">Organic</p>
+                  <p className="text-lg font-bold text-accent">{paidVsOrganic.organic}%</p>
+                  <p className="text-[10px] text-muted-foreground">Organic</p>
                 </div>
               </div>
               <Progress 
                 value={paidVsOrganic.paid} 
-                className="h-2" 
+                className="h-1.5" 
               />
             </div>
           )
         ) : (
           // Data not available - show reason
-          <div className="p-4 rounded-2xl border border-dashed border-border bg-muted/20">
-            <div className="flex items-center gap-2 mb-2">
-              <PieChart className="h-4 w-4 text-muted-foreground" />
-              <h4 className="font-semibold text-sm text-muted-foreground">Paid vs Organic</h4>
+          <div className="p-3 rounded-xl border border-dashed border-border bg-muted/20">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <PieChart className="h-3.5 w-3.5 text-muted-foreground" />
+              <h4 className="font-semibold text-xs text-muted-foreground">Paid vs Organic</h4>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
               {paidVsOrganic?.reason || 'Not available via current Facebook data.'}
             </p>
           </div>
         )
       ) : (
-        <div className="p-4 rounded-2xl border border-border bg-muted/30 relative overflow-hidden">
-          <div className="flex items-center gap-2 mb-2">
-            <Lock className="h-4 w-4 text-muted-foreground" />
-            <h4 className="font-semibold text-sm text-muted-foreground">Paid vs Organic</h4>
-            <Badge variant="secondary" className="text-xs">Pro</Badge>
+        <div className="p-3 rounded-xl border border-border bg-muted/30 relative overflow-hidden">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+            <h4 className="font-semibold text-xs text-muted-foreground">Paid vs Organic</h4>
+            <Badge variant="secondary" className="text-[10px] py-0 px-1.5">Pro</Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Upgrade to Pro to see paid vs organic performance breakdown.
+          <p className="text-[10px] text-muted-foreground">
+            Upgrade to Pro to see paid vs organic breakdown.
           </p>
         </div>
       )}
 
-      {/* Benchmarks */}
+      {/* Benchmarks - Compact */}
       {hasProAccess && benchmarks && (
-        <div className="p-4 rounded-2xl border border-border bg-card">
-          <div className="flex items-center gap-2 mb-3">
-            <BarChart3 className="h-4 w-4 text-primary" />
-            <h4 className="font-semibold text-sm">Benchmarks</h4>
+        <div className="p-3 rounded-xl border border-border bg-card">
+          <div className="flex items-center gap-1.5 mb-2">
+            <BarChart3 className="h-3.5 w-3.5 text-primary" />
+            <h4 className="font-semibold text-xs">Benchmarks</h4>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div>
-              <div className="flex items-center justify-between text-sm mb-1">
+              <div className="flex items-center justify-between text-xs mb-0.5">
                 <span className="text-muted-foreground">Posting Frequency</span>
-                <Badge variant="outline" className="text-xs">{benchmarks.postingFrequency.target}</Badge>
+                <Badge variant="outline" className="text-[10px] py-0 px-1.5">{benchmarks.postingFrequency.target}</Badge>
               </div>
-              <p className="text-sm">
+              <p className="text-xs">
                 <span className="font-medium">{benchmarks.postingFrequency.current}</span>
                 <span className="text-muted-foreground"> posts/week</span>
               </p>
             </div>
             <div>
-              <div className="flex items-center justify-between text-sm mb-1">
+              <div className="flex items-center justify-between text-xs mb-0.5">
                 <span className="text-muted-foreground">Engagement Rate</span>
-                <Badge variant="outline" className="text-xs">{benchmarks.engagementRate.range}</Badge>
+                <Badge variant="outline" className="text-[10px] py-0 px-1.5">{benchmarks.engagementRate.range}</Badge>
               </div>
-              <p className="text-sm">
+              <p className="text-xs">
                 <span className="font-medium">{benchmarks.engagementRate.current}%</span>
                 <span className="text-muted-foreground"> current</span>
               </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-3 italic">
+          <p className="text-[10px] text-muted-foreground mt-2 italic">
             * Benchmarks are industry heuristics
           </p>
         </div>
       )}
 
-      {/* Upgrade CTA for Free Users */}
+      {/* Upgrade CTA for Free Users - Compact */}
       {!hasProAccess && (
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <h4 className="font-semibold text-sm">Unlock Full Report</h4>
+        <div className="p-3 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <h4 className="font-semibold text-xs">Unlock Full Report</h4>
           </div>
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-[10px] text-muted-foreground mb-2">
             Get paid/organic insights, benchmarks, creative analysis, and more.
           </p>
-          <Button size="sm" className="w-full" asChild>
+          <Button size="sm" className="w-full h-7 text-xs" asChild>
             <Link to="/dashboard/billing">
               Upgrade to Pro
-              <ArrowRight className="ml-2 h-3 w-3" />
+              <ArrowRight className="ml-1.5 h-3 w-3" />
             </Link>
           </Button>
         </div>
