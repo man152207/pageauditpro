@@ -47,6 +47,8 @@ const navItems: NavItem[] = [
   { href: '/dashboard/compare', label: 'Compare', icon: GitCompare },
   { href: '/dashboard/history', label: 'History', icon: History },
   { href: '/dashboard/billing', label: 'Billing', icon: CreditCard },
+  { href: '/dashboard/profile', label: 'Profile', icon: User },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 const adminNavItems: NavItem[] = [
