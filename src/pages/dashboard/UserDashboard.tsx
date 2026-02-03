@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRecentAudits, useAuditStats } from '@/hooks/useAudits';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSparklineData } from '@/hooks/useHistoricalScores';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/ui/stat-card';
 import { ScoreCard } from '@/components/ui/score-card';
@@ -33,6 +34,9 @@ export default function UserDashboard() {
   // Real data hooks
   const { data: recentAudits = [], isLoading: auditsLoading } = useRecentAudits(5);
   const { data: stats, isLoading: statsLoading } = useAuditStats();
+  
+  // Real sparkline data (replaces hardcoded sample arrays)
+  const { data: sparklineScores, hasData: hasSparklineData } = useSparklineData(7);
 
   const isLoading = auditsLoading || statsLoading;
 
@@ -91,12 +95,14 @@ export default function UserDashboard() {
                 </p>
                 <p className="text-sm text-muted-foreground mt-0.5">All time audits</p>
               </div>
-              <Sparkline 
-                data={[12, 15, 18, 14, 22, 25, stats?.totalAudits || 28]} 
-                color="primary" 
-                height={36} 
-                width={72}
-              />
+              {hasSparklineData && sparklineScores.length > 1 && (
+                <Sparkline 
+                  data={sparklineScores} 
+                  color="primary" 
+                  height={36} 
+                  width={72}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -116,12 +122,14 @@ export default function UserDashboard() {
                 </p>
                 <p className="text-sm text-muted-foreground mt-0.5">Across all audits</p>
               </div>
-              <Sparkline 
-                data={[65, 68, 72, 70, 75, 78, stats?.avgScore || 80]} 
-                color="accent" 
-                height={36} 
-                width={72}
-              />
+              {hasSparklineData && sparklineScores.length > 1 && (
+                <Sparkline 
+                  data={sparklineScores} 
+                  color="accent" 
+                  height={36} 
+                  width={72}
+                />
+              )}
             </div>
           </div>
         </div>

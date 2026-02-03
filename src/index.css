@@ -305,6 +305,145 @@
     margin-top: 1rem !important;
   }
 
+  /* ========== COMPACT MODE: REPORT COMPONENTS ========== */
+  /* Executive Summary */
+  .density-compact .executive-summary {
+    @apply p-4 sm:p-5;
+  }
+
+  .density-compact .executive-summary h2 {
+    @apply text-xl sm:text-2xl mb-2;
+  }
+
+  /* Score cards in compact mode */
+  .density-compact .score-card {
+    @apply p-3 sm:p-4;
+  }
+
+  .density-compact .score-card .score-value {
+    @apply text-3xl sm:text-4xl;
+  }
+
+  /* Hero Score Section */
+  .density-compact .hero-score-section {
+    @apply py-4 sm:py-5;
+  }
+
+  .density-compact .hero-score-section .score-display {
+    @apply text-5xl sm:text-6xl;
+  }
+
+  /* Action Cards */
+  .density-compact .action-card {
+    @apply p-3 sm:p-4;
+  }
+
+  .density-compact .action-card h4 {
+    @apply text-sm font-semibold;
+  }
+
+  .density-compact .action-card p {
+    @apply text-xs;
+  }
+
+  /* Chart containers */
+  .density-compact .chart-container {
+    @apply min-h-[180px];
+  }
+
+  .density-compact .recharts-wrapper {
+    font-size: 11px;
+  }
+
+  /* Tables */
+  .density-compact table th,
+  .density-compact table td {
+    @apply py-2 px-2.5 text-xs;
+  }
+
+  .density-compact .posts-table th,
+  .density-compact .posts-table td {
+    @apply py-2 px-2;
+  }
+
+  /* Post cards */
+  .density-compact .post-card {
+    @apply p-3;
+  }
+
+  .density-compact .post-card .thumbnail {
+    @apply w-12 h-12;
+  }
+
+  /* Sidebar in compact mode */
+  .density-compact .report-sidebar {
+    @apply p-3 sm:p-4 gap-3;
+  }
+
+  .density-compact .report-sidebar h3 {
+    @apply text-sm font-semibold;
+  }
+
+  /* Benchmarks card */
+  .density-compact .benchmarks-card {
+    @apply p-3;
+  }
+
+  .density-compact .benchmarks-card .metric-row {
+    @apply py-1.5;
+  }
+
+  /* Demographics section */
+  .density-compact .demographics-section {
+    @apply p-4;
+  }
+
+  .density-compact .demographics-chart {
+    @apply min-h-[160px];
+  }
+
+  /* AI Insights */
+  .density-compact .ai-insights-section {
+    @apply p-4;
+  }
+
+  .density-compact .ai-insights-section h3 {
+    @apply text-base mb-2;
+  }
+
+  /* Creative Preview */
+  .density-compact .creative-preview {
+    @apply p-3;
+  }
+
+  .density-compact .creative-preview .media-thumbnail {
+    @apply w-16 h-16 sm:w-20 sm:h-20;
+  }
+
+  /* Report header */
+  .density-compact .report-header {
+    @apply py-3 px-4;
+  }
+
+  .density-compact .report-header h1 {
+    @apply text-lg sm:text-xl;
+  }
+
+  /* Tab content spacing */
+  .density-compact [role="tabpanel"] {
+    @apply pt-3;
+  }
+
+  /* Reduce card borders in compact mode */
+  .density-compact .border {
+    border-width: 1px;
+  }
+
+  /* Compact tooltips */
+  .density-compact [data-radix-popper-content-wrapper] {
+    font-size: 12px;
+  }
+
   /* ========== GENEROUS SECTION SPACING ========== */
   .section {
     @apply py-16 sm:py-20 md:py-24;
