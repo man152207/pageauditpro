@@ -138,7 +138,7 @@ export function ReportSidebar({
 
       {/* Paid vs Organic Snapshot */}
       {hasProAccess ? (
-        paidVsOrganic ? (
+        paidVsOrganic && paidVsOrganic.paid !== undefined && paidVsOrganic.organic !== undefined && (paidVsOrganic.paid > 0 || paidVsOrganic.organic > 0) ? (
           <div className="p-4 rounded-2xl border border-border bg-card">
             <div className="flex items-center gap-2 mb-3">
               <PieChart className="h-4 w-4 text-primary" />
@@ -161,13 +161,13 @@ export function ReportSidebar({
             />
           </div>
         ) : (
-          <div className="p-4 rounded-2xl border border-border bg-muted/30">
+          <div className="p-4 rounded-2xl border border-dashed border-border bg-muted/20">
             <div className="flex items-center gap-2 mb-2">
               <PieChart className="h-4 w-4 text-muted-foreground" />
               <h4 className="font-semibold text-sm text-muted-foreground">Paid vs Organic</h4>
             </div>
-            <p className="text-xs text-muted-foreground">
-              This data requires ad account permissions. Connect your ad account to see paid vs organic breakdown.
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Paid vs Organic breakdown is not available for this page via current Facebook data. This typically requires ad account permissions or boosted post insights.
             </p>
           </div>
         )

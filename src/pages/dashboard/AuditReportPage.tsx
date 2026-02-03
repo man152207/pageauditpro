@@ -175,39 +175,17 @@ export default function AuditReportPage() {
     queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
   };
 
-  // Generate chart data
-  const generateEngagementData = () => {
-    const data = [];
-    for (let i = 30; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      data.push({
-        date: format(date, 'MMM d'),
-        value: Math.floor(Math.random() * 500) + 100,
-        previousValue: Math.floor(Math.random() * 400) + 80,
-      });
-    }
-    return data;
-  };
+  // Get real chart data from computed metrics - NO MOCK DATA
+  const engagementTrendData = computedMetrics.engagementTrend || null;
+  const hasRealEngagementData = engagementTrendData && Array.isArray(engagementTrendData) && engagementTrendData.length > 0;
 
-  const postTypeData = computedMetrics.postTypeAnalysis || [
-    { type: 'Photos', engagement: 450, posts: 12 },
-    { type: 'Videos', engagement: 820, posts: 5 },
-    { type: 'Links', engagement: 180, posts: 8 },
-    { type: 'Status', engagement: 95, posts: 15 },
-  ];
+  // Post type data - only use if real data exists
+  const postTypeData = computedMetrics.postTypeAnalysis || null;
+  const hasRealPostTypeData = postTypeData && Array.isArray(postTypeData) && postTypeData.length > 0;
 
-  const heatmapData = (() => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const hours = [9, 12, 15, 18, 21];
-    const data: { day: string; hour: number; value: number }[] = [];
-    days.forEach(day => {
-      hours.forEach(hour => {
-        data.push({ day, hour, value: Math.floor(Math.random() * 100) });
-      });
-    });
-    return data;
-  })();
+  // Heatmap data - only use if real data exists
+  const heatmapData = computedMetrics.bestTimeToPost || null;
+  const hasRealHeatmapData = heatmapData && Array.isArray(heatmapData) && heatmapData.length > 0;
 
   const mapPriorityToImpact = (priority: string): ImpactLevel => {
     switch (priority) {
@@ -454,31 +432,31 @@ Powered by Pagelyzer
               icon={<TrendingUp className="h-5 w-5" />}
             >
               <div className="grid gap-6 lg:grid-cols-2">
-                {report.detailed_metrics ? (
-                  <>
-                    <EngagementChart
-                      data={generateEngagementData()}
-                      title="Engagement Over Time"
-                      showComparison={true}
-                    />
-                    <PostTypeChart
-                      data={postTypeData.map((d: any) => ({
-                        type: d.type,
-                        engagement: d.avgEngagement || d.engagement,
-                        posts: d.count || d.posts,
-                      }))}
-                      title="Post Type Performance"
-                    />
-                  </>
+                {hasRealEngagementData ? (
+                  <EngagementChart
+                    data={engagementTrendData}
+                    title="Engagement Over Time"
+                    showComparison={false}
+                  />
                 ) : (
-                  <>
-                    <ChartEmptyState title="Engagement Over Time" chartType="line" />
-                    <ChartEmptyState title="Post Type Performance" chartType="bar" />
-                  </>
+                  <ChartEmptyState title="Engagement Over Time" chartType="line" />
+                )}
+                
+                {hasRealPostTypeData ? (
+                  <PostTypeChart
+                    data={postTypeData.map((d: any) => ({
+                      type: d.type,
+                      engagement: d.avgEngagement || d.engagement || 0,
+                      posts: d.count || d.posts || 0,
+                    }))}
+                    title="Post Type Performance"
+                  />
+                ) : (
+                  <ChartEmptyState title="Post Type Performance" chartType="bar" />
                 )}
               </div>
               <div className="mt-6">
-                {report.detailed_metrics ? (
+                {hasRealHeatmapData ? (
                   <BestTimeHeatmap data={heatmapData} title="Best Time to Post" />
                 ) : (
                   <ChartEmptyState title="Best Time to Post" chartType="heatmap" />
@@ -533,11 +511,11 @@ Powered by Pagelyzer
             >
               <CreativePreview
                 creatives={creatives}
-                postTypeStats={postTypeData.map((d: any) => ({
+                postTypeStats={hasRealPostTypeData ? postTypeData.map((d: any) => ({
                   type: d.type,
-                  avgEngagement: d.avgEngagement || d.engagement,
-                  count: d.count || d.posts,
-                }))}
+                  avgEngagement: d.avgEngagement || d.engagement || 0,
+                  count: d.count || d.posts || 0,
+                })) : []}
               />
             </ReportSection>
           )}

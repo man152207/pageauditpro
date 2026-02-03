@@ -1,7 +1,6 @@
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, BarChart3, ThumbsUp, Zap, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Sparkline } from '@/components/ui/sparkline';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ScoreBreakdown {
@@ -84,21 +83,15 @@ interface BreakdownCardProps {
   title: string;
   score: number;
   icon: React.ElementType;
-  trend?: number[];
 }
 
-function BreakdownCard({ title, score, icon: Icon, trend }: BreakdownCardProps) {
-  const { color } = getGradeLabel(score);
-  
+function BreakdownCard({ title, score, icon: Icon }: BreakdownCardProps) {
   return (
     <div className="interactive-card p-4 group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
           <Icon className="h-4 w-4" />
         </div>
-        {trend && trend.length > 0 && (
-          <Sparkline data={trend} height={28} width={64} color="primary" showArea={false} />
-        )}
       </div>
       <div className="flex items-end justify-between">
         <div>
@@ -152,13 +145,6 @@ export function HeroScoreSection({
 
   const scoreDiff = previousScore !== undefined ? overallScore - previousScore : null;
 
-  // Generate mock trend data (in real app, this would come from history)
-  const generateTrendData = (baseScore: number) => {
-    return Array.from({ length: 7 }, (_, i) => 
-      Math.max(0, Math.min(100, baseScore + (Math.random() - 0.5) * 15 + (i * 2)))
-    );
-  };
-
   return (
     <div className={cn('rounded-2xl border border-border bg-card overflow-hidden', className)}>
       {/* Header */}
@@ -208,25 +194,21 @@ export function HeroScoreSection({
               title="Engagement"
               score={breakdown.engagement || 0}
               icon={ThumbsUp}
-              trend={generateTrendData(breakdown.engagement || 0)}
             />
             <BreakdownCard
               title="Consistency"
               score={breakdown.consistency || 0}
               icon={BarChart3}
-              trend={generateTrendData(breakdown.consistency || 0)}
             />
             <BreakdownCard
               title="Readiness"
               score={breakdown.readiness || 0}
               icon={Zap}
-              trend={generateTrendData(breakdown.readiness || 0)}
             />
             <BreakdownCard
               title="Growth"
               score={breakdown.growth || breakdown.readiness || 0}
               icon={Users}
-              trend={generateTrendData(breakdown.growth || breakdown.readiness || 0)}
             />
           </div>
         </div>
