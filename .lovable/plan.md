@@ -1,268 +1,431 @@
 
-# Yoast-Style UI/UX Redesign for Pagelyzer
-## Non-Destructive Premium Redesign
+
+# Pagelyzer - Complete Feature Documentation
+## Comprehensive System Documentation in Nepali + English
 
 ---
 
-## Yoast Design Analysis
+## Overview
 
-Based on the screenshot and content from Yoast.com, their design features:
-
-### Key Visual Elements
-1. **Signature Purple/Magenta Gradient Background** - Hero section uses a purple-pink-green gradient (not flat colors)
-2. **Bold Typography** - Large, impactful headlines with strong weight
-3. **Centered Hero Layout** - Content centered with CTA buttons side-by-side
-4. **Trustpilot Integration** - Social proof prominently displayed under CTAs
-5. **SVG Illustrations** - Custom illustrations for features (not icon containers)
-6. **Product Cards with Images** - Feature/product cards include header images
-7. **Green Accent for Trust** - Green checkmarks and success indicators
-8. **Soft Rounded Corners** - Very rounded buttons and cards (pill-shaped CTAs)
-9. **Clean Navigation** - Simple top nav with dropdown menus, prominent "Download FREE" CTA
-10. **Testimonial Sections** - Customer quotes with photos
-
-### Color Palette (Yoast-inspired)
-- **Primary Purple**: #A4286A (magenta/plum)
-- **Secondary Green**: #77B227 (Yoast green for success/CTAs)
-- **Gradient Start**: #7B2D8E (purple)
-- **Gradient End**: #A4D037 (lime green)
-- **Background**: Soft gradients with pink/purple/green
+Yo documentation file create garincha `docs/FEATURES.md` ma. Yo file ma Pagelyzer ko sabai main functions ra features explain garincha with full technical details.
 
 ---
 
-## Implementation Plan
+## File to Create: `docs/FEATURES.md`
 
-### Part 1: Design System Updates
+### Content Structure:
 
-**File: `src/index.css`**
+```markdown
+# Pagelyzer - Complete Feature Documentation
 
-1. **New Yoast-Inspired Color Palette:**
-   - Primary: Magenta/Purple (#A4286A)
-   - Accent: Yoast Green (#77B227)
-   - Gradient: Purple to Green
-   - Lighter background gradients for hero sections
-
-2. **Typography Updates:**
-   - Bolder headlines (font-weight 800)
-   - Larger line-height for readability
-   - More impactful H1 sizing (up to 64px on desktop)
-
-3. **Border Radius:**
-   - More rounded: 20-24px for cards, pill-shaped buttons (9999px or 50px)
-   - Softer, friendlier feel
-
-4. **Button Styles:**
-   - Pill-shaped primary buttons with solid colors
-   - Outline buttons with rounded borders
-   - Larger padding for touch-friendliness
-
-5. **Hero Section Patterns:**
-   - Multi-color gradient backgrounds (purple-pink-green)
-   - Subtle texture overlays
-   - Larger floating decorative shapes
+## Table of Contents
+1. Application Overview
+2. Core Features  
+3. User Roles & Permissions
+4. Edge Functions (Backend APIs)
+5. Database Schema
+6. Authentication Flow
+7. Payment Integration
+8. Facebook Integration
 
 ---
 
-### Part 2: Landing Page Redesign (HomePage.tsx)
+## 1. Application Overview (Overview)
 
-**Current State:** Blue/teal color scheme, left-aligned hero, smaller typography
-**Target State:** Yoast-like purple/green gradient, centered hero, bolder text
+Pagelyzer is a **Facebook Page Audit Platform** that analyzes Facebook business pages and provides:
+- Engagement metrics analysis
+- Performance scoring (0-100)
+- AI-powered recommendations
+- Detailed analytics for Pro users
+- PDF report generation
+- Shareable public reports
 
-**Changes:**
-
-1. **Hero Section:**
-   - Centered layout (not two-column)
-   - Large gradient background (purple → pink → green)
-   - Bigger headline with animated text or brand emphasis
-   - Stacked buttons (Primary + Secondary) centered
-   - Trust badges/Trustpilot-style rating below CTAs
-   - Decorative gradient blobs on sides
-
-2. **"All the help you need" Benefits Section:**
-   - 3-column grid with SVG-style illustrations (instead of icon boxes)
-   - Larger feature titles
-   - Short benefit descriptions
-   - Soft background with gradient overlays
-
-3. **Products/Features Section:**
-   - Card-based layout with header images
-   - "Premium" badges on pro features
-   - Price tags visible on cards
-   - "Buy Product" and "Read More" CTAs
-
-4. **Testimonial Section (NEW):**
-   - Customer quote with photo
-   - Company name and star rating
-   - Soft background treatment
-
-5. **Newsletter CTA Section:**
-   - Email signup with green CTA button
-   - "Get free tips!" messaging
-   - Privacy note below form
-
-6. **Footer:**
-   - More comprehensive with multiple columns
-   - Newsletter signup integration
-   - Social links with icons
+### Tech Stack:
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Backend**: Supabase (Lovable Cloud)
+- **Database**: PostgreSQL
+- **Authentication**: Supabase Auth
+- **Payments**: Stripe + PayPal + eSewa (Nepal)
 
 ---
 
-### Part 3: Features Page Redesign
+## 2. Core Features
 
-**Changes:**
-1. Replace icon containers with larger SVG-style illustrations
-2. Add header images to feature cards
-3. Use Yoast-green for free features, purple for Pro
-4. Larger card padding and typography
-5. Add "Includes Premium features" badges
+### 2.1 Facebook Page Connection
+**Functionality**: Users connect their Facebook pages via OAuth
 
----
+**Flow**:
+1. User clicks "Connect Facebook Page"
+2. Redirects to Facebook OAuth dialog
+3. User grants page permissions
+4. Callback saves access token to `fb_connections` table
+5. User can now run audits on that page
 
-### Part 4: Pricing Page Redesign
-
-**Changes:**
-1. Card headers with product images/illustrations
-2. Green "Try for free" buttons for free plan
-3. Purple gradient for premium plans
-4. "Best value" or "Most Popular" badge styling
-5. Feature comparison with check/cross icons
-6. Larger price display with "ex. VAT" or billing info
+**Edge Function**: `facebook-oauth`
+**Permissions Required**: 
+- `pages_show_list`
+- `pages_read_engagement`  
+- `pages_read_user_content`
+- `read_insights`
 
 ---
 
-### Part 5: Marketing Layout (Header/Footer)
+### 2.2 Run Page Audit
+**Functionality**: Analyzes a connected Facebook page
 
-**Header Changes:**
-1. Add dropdown menu support for nav items
-2. Prominent "Download FREE" or "Start Free" button (green)
-3. Login as secondary text link
-4. Search icon option
+**Edge Function**: `run-audit`
 
-**Footer Changes:**
-1. Newsletter signup section
-2. Multi-column layout with more links
-3. Social media icons
-4. Trust seals/compliance badges
+**What it does**:
+1. Validates user authentication and subscription
+2. Fetches page info from Facebook Graph API
+3. Fetches page insights (impressions, engagement)
+4. Fetches recent posts (last 20)
+5. Calculates scores:
+   - **Engagement Score** (40% weight): Based on likes/comments/shares per follower
+   - **Consistency Score** (35% weight): Based on posts per week
+   - **Readiness Score** (25% weight): Based on profile completeness
+6. Generates recommendations based on scores
+7. Stores results in `audits` and `audit_metrics` tables
 
----
-
-### Part 6: Component Updates
-
-**Buttons (`button.tsx`):**
-- Add `rounded-full` variant for pill buttons
-- Add Yoast-green variant
-- Larger default size
-
-**Cards (`card.tsx`):**
-- Add variant with header image slot
-- Increase border-radius to 20-24px
-- Softer shadows
-
-**Badges:**
-- Add "Premium" product badge (purple gradient)
-- Green "Try Free" badge
-- "New product" label style
+**Usage Limits**:
+- Free users: 3 audits/month
+- Pro users: Unlimited
+- Users with free grants: Unlimited for that month
 
 ---
 
-## Technical Implementation
+### 2.3 View Audit Report
+**Functionality**: Displays audit results with gated content
 
-### Files to Create:
-1. None (using existing components with new styles)
+**Edge Function**: `get-audit-report`
 
-### Files to Modify:
-1. `src/index.css` - New Yoast color palette, gradients, typography
-2. `src/pages/HomePage.tsx` - Centered hero, gradient background, new sections
-3. `src/pages/FeaturesPage.tsx` - Card image headers, larger illustrations
-4. `src/pages/PricingPage.tsx` - Product cards with images, green CTAs
-5. `src/components/layout/MarketingLayout.tsx` - Enhanced header/footer
-6. `src/components/ui/button.tsx` - Pill button variant
-7. `src/components/ui/card.tsx` - Image header variant
-8. `tailwind.config.ts` - New color tokens
+**Free User Gets**:
+- Overall score and breakdown
+- 2 basic recommendations
+- Basic metrics (followers, posts analyzed)
+- 10% preview of engagement rate
+
+**Pro User Gets**:
+- All recommendations
+- Full detailed metrics
+- Post-by-post analysis
+- Demographics (age, gender, location)
+- AI insights
+- Share link capability
+- PDF export
 
 ---
 
-## Visual Preview of Key Changes
+### 2.4 AI Insights Generation
+**Functionality**: GPT-powered personalized marketing advice
 
-### Hero Section Layout:
-```text
-+----------------------------------------------------------+
-| [Purple-Pink-Green Gradient Background]                  |
-|                                                          |
-|              INCREASE YOUR PAGE ENGAGEMENT               |
-|                                                          |
-|           Social Starts with Pagelyzer                   |
-|                  [Big Logo Animation]                    |
-|                                                          |
-|        Boost your page with AI-powered insights          |
-|           Join 10K+ happy users worldwide!               |
-|                                                          |
-|     [Explore Pro ✓]    [Download Free ↓]                |
-|                                                          |
-|        ★★★★★ Excellent 4.8/5 based on reviews           |
-|                                                          |
-+----------------------------------------------------------+
+**Edge Function**: `generate-ai-insights`
+
+**What it does**:
+1. Compiles audit data into a prompt
+2. Calls OpenAI GPT-4 API
+3. Generates 5 strategic insights:
+   - Content strategy improvements
+   - Optimal posting timing
+   - Audience growth tactics
+   - Engagement boosting techniques
+   - One "quick win"
+4. Stores insights in `audit_metrics.ai_insights`
+
+**Requires**: OpenAI API key configured in settings
+
+---
+
+### 2.5 PDF Report Export
+**Functionality**: Generates downloadable PDF reports
+
+**Edge Function**: `generate-pdf-report`
+
+**Output includes**:
+- Page name and audit date
+- Overall score with color indicator
+- Score breakdown (Engagement, Consistency, Readiness)
+- Key metrics table
+- Recommendations list
+- Pagelyzer branding
+
+**Uses**: html2pdf.js on client-side for PDF generation
+
+---
+
+### 2.6 Share Report (Public Link)
+**Functionality**: Creates shareable public links for reports
+
+**Edge Function**: `share-report`
+
+**Actions**:
+- `create`: Generates unique 8-character slug, makes report public
+- `revoke`: Removes public access
+
+**Public URL format**: `https://pagelyzer.io/r/{slug}`
+
+**Edge Function**: `get-public-report` serves the public report
+
+---
+
+### 2.7 Subscription Management
+**Functionality**: Freemium model with Pro upgrades
+
+**Edge Function**: `check-subscription`
+
+**Checks**:
+1. Active subscription in `subscriptions` table
+2. Free audit grants in `free_audit_grants` table
+3. Plan limits from `plans` table
+
+**Returns**:
+- `isPro`: boolean
+- `hasFreeAuditGrant`: boolean
+- `planName`: string
+- `features`: object (what user can access)
+- `limits`: object (monthly quotas)
+- `usage`: object (current usage stats)
+
+---
+
+### 2.8 Stripe Payment
+**Functionality**: Credit card payments via Stripe Checkout
+
+**Edge Functions**:
+- `create-checkout`: Creates Stripe Checkout session
+- `stripe-webhook`: Handles Stripe events
+
+**Webhook Events Handled**:
+- `checkout.session.completed`: Creates subscription
+- `customer.subscription.updated`: Updates status
+- `customer.subscription.deleted`: Cancels subscription
+- `invoice.payment_failed`: Marks as expired
+
+---
+
+### 2.9 Scheduled Audits (Cron)
+**Functionality**: Automatic recurring audits
+
+**Edge Function**: `auto-audit-cron`
+
+**What it does**:
+1. Finds due schedules from `audit_schedules` table
+2. Runs audit for each
+3. Updates `next_run_at` based on frequency (weekly/monthly)
+4. Sends email notification with results
+
+---
+
+### 2.10 Email Notifications
+**Functionality**: Sends audit completion emails
+
+**Edge Functions**:
+- `send-audit-email`: Sends single audit email
+- `weekly-email-cron`: Sends weekly digest emails
+
+**Uses**: Resend API (configured in settings)
+
+---
+
+## 3. User Roles & Permissions
+
+### Role Hierarchy:
+```
+super_admin > admin > user
 ```
 
-### Color Tokens:
-```css
---yoast-purple: 326 55% 42%;    /* #A4286A */
---yoast-green: 86 66% 43%;       /* #77B227 */
---yoast-gradient-start: 287 55% 36%;
---yoast-gradient-end: 78 65% 52%;
+### super_admin:
+- All admin permissions
+- Manage all users across system
+- Configure system settings (Facebook, Stripe, etc.)
+- Manage subscription plans
+- View all audits and security logs
+- Grant free audits to users
+
+### admin:
+- View users in their organization
+- View audits in their organization  
+- Manage organization branding
+
+### user:
+- Connect own Facebook pages
+- Run audits on own pages
+- View own reports
+- Manage own profile
+
+---
+
+## 4. Edge Functions Summary
+
+| Function | Purpose | Auth Required |
+|----------|---------|---------------|
+| `check-subscription` | Get user's plan status | Yes |
+| `run-audit` | Execute Facebook page audit | Yes |
+| `get-audit-report` | Fetch gated report data | Yes |
+| `get-public-report` | Fetch shared report | No |
+| `generate-ai-insights` | Create GPT insights | Yes (Pro) |
+| `generate-pdf-report` | Create PDF HTML | Yes (Pro) |
+| `share-report` | Create/revoke share link | Yes (Pro) |
+| `facebook-oauth` | OAuth flow + page connect | Partial |
+| `facebook-auth-login` | Social login with Facebook | No |
+| `facebook-webhook` | Handle FB deauth callbacks | No |
+| `create-checkout` | Stripe checkout session | Yes |
+| `stripe-webhook` | Handle Stripe events | No (signed) |
+| `paypal-checkout` | PayPal payment flow | Yes |
+| `esewa-checkout` | eSewa (Nepal) payments | Yes |
+| `auto-audit-cron` | Scheduled audit runner | No (cron) |
+| `send-audit-email` | Email notifications | Yes |
+| `weekly-email-cron` | Weekly digest emails | No (cron) |
+| `admin-delete-user` | Delete user (cascade) | Yes (SA) |
+| `seed-test-users` | Create test users | Yes (SA) |
+| `sitemap` | Dynamic XML sitemap | No |
+
+---
+
+## 5. Database Tables
+
+### Core Tables:
+- `profiles`: User profile data (name, avatar, org)
+- `user_roles`: Role assignments (user/admin/super_admin)
+- `organizations`: Multi-tenant organizations
+
+### Audit Tables:
+- `fb_connections`: Connected Facebook pages
+- `audits`: Audit records with scores/recommendations
+- `audit_metrics`: Detailed metrics (Pro only)
+- `audit_schedules`: Recurring audit schedules
+- `reports`: Share settings for audits
+
+### Billing Tables:
+- `plans`: Subscription plan definitions
+- `subscriptions`: User subscriptions
+- `payments`: Payment history
+- `free_audit_grants`: Monthly free Pro grants
+
+### System Tables:
+- `settings`: Global/org/user settings (encrypted)
+- `audit_logs`: Admin action logs
+- `security_events`: Security event tracking
+
+---
+
+## 6. Authentication Flow
+
+### Email/Password:
+1. User signs up with email + password
+2. Email verification sent
+3. User clicks verification link
+4. Session created, tokens issued
+
+### Facebook Login:
+1. User clicks "Continue with Facebook"
+2. OAuth flow via `facebook-auth-login`
+3. Account created/linked
+4. Session created
+
+### Session Management:
+- JWT tokens with auto-refresh
+- 5-minute subscription check interval
+- Silent token refresh on 401
+
+---
+
+## 7. Freemium Model
+
+### Free Tier:
+- 3 audits per month
+- Basic score and 2 recommendations
+- 7-day history
+- No exports, no sharing
+
+### Pro Tier:
+- Unlimited audits
+- Full recommendations
+- Demographics data
+- AI insights
+- PDF export
+- Shareable links
+- Full history
+- Priority support
+
+### Free Audit Grants:
+- Super Admin can grant Pro access for 1 month
+- Stored in `free_audit_grants` table
+- Same features as Pro subscription
+
+---
+
+## 8. Settings Configuration
+
+All API keys stored in `settings` table with `scope = 'global'`:
+
+| Key | Purpose |
+|-----|---------|
+| `facebook_app_id` | Facebook OAuth App ID |
+| `facebook_app_secret` | Facebook OAuth Secret |
+| `stripe_secret_key` | Stripe API Key |
+| `stripe_webhook_secret` | Stripe Webhook Signing |
+| `paypal_client_id` | PayPal Client ID |
+| `paypal_client_secret` | PayPal Secret |
+| `esewa_merchant_id` | eSewa (Nepal) Merchant |
+| `esewa_secret_key` | eSewa Secret |
+| `openai_api_key` | OpenAI for AI Insights |
+| `resend_api_key` | Resend for Emails |
+| `email_from_address` | Sender email address |
+| `facebook_webhook_verify_token` | FB webhook verification |
+
+---
+
+## 9. Page Routes
+
+### Public Routes:
+- `/` - Landing page
+- `/features` - Features page
+- `/pricing` - Pricing page
+- `/faq` - FAQ page
+- `/sample-report` - Demo report
+- `/auth` - Login/Signup
+- `/r/:slug` - Public shared report
+
+### Dashboard Routes (Auth Required):
+- `/dashboard` - User dashboard
+- `/dashboard/audit` - Run new audit
+- `/dashboard/reports` - All reports
+- `/dashboard/reports/:id` - Single report
+- `/dashboard/history` - Audit history
+- `/dashboard/compare` - Compare reports
+- `/dashboard/billing` - Subscription/billing
+- `/dashboard/profile` - User profile
+- `/dashboard/settings` - User settings
+
+### Admin Routes:
+- `/admin` - Admin dashboard
+- `/admin/users` - Org user management
+- `/admin/audits` - Org audit list
+- `/admin/branding` - Org branding
+
+### Super Admin Routes:
+- `/super-admin` - SA dashboard
+- `/super-admin/users` - All users
+- `/super-admin/plans` - Plan management
+- `/super-admin/settings/*` - System settings
 ```
-
----
-
-## Implementation Priority
-
-### Phase 1: Color & Typography Foundation
-1. Add Yoast color palette to CSS variables
-2. Update gradient utilities
-3. Add pill button variants
-4. Increase border-radius globally
-
-### Phase 2: Landing Page Hero
-1. Redesign hero with centered layout
-2. Apply purple-green gradient background
-3. Update CTA buttons to pill style
-4. Add trust rating section
-
-### Phase 3: Feature & Pricing Cards
-1. Add image headers to cards
-2. Update color scheme on all pages
-3. Apply new button styles
-
-### Phase 4: Header & Footer Polish
-1. Enhanced navigation styling
-2. Newsletter section in footer
-3. Social links update
-
----
-
-## Preserved Elements (No Changes)
-
-- All backend logic and API calls
-- Database schema and migrations
-- Authentication flow
-- Billing/subscription flow
-- Route structure and paths
-- DOM IDs and data attributes
-- Event handlers and hooks
-- Form field names
-- Query parameters
 
 ---
 
 ## Summary
 
-This redesign transforms Pagelyzer from its current blue/teal Iconosquare-inspired look to a Yoast-style aesthetic featuring:
+This documentation file will be saved at `docs/FEATURES.md` containing:
 
-- **Bold purple/green gradient hero** instead of blue
-- **Centered layout** for hero sections
-- **Pill-shaped buttons** (fully rounded)
-- **Product cards with images** instead of icon-only
-- **Trust signals** like ratings and customer count
-- **Larger, bolder typography** for impact
-- **Softer, more playful feel** overall
+1. **Application Overview** - What Pagelyzer does
+2. **10 Core Features** - Detailed explanation of each feature
+3. **User Roles** - super_admin, admin, user permissions
+4. **20 Edge Functions** - Full API reference table
+5. **Database Schema** - All tables explained
+6. **Auth Flow** - Email + Facebook login
+7. **Freemium Model** - Free vs Pro features
+8. **Settings Keys** - All configurable API keys
+9. **Routes** - Complete URL structure
 
-The dashboard will maintain its current layout but inherit the new color palette for consistency.
+File Size: ~15KB of comprehensive documentation
+
