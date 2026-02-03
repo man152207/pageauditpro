@@ -34,6 +34,11 @@ interface ReportSidebarProps {
   paidVsOrganic?: {
     paid: number;
     organic: number;
+    totalPaid?: number;
+    totalOrganic?: number;
+    available?: boolean;
+    message?: string;
+    reason?: string;
   } | null;
   benchmarks?: {
     postingFrequency: { current: number; target: string };
@@ -138,39 +143,54 @@ export function ReportSidebar({
 
       {/* Paid vs Organic Snapshot */}
       {hasProAccess ? (
-        paidVsOrganic && paidVsOrganic.paid !== undefined && paidVsOrganic.organic !== undefined && (paidVsOrganic.paid > 0 || paidVsOrganic.organic > 0) ? (
-          <div className="p-4 rounded-2xl border border-border bg-card">
-            <div className="flex items-center gap-2 mb-3">
-              <PieChart className="h-4 w-4 text-primary" />
-              <h4 className="font-semibold text-sm">Paid vs Organic</h4>
-            </div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-center flex-1">
-                <p className="text-xl font-bold text-primary">{paidVsOrganic.paid}%</p>
-                <p className="text-xs text-muted-foreground">Paid</p>
+        paidVsOrganic?.available === true ? (
+          // Data is available - show percentages
+          paidVsOrganic.paid === 0 && paidVsOrganic.organic === 100 ? (
+            <div className="p-4 rounded-2xl border border-border bg-card">
+              <div className="flex items-center gap-2 mb-3">
+                <PieChart className="h-4 w-4 text-primary" />
+                <h4 className="font-semibold text-sm">Paid vs Organic</h4>
               </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="text-center flex-1">
-                <p className="text-xl font-bold text-accent">{paidVsOrganic.organic}%</p>
-                <p className="text-xs text-muted-foreground">Organic</p>
+              <div className="text-center py-2">
+                <p className="text-xl font-bold text-accent">100%</p>
+                <p className="text-xs text-muted-foreground">Organic Reach</p>
               </div>
+              <p className="text-xs text-muted-foreground mt-2 text-center italic">
+                {paidVsOrganic.message || 'No paid impressions detected in this period'}
+              </p>
             </div>
-            <Progress 
-              value={paidVsOrganic.paid} 
-              className="h-2" 
-            />
-          </div>
+          ) : (
+            <div className="p-4 rounded-2xl border border-border bg-card">
+              <div className="flex items-center gap-2 mb-3">
+                <PieChart className="h-4 w-4 text-primary" />
+                <h4 className="font-semibold text-sm">Paid vs Organic</h4>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-center flex-1">
+                  <p className="text-xl font-bold text-primary">{paidVsOrganic.paid}%</p>
+                  <p className="text-xs text-muted-foreground">Paid</p>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center flex-1">
+                  <p className="text-xl font-bold text-accent">{paidVsOrganic.organic}%</p>
+                  <p className="text-xs text-muted-foreground">Organic</p>
+                </div>
+              </div>
+              <Progress 
+                value={paidVsOrganic.paid} 
+                className="h-2" 
+              />
+            </div>
+          )
         ) : (
+          // Data not available - show reason
           <div className="p-4 rounded-2xl border border-dashed border-border bg-muted/20">
             <div className="flex items-center gap-2 mb-2">
               <PieChart className="h-4 w-4 text-muted-foreground" />
               <h4 className="font-semibold text-sm text-muted-foreground">Paid vs Organic</h4>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-              Paid/organic breakdown is unavailable for this page. Facebook's Graph API typically requires boosted posts or ad account access to provide this data.
-            </p>
-            <p className="text-xs text-muted-foreground/70 italic">
-              Tip: Run ads or boost posts to enable this metric in future audits.
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {paidVsOrganic?.reason || 'Not available via current Facebook data.'}
             </p>
           </div>
         )
