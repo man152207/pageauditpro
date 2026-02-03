@@ -69,6 +69,46 @@ const webhookProducts = [
   { id: 'catalog', name: 'Catalog', description: 'Product catalog updates' },
 ];
 
+// Required permissions for insights data
+const requiredPermissions = [
+  { 
+    name: 'pages_show_list', 
+    description: 'See your managed Pages',
+    required: true,
+    reason: 'Needed to list user\'s Facebook pages for connection'
+  },
+  { 
+    name: 'pages_read_engagement', 
+    description: 'Read engagement data (likes, comments, shares)',
+    required: true,
+    reason: 'Required for engagement metrics in audit reports'
+  },
+  { 
+    name: 'pages_read_user_content', 
+    description: 'Read posts and content on Pages',
+    required: true,
+    reason: 'Required to fetch page posts for analysis'
+  },
+  { 
+    name: 'read_insights', 
+    description: 'Read Page analytics and demographics',
+    required: true,
+    reason: 'Required for impressions, reach, demographics data'
+  },
+  { 
+    name: 'email', 
+    description: 'Access user email address',
+    required: false,
+    reason: 'Used for "Continue with Facebook" login'
+  },
+  { 
+    name: 'public_profile', 
+    description: 'Access basic profile info',
+    required: false,
+    reason: 'Used for "Continue with Facebook" login'
+  },
+];
+
 const checklistItems = [
   { id: 'domains', label: 'Add App Domains in Settings > Basic', section: 'basic' },
   { id: 'website', label: 'Add Website URL in Settings > Basic', section: 'basic' },
@@ -78,6 +118,11 @@ const checklistItems = [
   { id: 'redirect-login', label: 'Add login redirect URI', section: 'login' },
   { id: 'redirect-page', label: 'Add page connect redirect URI', section: 'login' },
   { id: 'deauthorize', label: 'Add Deauthorize callback URL', section: 'login' },
+  { id: 'advanced-pages', label: 'Request Advanced Access for pages_show_list', section: 'permissions' },
+  { id: 'advanced-engagement', label: 'Request Advanced Access for pages_read_engagement', section: 'permissions' },
+  { id: 'advanced-content', label: 'Request Advanced Access for pages_read_user_content', section: 'permissions' },
+  { id: 'advanced-insights', label: 'Request Advanced Access for read_insights', section: 'permissions' },
+  { id: 'app-live', label: 'Switch App Mode from Development to Live', section: 'permissions' },
 ];
 
 // Copy button component
@@ -152,6 +197,7 @@ export default function FacebookSettings() {
     checklist: true,
     appSettings: true,
     login: true,
+    permissions: true, // Advanced Access section - important!
     webhooks: false,
     jsSdk: false,
   });
@@ -307,8 +353,15 @@ export default function FacebookSettings() {
                     <span className={checkedItems.has(item.id) ? 'line-through text-muted-foreground' : ''}>
                       {item.label}
                     </span>
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      {item.section === 'basic' ? 'Settings > Basic' : 'Facebook Login'}
+                    <Badge 
+                      variant={item.section === 'permissions' ? 'destructive' : 'outline'} 
+                      className="ml-auto text-xs"
+                    >
+                      {item.section === 'basic' 
+                        ? 'Settings > Basic' 
+                        : item.section === 'permissions' 
+                          ? 'App Review' 
+                          : 'Facebook Login'}
                     </Badge>
                   </div>
                 ))}
@@ -420,6 +473,135 @@ export default function FacebookSettings() {
                   purpose="User app removal notification" 
                 />
               </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Advanced Access Permissions - CRITICAL for insights data */}
+      <Collapsible open={openSections.permissions} onOpenChange={() => toggleSection('permissions')}>
+        <Card className="border-2 border-destructive/30">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      Advanced Access Permissions
+                      <Badge variant="destructive">Critical</Badge>
+                    </CardTitle>
+                    <CardDescription>App Review → Permissions and Features in Developer Console</CardDescription>
+                  </div>
+                </div>
+                {openSections.permissions ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0 space-y-6">
+              {/* Critical Warning */}
+              <div className="flex gap-3 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-destructive">Without Advanced Access, audits will return empty data!</p>
+                  <p className="text-muted-foreground mt-1">
+                    By default, Facebook apps only have "Standard Access" which limits data to app developers only.
+                    You MUST request and receive "Advanced Access" for each permission to fetch insights for all users.
+                  </p>
+                </div>
+              </div>
+
+              {/* Steps to enable */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">How to Request Advanced Access</h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>Go to <strong>App Review → Permissions and Features</strong> in the Developer Console</li>
+                  <li>Find each permission listed below</li>
+                  <li>Click <strong>"Request Advanced Access"</strong></li>
+                  <li>Complete the verification form (may require business verification)</li>
+                  <li>Wait for Meta approval (usually 1-5 business days)</li>
+                </ol>
+              </div>
+
+              {/* Required Permissions Table */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">Required Permissions for Insights Data</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-3 font-medium">Permission</th>
+                        <th className="text-left p-3 font-medium">Why Needed</th>
+                        <th className="text-left p-3 font-medium">Status Needed</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {requiredPermissions.filter(p => p.required).map((perm) => (
+                        <tr key={perm.name} className="border-t">
+                          <td className="p-3">
+                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                              {perm.name}
+                            </code>
+                          </td>
+                          <td className="p-3 text-muted-foreground">{perm.reason}</td>
+                          <td className="p-3">
+                            <Badge variant="destructive">Advanced Access</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* App Mode Warning */}
+              <div>
+                <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                  App Mode
+                  <Badge variant="destructive">Important</Badge>
+                </h4>
+                <div className="flex gap-3 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                  <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-600 dark:text-amber-400">Your app must be in "Live" mode</p>
+                    <p className="text-muted-foreground mt-1">
+                      Go to <strong>Settings → Basic</strong> and toggle "App Mode" from <strong>Development</strong> to <strong>Live</strong>.
+                      In Development mode, only app developers/testers can use the app.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Troubleshooting */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">Troubleshooting Empty Audit Data</h4>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>If audits return empty data, verify:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>All 4 required permissions have "Advanced Access" (not just Standard)</li>
+                    <li>App Mode is set to "Live" (not Development)</li>
+                    <li>The Facebook user connecting the page has <strong>Admin</strong> role on the page (not just Editor)</li>
+                    <li>User granted all permissions during OAuth (didn't uncheck any boxes)</li>
+                    <li>The Page has recent activity and isn't newly created</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* External Link */}
+              <Button variant="outline" asChild className="w-full">
+                <a 
+                  href="https://developers.facebook.com/docs/app-review/permissions" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Facebook Permissions Documentation
+                </a>
+              </Button>
             </CardContent>
           </CollapsibleContent>
         </Card>
