@@ -14,6 +14,10 @@ import { ReportFilters, ReportCategory, ReportPriority } from '@/components/repo
 import { AiInsightsSection } from '@/components/report/AiInsightsSection';
 import { DemographicsSection } from '@/components/report/DemographicsSection';
 import { ShareReportDialog } from '@/components/report/ShareReportDialog';
+import { ExecutiveSummary } from '@/components/report/ExecutiveSummary';
+import { ScoreExplanationGrid } from '@/components/report/ScoreExplanations';
+import { TopPostsTable } from '@/components/report/TopPostsTable';
+import { ChartEmptyState, ChartContainer } from '@/components/report/ChartEmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   LockedSection,
@@ -26,6 +30,7 @@ import {
   AlertCircle,
   ArrowLeft,
   BarChart3,
+  Copy,
   Download,
   FileBarChart,
   Loader2,
@@ -36,15 +41,25 @@ import {
   Users,
   Facebook,
   Calendar,
+  Lock,
+  TrendingUp,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function AuditReportPage() {
   const { auditId } = useParams<{ auditId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: report, isLoading, error } = useAudit(auditId);
   const { isPro } = useSubscription();
   const { exportToPdf, isExporting } = usePdfExport();
@@ -77,6 +92,9 @@ export default function AuditReportPage() {
             <Skeleton className="h-10 w-32" />
           </div>
         </div>
+        
+        {/* Skeleton executive summary */}
+        <Skeleton className="h-48 w-full rounded-2xl" />
         
         {/* Skeleton hero score */}
         <Skeleton className="h-72 w-full rounded-2xl" />
@@ -167,41 +185,80 @@ export default function AuditReportPage() {
     }
   };
 
+  const handleCopySummary = async () => {
+    const summaryText = `
+📊 ${report.page_name || 'Page'} Audit Report
+━━━━━━━━━━━━━━━━━━━━━━
+Overall Score: ${report.score_total}/100
+Engagement: ${scores.engagement || 0}/100
+Consistency: ${scores.consistency || 0}/100
+Readiness: ${scores.readiness || 0}/100
+━━━━━━━━━━━━━━━━━━━━━━
+Powered by Pagelyzer
+    `.trim();
+
+    try {
+      await navigator.clipboard.writeText(summaryText);
+      toast({
+        title: 'Summary Copied!',
+        description: 'Report summary copied to clipboard.',
+      });
+    } catch {
+      toast({
+        title: 'Copy Failed',
+        description: 'Could not copy to clipboard.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-8">
-      {/* Sticky Header */}
+      {/* B1: Sticky Report Header */}
       <div
         className={cn(
-          'sticky top-0 z-30 -mx-6 px-6 py-4 transition-all duration-300',
+          'sticky top-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 transition-all duration-300',
           isScrolled && 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm'
         )}
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             {/* Page Avatar */}
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1877F2]/10 text-[#1877F2]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1877F2]/10 text-[#1877F2] shrink-0">
               <Facebook className="h-6 w-6" />
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
                 {report.page_name || 'Audit Report'}
               </h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>
-                  Analyzed on {format(new Date(report.created_at), 'MMMM d, yyyy')}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 shrink-0" />
+                  Audited {format(new Date(report.created_at), 'MMM d, yyyy')}
                 </span>
+                {report.input_summary?.dateRange && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    {report.input_summary.dateRange}
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+            {/* Copy Summary - Always available */}
+            <Button variant="outline" size="sm" onClick={handleCopySummary} className="gap-2">
+              <Copy className="h-4 w-4" />
+              <span className="hidden sm:inline">Copy Summary</span>
+            </Button>
+
             {hasProAccess ? (
               <>
                 <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
                   <Share2 className="mr-2 h-4 w-4" />
-                  Share
+                  <span className="hidden sm:inline">Share</span>
                 </Button>
                 <Button 
                   variant="outline"
@@ -214,20 +271,44 @@ export default function AuditReportPage() {
                   ) : (
                     <Download className="mr-2 h-4 w-4" />
                   )}
-                  Export PDF
+                  <span className="hidden sm:inline">Export PDF</span>
                 </Button>
                 <Button size="sm">
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Re-run
+                  <span className="hidden sm:inline">Re-run</span>
                 </Button>
               </>
             ) : (
-              <Button size="sm" asChild>
-                <Link to="/dashboard/billing">
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Upgrade for Full Report
-                </Link>
-              </Button>
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" disabled className="gap-2">
+                      <Lock className="h-4 w-4" />
+                      <span className="hidden sm:inline">Share</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Upgrade to Pro to share reports</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" disabled className="gap-2">
+                      <Lock className="h-4 w-4" />
+                      <span className="hidden sm:inline">Export PDF</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Upgrade to Pro to export PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Button size="sm" asChild>
+                  <Link to="/dashboard/billing">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Upgrade</span>
+                  </Link>
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -242,6 +323,19 @@ export default function AuditReportPage() {
         existingIsPublic={report.report?.is_public}
       />
 
+      {/* B2: Executive Summary Card - Always visible at top */}
+      <ExecutiveSummary
+        score={report.score_total || 0}
+        scoreBreakdown={{
+          engagement: scores.engagement || 0,
+          consistency: scores.consistency || 0,
+          readiness: scores.readiness || 0,
+        }}
+        recommendations={recommendations}
+        aiInsights={report.ai_insights}
+        pageName={report.page_name}
+      />
+
       {/* Hero Score Section */}
       <HeroScoreSection
         overallScore={report.score_total || 0}
@@ -254,6 +348,23 @@ export default function AuditReportPage() {
         previousScore={undefined}
       />
 
+      {/* B3: Score Explanations with "Why this score?" accordions */}
+      <ReportSection
+        title="Score Breakdown"
+        description="Understand how each score is calculated"
+        icon={<BarChart3 className="h-5 w-5" />}
+      >
+        <ScoreExplanationGrid
+          breakdown={{
+            engagement: scores.engagement || 0,
+            consistency: scores.consistency || 0,
+            readiness: scores.readiness || 0,
+          }}
+          detailedMetrics={report.detailed_metrics || report.detailed_metrics_preview}
+          inputSummary={report.input_summary}
+        />
+      </ReportSection>
+
       {/* Filters */}
       <ReportFilters
         category={categoryFilter}
@@ -263,7 +374,7 @@ export default function AuditReportPage() {
         showProFilters={hasProAccess}
       />
 
-      {/* Recommendations with ActionCards */}
+      {/* B6: Recommendations as Action Cards */}
       <ReportSection
         title="Action Plan"
         description={hasProAccess ? 'Personalized recommendations to improve your page' : 'Top recommendations for your page'}
@@ -305,36 +416,49 @@ export default function AuditReportPage() {
         )}
       </ReportSection>
 
-      {/* Performance Charts (Pro) */}
+      {/* B4: Performance Charts */}
       {hasProAccess ? (
         <ReportSection
-          title="Performance Analytics"
+          title="Performance Trends"
           description="Detailed engagement trends and content analysis"
-          icon={<BarChart3 className="h-5 w-5" />}
+          icon={<TrendingUp className="h-5 w-5" />}
         >
           <div className="grid gap-6 lg:grid-cols-2">
-            <EngagementChart
-              data={generateEngagementData()}
-              title="Engagement Over Time"
-              showComparison={true}
-            />
-            <PostTypeChart
-              data={postTypeData}
-              title="Post Type Performance"
-            />
+            {report.detailed_metrics ? (
+              <>
+                <EngagementChart
+                  data={generateEngagementData()}
+                  title="Engagement Over Time"
+                  showComparison={true}
+                />
+                <PostTypeChart
+                  data={postTypeData}
+                  title="Post Type Performance"
+                />
+              </>
+            ) : (
+              <>
+                <ChartEmptyState title="Engagement Over Time" chartType="line" />
+                <ChartEmptyState title="Post Type Performance" chartType="bar" />
+              </>
+            )}
           </div>
           <div className="mt-6">
-            <BestTimeHeatmap
-              data={heatmapData}
-              title="Best Time to Post"
-            />
+            {report.detailed_metrics ? (
+              <BestTimeHeatmap
+                data={heatmapData}
+                title="Best Time to Post"
+              />
+            ) : (
+              <ChartEmptyState title="Best Time to Post" chartType="heatmap" />
+            )}
           </div>
         </ReportSection>
       ) : (
         <LockedSection
-          title="Performance Analytics"
+          title="Performance Trends"
           description="Unlock detailed charts and trend analysis"
-          icon={<BarChart3 className="h-5 w-5" />}
+          icon={<TrendingUp className="h-5 w-5" />}
           placeholderContent={<MetricsPlaceholder />}
         />
       )}
@@ -362,8 +486,6 @@ export default function AuditReportPage() {
           </div>
         </ReportSection>
       )}
-
-      {/* PRO SECTIONS - Locked for Free Users */}
 
       {/* Detailed Metrics - Show 10% preview for free users */}
       {hasProAccess && report.detailed_metrics ? (
@@ -448,36 +570,14 @@ export default function AuditReportPage() {
         />
       )}
 
-      {/* Post Analysis */}
+      {/* B5: Top Posts Table */}
       {hasProAccess && report.raw_metrics?.posts ? (
         <ReportSection
           title="Top Posts Analysis"
           description="Your best performing content"
           icon={<FileBarChart className="h-5 w-5" />}
         >
-          <div className="space-y-3">
-            {report.raw_metrics.posts.slice(0, 5).map((post: any, i: number) => (
-              <div key={post.id || i} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border hover:border-primary/20 transition-colors">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-                  #{i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {post.type || 'Post'} • {new Date(post.created_time).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {post.likes} likes • {post.comments} comments • {post.shares} shares
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-primary">
-                    {post.likes + post.comments + post.shares}
-                  </p>
-                  <p className="text-xs text-muted-foreground">engagements</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <TopPostsTable posts={report.raw_metrics.posts} />
         </ReportSection>
       ) : (
         <LockedSection
@@ -488,7 +588,7 @@ export default function AuditReportPage() {
         />
       )}
 
-      {/* AI Insights */}
+      {/* B7: AI Insights - NO REGENERATE */}
       {hasProAccess ? (
         <ReportSection
           title="AI-Powered Insights"
@@ -517,7 +617,21 @@ export default function AuditReportPage() {
           description="Understand who your audience is"
           icon={<Users className="h-5 w-5" />}
         >
-          <DemographicsSection demographics={report.demographics || null} />
+          {report.demographics ? (
+            <DemographicsSection demographics={report.demographics} />
+          ) : (
+            <div className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground text-sm">
+                Demographics data can take time to load from Facebook.
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Please check back later or re-run the audit.
+              </p>
+            </div>
+          )}
         </ReportSection>
       ) : (
         <LockedSection

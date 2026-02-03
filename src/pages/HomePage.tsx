@@ -35,6 +35,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { WhyPagelyzerSection, WhatYouGetSection, CTAHooksSection } from '@/components/marketing/WhyPagelyzerSection';
 
 export default function HomePage() {
   const benefits = [
@@ -315,6 +316,12 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ========== WHY PAGELYZER BEATS BUSINESS SUITE (A1) ========== */}
+      <WhyPagelyzerSection />
+
+      {/* ========== WHAT YOU GET IN EVERY AUDIT (A2) ========== */}
+      <WhatYouGetSection />
+
       {/* ========== WHAT WE ANALYZE ========== */}
       <section className="section-tight bg-muted/50">
         <div className="container">
@@ -564,6 +571,16 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ========== CTA HOOKS (A3) ========== */}
+      <section className="section-tight bg-background">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="text-2xl sm:text-3xl">What Makes Pagelyzer Different?</h2>
+          </div>
+          <CTAHooksSection />
         </div>
       </section>
 

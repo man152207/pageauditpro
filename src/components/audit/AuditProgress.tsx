@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import { Download, Calculator, Sparkles, Check, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-export type AuditStep = 'fetching' | 'calculating' | 'generating';
+export type AuditStep = 'fetching' | 'calculating' | 'generating' | 'building';
 
 interface AuditProgressProps {
   currentStep: AuditStep;
