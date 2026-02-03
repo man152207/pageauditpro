@@ -6,6 +6,7 @@ import { usePdfExport } from '@/hooks/usePdfExport';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProBadge } from '@/components/ui/pro-badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ReportSection } from '@/components/report/ReportSection';
 import { ReportSidebar } from '@/components/report/ReportSidebar';
 import { HeroScoreSection } from '@/components/report/HeroScoreSection';
@@ -34,6 +35,7 @@ import {
   ArrowLeft,
   BarChart3,
   Copy,
+  Crown,
   Download,
   FileBarChart,
   Loader2,
@@ -49,6 +51,8 @@ import {
   Clock,
   Image,
   PieChart,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -66,7 +70,7 @@ export default function AuditReportPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: report, isLoading, error } = useAudit(auditId);
-  const { isPro } = useSubscription();
+  const { isPro, planName } = useSubscription();
   const { exportToPdf, isExporting } = usePdfExport();
 
   const [categoryFilter, setCategoryFilter] = useState<ReportCategory>('all');
@@ -247,21 +251,21 @@ Powered by Pagelyzer
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1877F2]/10 text-[#1877F2] shrink-0">
               <Facebook className="h-6 w-6" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
+              <div className="min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap mb-1">
+                <h1 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight truncate">
                   {report.page_name || 'Audit Report'}
                 </h1>
-                {/* Pro/Free Report Indicator */}
+                {/* Pro/Free Report Indicator with Plan Name */}
                 {hasProAccess ? (
                   <span className="pro-report-indicator shrink-0">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Full Report
+                    <Crown className="h-3.5 w-3.5" />
+                    {planName || 'Pro'} · Full Report
                   </span>
                 ) : (
                   <span className="free-report-indicator shrink-0">
                     <Lock className="h-3.5 w-3.5" />
-                    Limited Preview
+                    Free · Limited Preview
                   </span>
                 )}
               </div>
@@ -358,10 +362,30 @@ Powered by Pagelyzer
         existingIsPublic={report.report?.is_public}
       />
 
-      {/* 3-Column Layout: Main + Sidebar */}
-      <div className="flex flex-col lg:flex-row gap-5 mt-5">
-        {/* Main Column */}
-        <div className="flex-1 min-w-0 space-y-5">
+      {/* Data Status Alert - when data is missing */}
+      {report.data_availability && 
+       (!report.data_availability.insights || !report.data_availability.posts) && (
+        <Alert className="mt-4 border-warning/50 bg-warning/5">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertTitle className="text-warning">Limited Data Available</AlertTitle>
+          <AlertDescription className="text-sm text-muted-foreground">
+            <p className="mb-2">Facebook returned limited data for this page. This may be due to:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-xs mb-2">
+              <li>Page activity level during selected date range</li>
+              <li>API permission restrictions (Page Admin role required for insights)</li>
+              <li>Page privacy or analytics settings</li>
+            </ul>
+            <p className="text-xs">
+              <strong>Try:</strong> Disconnecting and reconnecting your Facebook page with all permissions, or selecting a different date range.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* 3-Column Layout: Main + Sidebar - Tighter spacing */}
+      <div className="flex flex-col lg:flex-row gap-4 mt-4">
+        {/* Main Column - Reduced spacing */}
+        <div className="flex-1 min-w-0 space-y-4">
           {/* Executive Summary */}
           <ExecutiveSummary
             score={report.score_total || 0}
@@ -417,7 +441,7 @@ Powered by Pagelyzer
               onPriorityChange={setPriorityFilter}
               showProFilters={hasProAccess}
             />
-            <div className="grid gap-4 sm:grid-cols-2 mt-4">
+            <div className="grid gap-3 sm:grid-cols-2 mt-3">
               {filteredRecommendations.length > 0 ? (
                 filteredRecommendations.slice(0, hasProAccess ? undefined : 3).map((rec: any, index: number) => (
                   <ActionCard
@@ -460,7 +484,7 @@ Powered by Pagelyzer
               description="Detailed engagement trends and content analysis"
               icon={<TrendingUp className="h-5 w-5" />}
             >
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-2">
                 {hasRealEngagementData ? (
                   <EngagementChart
                     data={engagementTrendData}
@@ -484,7 +508,7 @@ Powered by Pagelyzer
                   <ChartEmptyState title="Post Type Performance" chartType="bar" />
                 )}
               </div>
-              <div className="mt-6">
+              <div className="mt-4">
                 {hasRealHeatmapData ? (
                   <BestTimeHeatmap data={heatmapData} title="Best Time to Post" />
                 ) : (
