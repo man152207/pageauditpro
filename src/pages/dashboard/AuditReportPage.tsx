@@ -248,9 +248,23 @@ Powered by Pagelyzer
               <Facebook className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
-                {report.page_name || 'Audit Report'}
-              </h1>
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
+                  {report.page_name || 'Audit Report'}
+                </h1>
+                {/* Pro/Free Report Indicator */}
+                {hasProAccess ? (
+                  <span className="pro-report-indicator shrink-0">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Full Report
+                  </span>
+                ) : (
+                  <span className="free-report-indicator shrink-0">
+                    <Lock className="h-3.5 w-3.5" />
+                    Limited Preview
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5 shrink-0" />

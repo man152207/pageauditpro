@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/ui/stat-card';
 import { ScoreCard } from '@/components/ui/score-card';
 import { ProBadge } from '@/components/ui/pro-badge';
+import { PlanBadge } from '@/components/ui/plan-badge';
+import { PlanBanner } from '@/components/ui/plan-banner';
 import { LockedFeature } from '@/components/ui/locked-feature';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Sparkline } from '@/components/ui/sparkline';
@@ -23,6 +25,8 @@ import {
   ArrowUpRight,
   ChevronRight,
   Calendar,
+  Crown,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -60,22 +64,24 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-5">
-      {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-1">
-            Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}! 👋
-          </h1>
-          <p className="text-muted-foreground text-base">
-            Here's an overview of your page audits and performance.
-          </p>
+      {/* Welcome Header with Plan Badge */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
+                Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}! 👋
+              </h1>
+            </div>
+            <PlanBadge showRenewal={true} showUsage={true} />
+          </div>
+          <Button asChild size="lg" className={cn("shrink-0", isPro ? "btn-premium" : "")}>
+            <Link to="/dashboard/audit">
+              <Plus className="mr-2 h-4 w-4" />
+              New Audit
+            </Link>
+          </Button>
         </div>
-        <Button asChild size="lg" className="btn-premium shrink-0">
-          <Link to="/dashboard/audit">
-            <Plus className="mr-2 h-4 w-4" />
-            New Audit
-          </Link>
-        </Button>
       </div>
 
       {/* Stats Grid with Sparklines */}
@@ -301,29 +307,55 @@ export default function UserDashboard() {
             </LockedFeature>
           )}
 
-          {/* Pro user: Show connected pages status */}
+          {/* Pro user: Show active features with checkmarks */}
           {isPro && (
-            <div className="rounded-2xl border border-success/20 bg-success/5 p-6">
-              <div className="flex items-center gap-4 mb-5">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-success/10 text-success">
-                  <Users className="h-7 w-7" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-lg">Pro Features Active</h3>
-                    <ProBadge size="sm" />
+            <div className="rounded-2xl pro-accent-border bg-card p-6 relative overflow-hidden">
+              {/* Decorative gradient */}
+              <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-gradient-to-br from-warning/10 to-transparent -translate-y-1/2 translate-x-1/2" />
+              
+              <div className="relative">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-warning/20 to-warning/10 text-warning">
+                    <Crown className="h-7 w-7" />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    You have access to all premium features
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-lg">Pro Features Active</h3>
+                      <span className="plan-badge-pro">
+                        <Crown className="h-3 w-3" />
+                        PRO
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Thank you for being a Pro member!
+                    </p>
+                  </div>
                 </div>
+                
+                {/* Active features list */}
+                <div className="space-y-2 mb-5">
+                  {[
+                    'Unlimited audits',
+                    'AI-powered insights',
+                    'PDF export & sharing',
+                    'Audience demographics',
+                  ].map((feature) => (
+                    <div key={feature} className="flex items-center gap-2 text-sm">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-success/10 text-success">
+                        <Check className="h-3 w-3" />
+                      </div>
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                <Button asChild className="w-full btn-premium">
+                  <Link to="/dashboard/audit">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Run Pro Audit
+                  </Link>
+                </Button>
               </div>
-              <Button asChild className="w-full btn-premium">
-                <Link to="/dashboard/audit">
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Run Pro Audit
-                </Link>
-              </Button>
             </div>
           )}
         </div>

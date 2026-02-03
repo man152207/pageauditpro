@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Lock, Sparkles } from 'lucide-react';
+import { Lock, Sparkles, Crown, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProBadge } from '@/components/ui/pro-badge';
 import { Link } from 'react-router-dom';
@@ -10,6 +10,8 @@ interface LockedSectionProps {
   description?: string;
   icon?: ReactNode;
   placeholderContent?: ReactNode;
+  valueProposition?: string; // e.g., "See your top 5 performing posts"
+  lockedCount?: number; // e.g., "3 more insights locked"
   className?: string;
 }
 
@@ -23,6 +25,8 @@ export function LockedSection({
   description = 'Upgrade to Pro to unlock this section',
   icon,
   placeholderContent,
+  valueProposition,
+  lockedCount,
   className,
 }: LockedSectionProps) {
   return (
@@ -56,18 +60,33 @@ export function LockedSection({
           </div>
         )}
         
-        {/* Blur Overlay */}
+        {/* Blur Overlay with Enhanced CTA */}
         <div className="absolute inset-0 backdrop-blur-md bg-background/70 flex flex-col items-center justify-center p-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mb-4 animate-bounce-soft">
-            <Lock className="h-7 w-7 text-primary" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-pro/20 to-warning/10 mb-4">
+            <Crown className="h-7 w-7 text-pro" />
           </div>
-          <p className="text-center text-muted-foreground mb-4 max-w-xs">
+          
+          {valueProposition && (
+            <p className="text-center font-semibold text-foreground mb-2 max-w-xs">
+              {valueProposition}
+            </p>
+          )}
+          
+          {lockedCount && lockedCount > 0 && (
+            <p className="text-sm text-muted-foreground mb-3">
+              +{lockedCount} more insights locked
+            </p>
+          )}
+          
+          <p className="text-center text-sm text-muted-foreground mb-4 max-w-xs">
             Unlock detailed insights, AI recommendations, and more with Pro
           </p>
-          <Button asChild>
+          
+          <Button asChild className="btn-premium">
             <Link to="/dashboard/billing">
               <Sparkles className="mr-2 h-4 w-4" />
               Upgrade to Pro
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>

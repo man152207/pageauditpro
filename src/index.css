@@ -612,6 +612,64 @@
     box-shadow: 0 2px 8px hsl(var(--pro) / 0.35);
   }
 
+  /* ========== PLAN BADGES (Pro/Free Differentiation) ========== */
+  .plan-badge-pro {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full uppercase tracking-wide;
+    background: linear-gradient(135deg, hsl(30 90% 55%) 0%, hsl(45 95% 50%) 50%, hsl(30 85% 50%) 100%);
+    color: hsl(30 10% 15%);
+    box-shadow: 0 2px 12px hsl(38 92% 50% / 0.4), inset 0 1px 0 0 rgb(255 255 255 / 0.3);
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.2);
+    animation: shimmer-gold 3s infinite;
+  }
+
+  .plan-badge-free {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full;
+    @apply bg-muted text-muted-foreground border border-border;
+  }
+
+  /* Pro card accent border */
+  .pro-accent-border {
+    @apply border-2;
+    border-color: hsl(38 92% 50% / 0.3);
+    box-shadow: 0 0 20px -5px hsl(38 92% 50% / 0.15);
+  }
+
+  .pro-accent-border:hover {
+    border-color: hsl(38 92% 50% / 0.5);
+    box-shadow: 0 0 30px -5px hsl(38 92% 50% / 0.25);
+  }
+
+  /* Pro indicator for report pages */
+  .pro-report-indicator {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium;
+    background: linear-gradient(135deg, hsl(38 92% 50% / 0.1) 0%, hsl(45 95% 50% / 0.05) 100%);
+    border: 1px solid hsl(38 92% 50% / 0.25);
+    color: hsl(38 80% 40%);
+  }
+
+  .dark .pro-report-indicator {
+    color: hsl(38 92% 60%);
+  }
+
+  /* Free report limited preview indicator */
+  .free-report-indicator {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium;
+    @apply bg-muted/50 border border-border text-muted-foreground;
+  }
+
+  @keyframes shimmer-gold {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .plan-badge-pro {
+    background-size: 200% 200%;
+  }
+
   .score-excellent { @apply bg-success/10 text-success border-success/15; }
   .score-good { @apply bg-accent/10 text-accent border-accent/15; }
   .score-average { @apply bg-warning/10 text-warning border-warning/15; }
