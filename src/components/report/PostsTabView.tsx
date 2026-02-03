@@ -138,20 +138,25 @@ function PostRow({ post, rank, isTop }: { post: Post; rank: number; isTop: boole
             {post.message?.substring(0, 80) || `${post.type || 'Post'}`}
             {post.message && post.message.length > 80 && '...'}
           </p>
-          {post.permalink_url && (
+          {post.permalink_url ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <a 
                   href={post.permalink_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                  className="shrink-0 p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  aria-label="View post on Facebook"
                 >
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </TooltipTrigger>
-              <TooltipContent>Open on Facebook</TooltipContent>
+              <TooltipContent>View on Facebook</TooltipContent>
             </Tooltip>
+          ) : (
+            <span className="shrink-0 p-1.5 rounded-lg bg-muted text-muted-foreground" title="No link available">
+              <ExternalLink className="h-4 w-4 opacity-30" />
+            </span>
           )}
         </div>
 

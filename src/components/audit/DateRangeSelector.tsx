@@ -22,10 +22,10 @@ interface DateRangeSelectorProps {
 }
 
 const presets: { value: DateRangePreset; label: string; shortLabel: string }[] = [
-  { value: '7d', label: 'Last 7 Days', shortLabel: '7D' },
-  { value: '30d', label: 'Last 30 Days', shortLabel: '30D' },
-  { value: '3m', label: 'Last 3 Months', shortLabel: '3M' },
-  { value: '6m', label: 'Last 6 Months', shortLabel: '6M' },
+  { value: '7d', label: 'Last 7 Days', shortLabel: 'Last 7 Days' },
+  { value: '30d', label: 'Last 30 Days', shortLabel: 'Last 30 Days' },
+  { value: '3m', label: 'Last 3 Months', shortLabel: 'Last 3 Months' },
+  { value: '6m', label: 'Last 6 Months', shortLabel: 'Last 6 Months' },
 ];
 
 export function DateRangeSelector({
@@ -146,14 +146,15 @@ export function DateRangeSelector({
         <span>Tip: 30 days+ gives better trend accuracy.</span>
       </p>
 
-      {/* Backend support note */}
+      {/* Backend support note - transparency about data limitations */}
       {showBackendNote && (
-        <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 text-sm text-warning-foreground">
+        <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 text-sm">
           <p className="flex items-start gap-2">
             <Info className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
             <span className="text-muted-foreground">
-              <strong className="text-foreground">Note:</strong> Date range selection is for planning purposes. 
-              The audit analyzes available data from Facebook API.
+              <strong className="text-foreground">Data Notice:</strong> Selected range is stored for report context. 
+              Facebook API returns up to 25 recent posts and last 30 days of page insights. 
+              Scores reflect this available data, not the full selected range.
             </span>
           </p>
         </div>

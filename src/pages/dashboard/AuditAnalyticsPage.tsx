@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useQuery } from '@tanstack/react-query';
@@ -30,6 +31,8 @@ import {
   Target,
   ArrowUpRight,
   ArrowDownRight,
+  ExternalLink,
+  Eye,
 } from 'lucide-react';
 import { format, subDays, subMonths, startOfDay, endOfDay, isWithinInterval, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -689,6 +692,68 @@ export default function AuditAnalyticsPage() {
               </div>
             </div>
           </div>
+
+          {/* Recent Audits Table with View Links (C2) */}
+          {filteredAudits.length > 0 && (
+            <Card className="animate-fade-in-up">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileBarChart className="h-4 w-4 text-primary" />
+                  Recent Audits
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Click to view full report
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[500px]">
+                    <thead className="text-xs text-muted-foreground border-b">
+                      <tr>
+                        <th className="text-left py-2 px-3 font-medium">Page</th>
+                        <th className="text-left py-2 px-3 font-medium">Date</th>
+                        <th className="text-center py-2 px-3 font-medium">Score</th>
+                        <th className="text-center py-2 px-3 font-medium">Type</th>
+                        <th className="text-right py-2 px-3 font-medium">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm">
+                      {filteredAudits.slice(0, 10).map((audit) => {
+                        const score = audit.score_total || 0;
+                        const scoreColor = score >= 80 ? 'text-success' : score >= 60 ? 'text-accent' : score >= 40 ? 'text-warning' : 'text-destructive';
+                        return (
+                          <tr key={audit.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                            <td className="py-2.5 px-3 font-medium truncate max-w-[200px]">
+                              {audit.page_name || 'Untitled'}
+                            </td>
+                            <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
+                              {format(new Date(audit.created_at), 'MMM d, yyyy')}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className={cn('font-bold', scoreColor)}>{score}</span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {audit.audit_type}
+                              </Badge>
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <Button size="sm" variant="ghost" className="h-7 px-2" asChild>
+                                <Link to={`/dashboard/reports/${audit.id}`}>
+                                  <Eye className="h-3.5 w-3.5 mr-1" />
+                                  View
+                                </Link>
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Pro Feature Lock */}
           {!isPro && (

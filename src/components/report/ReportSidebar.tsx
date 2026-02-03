@@ -166,8 +166,11 @@ export function ReportSidebar({
               <PieChart className="h-4 w-4 text-muted-foreground" />
               <h4 className="font-semibold text-sm text-muted-foreground">Paid vs Organic</h4>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Paid vs Organic breakdown is not available for this page via current Facebook data. This typically requires ad account permissions or boosted post insights.
+            <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+              Paid/organic breakdown is unavailable for this page. Facebook's Graph API typically requires boosted posts or ad account access to provide this data.
+            </p>
+            <p className="text-xs text-muted-foreground/70 italic">
+              Tip: Run ads or boost posts to enable this metric in future audits.
             </p>
           </div>
         )
