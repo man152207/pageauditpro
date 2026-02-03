@@ -2,7 +2,12 @@ import { PageHeader } from '@/components/ui/page-header';
 import { AuditFlow } from '@/components/audit/AuditFlow';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { FileBarChart, Sparkles } from 'lucide-react';
+import { FileBarChart, Sparkles, Calendar, Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function ManualAuditPage() {
   return (
@@ -31,6 +36,48 @@ export default function ManualAuditPage() {
 
         {/* Sidebar - Tips & Info */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Date Range Info (C1/C2) */}
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <h3 className="font-semibold text-lg">Date Range Tips</h3>
+            </div>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-start gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                  1
+                </span>
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">Quick picks:</strong> 7D, 30D, 3M, 6M available
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                  2
+                </span>
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">30 days+</strong> gives better trend accuracy
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                  3
+                </span>
+                <span className="text-muted-foreground">
+                  Custom range available for specific periods
+                </span>
+              </li>
+            </ul>
+            <div className="mt-4 p-3 rounded-lg bg-background/50 border border-border">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Info className="h-3.5 w-3.5" />
+                <span>Tip: Longer ranges provide more accurate insights</span>
+              </div>
+            </div>
+          </div>
+
           {/* What you'll get */}
           <div className="rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center gap-3 mb-4">
