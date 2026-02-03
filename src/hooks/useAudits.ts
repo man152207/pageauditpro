@@ -57,13 +57,7 @@ export function useAudit(auditId: string | undefined) {
     queryFn: async () => {
       if (!auditId || !session) return null;
 
-      // Use edge function to get gated report data
-      const { data, error } = await supabase.functions.invoke('get-audit-report', {
-        body: {},
-        headers: {},
-      });
-
-      // Workaround: call with query param
+      // Call edge function with query param for gated report data
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-audit-report?audit_id=${auditId}`,
         {
