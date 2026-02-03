@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +10,38 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[RUN-AUDIT] ${step}${detailsStr}`);
 };
+
+// Convert preset to since/until dates
+function getDateRangeFromPreset(preset: string): { since: string; until: string } {
+  const now = new Date();
+  const until = now.toISOString().split('T')[0];
+  let since: Date;
+
+  switch (preset) {
+    case '7d':
+      since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case '30d':
+      since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    case '3m':
+      since = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      break;
+    case '6m':
+      since = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+      break;
+    case '1y':
+      since = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+
+  return {
+    since: since.toISOString().split('T')[0],
+    until,
+  };
+}
 
 // Calculate engagement score (0-100)
 function calculateEngagementScore(metrics: any): number {
@@ -49,7 +81,6 @@ function calculateReadinessScore(pageInfo: any): number {
 function generateRecommendations(scores: any, metrics: any, isPro: boolean): any[] {
   const recommendations: any[] = [];
   
-  // Basic recommendations (visible to all users)
   if (scores.engagement < 50) {
     recommendations.push({
       priority: "high",
@@ -70,14 +101,13 @@ function generateRecommendations(scores: any, metrics: any, isPro: boolean): any
     });
   }
 
-  // Pro-only recommendations with detailed actions
   if (isPro) {
     if (metrics.topPostType) {
       recommendations.push({
         priority: "medium",
         category: "content",
         title: `Focus on ${metrics.topPostType} Content`,
-        description: `Your ${metrics.topPostType} posts perform 40% better than other content types.`,
+        description: `Your ${metrics.topPostType} posts perform better than other content types.`,
         isPro: true,
       });
     }
@@ -102,6 +132,17 @@ function generateRecommendations(scores: any, metrics: any, isPro: boolean): any
   }
 
   return recommendations;
+}
+
+// Build time-series data from insights array
+function buildTimeSeries(insights: any[], metricName: string): { date: string; value: number }[] {
+  const metric = insights.find(m => m.name === metricName);
+  if (!metric?.values?.length) return [];
+  
+  return metric.values.map((v: any) => ({
+    date: v.end_time?.split('T')[0] || '',
+    value: v.value || 0,
+  })).filter((v: any) => v.date);
 }
 
 serve(async (req) => {
@@ -148,9 +189,19 @@ serve(async (req) => {
       );
     }
 
-    // Parse date range if provided (for UI context - stored in computed_metrics)
+    // Parse date range - ACTUALLY APPLY IT to API calls
     const requestedRange = date_range || { preset: '30d' };
-    logStep("Date range requested", requestedRange);
+    let dateParams: { since: string; until: string };
+    
+    if (requestedRange.from && requestedRange.to) {
+      // Custom date range
+      dateParams = { since: requestedRange.from, until: requestedRange.to };
+    } else {
+      // Preset conversion
+      dateParams = getDateRangeFromPreset(requestedRange.preset || '30d');
+    }
+    
+    logStep("Date range applied", { requestedRange, dateParams });
 
     // Check subscription status
     const { data: subscription } = await supabase
@@ -179,7 +230,7 @@ serve(async (req) => {
     const hasFreeAuditGrant = !!freeGrant;
     logStep("Free audit grant check", { hasFreeAuditGrant, month: monthStr });
 
-    // Check usage limits for free users (skip if they have a free grant)
+    // Check usage limits for free users
     if (!isPro && !hasFreeAuditGrant) {
       const { count } = await supabase
         .from("audits")
@@ -243,73 +294,128 @@ serve(async (req) => {
       dataAvailability.pageInfo = false;
     }
 
+    // Fetch insights WITH DATE RANGE using since/until
     try {
       const insightsUrl = `https://graph.facebook.com/v19.0/${pageId}/insights?` +
         `metric=page_impressions,page_engaged_users,page_post_engagements,page_fans&` +
-        `period=day&date_preset=last_30d&` +
+        `period=day&since=${dateParams.since}&until=${dateParams.until}&` +
         `access_token=${pageToken}`;
       
       const insightsRes = await fetch(insightsUrl);
       const insightsData = await insightsRes.json();
       insights = insightsData.data || [];
-      dataAvailability.insights = !insightsData.error;
-      logStep("Insights fetched", { success: !insightsData.error, count: insights.length });
+      dataAvailability.insights = !insightsData.error && insights.length > 0;
+      logStep("Insights fetched with date range", { 
+        success: !insightsData.error, 
+        count: insights.length,
+        since: dateParams.since,
+        until: dateParams.until
+      });
     } catch (e) {
       logStep("Insights fetch failed", { error: e });
       dataAvailability.insights = false;
     }
 
+    // Fetch posts WITH DATE RANGE using since/until
     try {
-      // Enhanced posts fetch with permalink_url, full_picture, and attachments
       const postsUrl = `https://graph.facebook.com/v19.0/${pageId}/posts?` +
         `fields=id,message,created_time,shares,likes.summary(true),comments.summary(true),type,` +
         `permalink_url,full_picture,attachments{media_type,media,url,subattachments}&` +
-        `limit=25&` +
+        `since=${dateParams.since}&until=${dateParams.until}&` +
+        `limit=100&` +
         `access_token=${pageToken}`;
       
       const postsRes = await fetch(postsUrl);
       const postsData = await postsRes.json();
       posts = postsData.data || [];
       dataAvailability.posts = !postsData.error;
-      logStep("Posts fetched with media", { success: !postsData.error, count: posts.length });
+      logStep("Posts fetched with date range", { 
+        success: !postsData.error, 
+        count: posts.length,
+        since: dateParams.since,
+        until: dateParams.until
+      });
     } catch (e) {
       logStep("Posts fetch failed", { error: e });
       dataAvailability.posts = false;
     }
 
-    // Fetch post-level insights for paid/organic breakdown (best effort)
+    // Fetch post-level insights for paid/organic breakdown
     let postInsights: Record<string, any> = {};
+    let totalPaidImpressions = 0;
+    let totalOrganicImpressions = 0;
+    let hasAnyPostInsights = false;
+    
     if (posts.length > 0) {
       try {
-        // Fetch insights for up to 10 posts (rate limit consideration)
-        const postIds = posts.slice(0, 10).map((p: any) => p.id);
+        // Fetch insights for up to 25 posts
+        const postIds = posts.slice(0, 25).map((p: any) => p.id);
         for (const postId of postIds) {
           try {
             const insightUrl = `https://graph.facebook.com/v19.0/${postId}/insights?` +
-              `metric=post_impressions,post_impressions_organic,post_impressions_paid,post_engaged_users&` +
+              `metric=post_impressions,post_impressions_organic,post_impressions_paid,post_engaged_users,post_clicks&` +
               `access_token=${pageToken}`;
             const insightRes = await fetch(insightUrl);
             const insightData = await insightRes.json();
             if (!insightData.error && insightData.data) {
+              hasAnyPostInsights = true;
               postInsights[postId] = {};
               insightData.data.forEach((metric: any) => {
-                postInsights[postId][metric.name] = metric.values?.[0]?.value || 0;
+                const val = metric.values?.[0]?.value || 0;
+                postInsights[postId][metric.name] = val;
+                if (metric.name === 'post_impressions_paid') totalPaidImpressions += val;
+                if (metric.name === 'post_impressions_organic') totalOrganicImpressions += val;
               });
             }
           } catch (e) {
             // Individual post insight failure is non-blocking
           }
         }
-        dataAvailability.postInsights = Object.keys(postInsights).length > 0;
-        logStep("Post insights fetched", { count: Object.keys(postInsights).length });
+        dataAvailability.postInsights = hasAnyPostInsights;
+        logStep("Post insights fetched", { 
+          count: Object.keys(postInsights).length,
+          totalPaid: totalPaidImpressions,
+          totalOrganic: totalOrganicImpressions
+        });
       } catch (e) {
         logStep("Post insights fetch failed", { error: e });
         dataAvailability.postInsights = false;
       }
     }
 
-    // Demographics will be fetched later after hasProAccess is calculated
+    // Demographics for Pro users
     let demographics: any = null;
+    const hasProAccess = isPro || hasFreeAuditGrant;
+
+    if (hasProAccess) {
+      try {
+        const demoUrl = `https://graph.facebook.com/v19.0/${pageId}/insights?` +
+          `metric=page_fans_gender_age,page_fans_city,page_fans_country&` +
+          `period=lifetime&access_token=${pageToken}`;
+        
+        const demoRes = await fetch(demoUrl);
+        const demoData = await demoRes.json();
+        
+        if (!demoData.error && demoData.data) {
+          const genderAge = demoData.data.find((d: any) => d.name === 'page_fans_gender_age');
+          const cities = demoData.data.find((d: any) => d.name === 'page_fans_city');
+          const countries = demoData.data.find((d: any) => d.name === 'page_fans_country');
+          
+          demographics = {
+            genderAge: genderAge?.values?.[0]?.value || null,
+            cities: cities?.values?.[0]?.value || null,
+            countries: countries?.values?.[0]?.value || null,
+          };
+          dataAvailability.demographics = true;
+        } else {
+          dataAvailability.demographics = false;
+        }
+        logStep("Demographics fetched", { success: !!demographics });
+      } catch (e) {
+        logStep("Demographics fetch failed", { error: e });
+        dataAvailability.demographics = false;
+      }
+    }
 
     // Calculate metrics
     const followers = pageInfo.followers_count || pageInfo.fan_count || 1000;
@@ -326,7 +432,7 @@ serve(async (req) => {
     const totalEngagements = totalLikes + totalComments + totalShares;
     const postsCount = posts.length || 1;
 
-    // Calculate posts per week (based on first and last post dates)
+    // Calculate posts per week
     let postsPerWeek = 3;
     if (posts.length >= 2) {
       const firstPost = new Date(posts[posts.length - 1].created_time);
@@ -363,40 +469,7 @@ serve(async (req) => {
 
     logStep("Scores calculated", scores);
 
-    // Generate recommendations - include Pro recommendations if user has grant OR subscription
-    const hasProAccess = isPro || hasFreeAuditGrant;
     const recommendations = generateRecommendations(scores, metrics, hasProAccess);
-
-    // Fetch demographics for Pro users (now that hasProAccess is defined)
-    if (hasProAccess) {
-      try {
-        const demoUrl = `https://graph.facebook.com/v19.0/${pageId}/insights?` +
-          `metric=page_fans_gender_age,page_fans_city,page_fans_country&` +
-          `period=lifetime&access_token=${pageToken}`;
-        
-        const demoRes = await fetch(demoUrl);
-        const demoData = await demoRes.json();
-        
-        if (!demoData.error && demoData.data) {
-          const genderAge = demoData.data.find((d: any) => d.name === 'page_fans_gender_age');
-          const cities = demoData.data.find((d: any) => d.name === 'page_fans_city');
-          const countries = demoData.data.find((d: any) => d.name === 'page_fans_country');
-          
-          demographics = {
-            genderAge: genderAge?.values?.[0]?.value || null,
-            cities: cities?.values?.[0]?.value || null,
-            countries: countries?.values?.[0]?.value || null,
-          };
-          dataAvailability.demographics = true;
-        } else {
-          dataAvailability.demographics = false;
-        }
-        logStep("Demographics fetched", { success: !!demographics });
-      } catch (e) {
-        logStep("Demographics fetch failed", { error: e });
-        dataAvailability.demographics = false;
-      }
-    }
 
     // Create audit record
     const { data: audit, error: auditError } = await supabase
@@ -414,6 +487,7 @@ serve(async (req) => {
           totalComments,
           totalShares,
           postsAnalyzed: postsCount,
+          dateRange: dateParams,
         },
         score_total: overallScore,
         score_breakdown: scores,
@@ -433,74 +507,129 @@ serve(async (req) => {
 
     logStep("Audit created", { auditId: audit.id });
 
-    // Store detailed metrics for Pro users OR users with free audit grants
+    // Build trend time-series from insights
+    const trendData = {
+      impressions: buildTimeSeries(insights, 'page_impressions'),
+      engagedUsers: buildTimeSeries(insights, 'page_engaged_users'),
+      postEngagements: buildTimeSeries(insights, 'page_post_engagements'),
+      fans: buildTimeSeries(insights, 'page_fans'),
+    };
+    
+    const hasTrendData = Object.values(trendData).some(arr => arr.length > 0);
+    logStep("Trend data built", { 
+      impressionsCount: trendData.impressions.length,
+      engagedUsersCount: trendData.engagedUsers.length,
+      hasTrendData
+    });
+
+    // Calculate paid vs organic - CORRECTLY
+    const totalImpressions = totalPaidImpressions + totalOrganicImpressions;
+    let paidVsOrganic: any = null;
+    
+    if (hasAnyPostInsights) {
+      if (totalImpressions > 0) {
+        paidVsOrganic = {
+          paid: Math.round((totalPaidImpressions / totalImpressions) * 100),
+          organic: Math.round((totalOrganicImpressions / totalImpressions) * 100),
+          totalPaid: totalPaidImpressions,
+          totalOrganic: totalOrganicImpressions,
+          available: true,
+        };
+      } else {
+        // We have post insights but no impressions data
+        paidVsOrganic = {
+          paid: 0,
+          organic: 100,
+          totalPaid: 0,
+          totalOrganic: 0,
+          available: true,
+          message: "No paid impressions detected in this period",
+        };
+      }
+    } else {
+      // No post insights available - NOT because of ad account
+      paidVsOrganic = {
+        available: false,
+        reason: "Post-level impression data not available from Facebook API for this page.",
+      };
+    }
+    dataAvailability.paidVsOrganic = paidVsOrganic?.available || false;
+
+    // Sort posts by engagement to find top/needs-work
+    const sortedPosts = [...posts].map((p: any) => {
+      const pInsight = postInsights[p.id] || {};
+      const engagement = (p.likes?.summary?.total_count || 0) + 
+                         (p.comments?.summary?.total_count || 0) + 
+                         (p.shares?.count || 0);
+      return {
+        id: p.id,
+        type: p.type,
+        created_time: p.created_time,
+        message: p.message,
+        permalink_url: p.permalink_url,
+        full_picture: p.full_picture,
+        media_type: p.attachments?.data?.[0]?.media_type || p.type,
+        likes: p.likes?.summary?.total_count || 0,
+        comments: p.comments?.summary?.total_count || 0,
+        shares: p.shares?.count || 0,
+        engagement,
+        impressions: pInsight.post_impressions || null,
+        impressions_organic: pInsight.post_impressions_organic || null,
+        impressions_paid: pInsight.post_impressions_paid || null,
+        engaged_users: pInsight.post_engaged_users || null,
+        clicks: pInsight.post_clicks || null,
+        is_paid: (pInsight.post_impressions_paid || 0) > 0,
+        engagement_rate: pInsight.post_impressions 
+          ? Math.round((engagement / pInsight.post_impressions) * 10000) / 100 
+          : null,
+      };
+    }).sort((a, b) => b.engagement - a.engagement);
+
+    const topPosts = sortedPosts.slice(0, 5);
+    const needsWorkPosts = sortedPosts.slice(-5).reverse();
+
+    // Post type analysis
+    const postTypeStats: Record<string, { total: number; count: number }> = {};
+    posts.forEach((p: any) => {
+      const type = p.type || 'status';
+      if (!postTypeStats[type]) {
+        postTypeStats[type] = { total: 0, count: 0 };
+      }
+      const eng = (p.likes?.summary?.total_count || 0) + 
+                  (p.comments?.summary?.total_count || 0) + 
+                  (p.shares?.count || 0);
+      postTypeStats[type].total += eng;
+      postTypeStats[type].count += 1;
+    });
+    const postTypeAnalysis = Object.entries(postTypeStats).map(([type, stats]) => ({
+      type,
+      avgEngagement: Math.round(stats.total / stats.count),
+      count: stats.count,
+    }));
+
+    // Store detailed metrics for Pro users
     if (hasProAccess) {
-      // Calculate paid vs organic totals
-      let totalPaidImpressions = 0;
-      let totalOrganicImpressions = 0;
-      Object.values(postInsights).forEach((insight: any) => {
-        totalPaidImpressions += insight.post_impressions_paid || 0;
-        totalOrganicImpressions += insight.post_impressions_organic || 0;
-      });
-      const totalImpressions = totalPaidImpressions + totalOrganicImpressions;
-      const paidVsOrganic = totalImpressions > 0 ? {
-        paid: Math.round((totalPaidImpressions / totalImpressions) * 100),
-        organic: Math.round((totalOrganicImpressions / totalImpressions) * 100),
-        totalPaid: totalPaidImpressions,
-        totalOrganic: totalOrganicImpressions,
-      } : null;
-
-      // Calculate post type stats for creative analysis
-      const postTypeStats: Record<string, { total: number; count: number }> = {};
-      posts.forEach((p: any) => {
-        const type = p.type || 'status';
-        if (!postTypeStats[type]) {
-          postTypeStats[type] = { total: 0, count: 0 };
-        }
-        const eng = (p.likes?.summary?.total_count || 0) + 
-                    (p.comments?.summary?.total_count || 0) + 
-                    (p.shares?.count || 0);
-        postTypeStats[type].total += eng;
-        postTypeStats[type].count += 1;
-      });
-      const postTypeAnalysis = Object.entries(postTypeStats).map(([type, stats]) => ({
-        type,
-        avgEngagement: Math.round(stats.total / stats.count),
-        count: stats.count,
-      }));
-
       await supabase.from("audit_metrics").insert({
         audit_id: audit.id,
         raw_metrics: {
           pageInfo,
           insights,
-          posts: posts.map((p: any) => {
-            const pInsight = postInsights[p.id] || {};
-            return {
-              id: p.id,
-              type: p.type,
-              created_time: p.created_time,
-              message: p.message,
-              permalink_url: p.permalink_url,
-              full_picture: p.full_picture,
-              media_type: p.attachments?.data?.[0]?.media_type || p.type,
-              likes: p.likes?.summary?.total_count || 0,
-              comments: p.comments?.summary?.total_count || 0,
-              shares: p.shares?.count || 0,
-              // Post-level insights (if available)
-              impressions: pInsight.post_impressions || null,
-              impressions_organic: pInsight.post_impressions_organic || null,
-              impressions_paid: pInsight.post_impressions_paid || null,
-              engaged_users: pInsight.post_engaged_users || null,
-              is_paid: (pInsight.post_impressions_paid || 0) > 0,
-            };
-          }),
+          posts: sortedPosts,
         },
         computed_metrics: {
           ...metrics,
-          requestedRange,
+          requestedRange: {
+            ...requestedRange,
+            appliedDates: dateParams,
+          },
           paidVsOrganic,
           postTypeAnalysis,
+          trendData,
+          postsAnalysis: {
+            top: topPosts,
+            needsWork: needsWorkPosts,
+            totalCount: posts.length,
+          },
           benchmarks: {
             postingFrequency: {
               current: postsPerWeek,
@@ -517,7 +646,12 @@ serve(async (req) => {
         data_availability: dataAvailability,
         demographics: demographics,
       });
-      logStep("Metrics stored for Pro/Grant user with enhanced data");
+      logStep("Metrics stored with date range and trends", { 
+        dateRange: dateParams,
+        hasTrendData,
+        topPostsCount: topPosts.length,
+        needsWorkCount: needsWorkPosts.length
+      });
     }
 
     // Create report record
@@ -532,6 +666,9 @@ serve(async (req) => {
         audit_id: audit.id,
         scores,
         is_pro: isPro,
+        date_range_applied: dateParams,
+        posts_fetched: posts.length,
+        has_trend_data: hasTrendData,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

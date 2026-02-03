@@ -159,9 +159,10 @@ export default function AuditReportPage() {
     },
   };
 
-  // Extract creatives for preview
-  const creatives = posts
-    .filter((p: any) => p.full_picture)
+  // Extract creatives for preview - use postsForDisplay
+  const allPostsWithImages = (rawMetrics.posts || [])
+    .filter((p: any) => p.full_picture);
+  const creatives = allPostsWithImages
     .slice(0, 6)
     .map((p: any) => ({
       id: p.id,
@@ -176,8 +177,12 @@ export default function AuditReportPage() {
   };
 
   // Get real chart data from computed metrics - NO MOCK DATA
-  const engagementTrendData = computedMetrics.engagementTrend || null;
-  const hasRealEngagementData = engagementTrendData && Array.isArray(engagementTrendData) && engagementTrendData.length > 0;
+  // Try trendData first (new structure), then fall back to engagementTrend
+  const trendData = computedMetrics.trendData || null;
+  const engagementTrendData = trendData?.impressions || trendData?.engagedUsers || 
+    trendData?.postEngagements || computedMetrics.engagementTrend || null;
+  const hasRealEngagementData = engagementTrendData && 
+    Array.isArray(engagementTrendData) && engagementTrendData.length > 0;
 
   // Post type data - only use if real data exists
   const postTypeData = computedMetrics.postTypeAnalysis || null;
@@ -186,6 +191,12 @@ export default function AuditReportPage() {
   // Heatmap data - only use if real data exists
   const heatmapData = computedMetrics.bestTimeToPost || null;
   const hasRealHeatmapData = heatmapData && Array.isArray(heatmapData) && heatmapData.length > 0;
+
+  // Get posts from the new postsAnalysis structure
+  const postsAnalysis = computedMetrics.postsAnalysis || null;
+  const postsForDisplay = postsAnalysis?.top?.length > 0 || postsAnalysis?.needsWork?.length > 0 
+    ? [...(postsAnalysis.top || []), ...(postsAnalysis.needsWork || [])]
+    : posts;
 
   const mapPriorityToImpact = (priority: string): ImpactLevel => {
     switch (priority) {
@@ -477,13 +488,13 @@ Powered by Pagelyzer
           )}
 
           {/* Posts Analysis with Tabs */}
-          {hasProAccess && posts.length > 0 ? (
+          {hasProAccess && postsForDisplay.length > 0 ? (
             <ReportSection
               title="Posts: What Worked vs What Didn't"
-              description="Analyze your best and worst performing content"
+              description={`Analyzing ${postsForDisplay.length} posts from selected period`}
               icon={<FileBarChart className="h-5 w-5" />}
             >
-              <PostsTabView posts={posts} />
+              <PostsTabView posts={postsForDisplay} />
             </ReportSection>
           ) : hasProAccess ? (
             <ReportSection
