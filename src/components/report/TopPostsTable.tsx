@@ -52,13 +52,20 @@ function generateWhyItWorked(post: Post): string {
   const engagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
   const hints: string[] = [];
 
+  // Check if we have enough metrics to infer why
+  const hasMetrics = post.likes !== undefined || post.comments !== undefined || post.shares !== undefined;
+  
+  if (!hasMetrics || engagement === 0) {
+    return 'Not enough data to infer why';
+  }
+
   if (engagement > 100) hints.push('High engagement vs average');
   if (post.type?.toLowerCase() === 'video') hints.push('Video content performs well');
   if (post.type?.toLowerCase() === 'photo') hints.push('Visual content drives engagement');
   if ((post.shares || 0) > (post.likes || 0) * 0.1) hints.push('Strong share rate');
   if ((post.comments || 0) > (post.likes || 0) * 0.05) hints.push('Good conversation starter');
 
-  return hints.length > 0 ? hints[0] : 'Consistent with audience preferences';
+  return hints.length > 0 ? hints[0] : 'Not enough data to infer why';
 }
 
 /**

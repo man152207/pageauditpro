@@ -69,6 +69,13 @@ function generateWhyItWorked(post: Post, isTop: boolean): string {
   const engagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
   const hints: string[] = [];
 
+  // Check if we have enough metrics to infer why
+  const hasMetrics = post.likes !== undefined || post.comments !== undefined || post.shares !== undefined;
+  
+  if (!hasMetrics || engagement === 0) {
+    return 'Not enough data to infer why';
+  }
+
   if (isTop) {
     if (engagement > 100) hints.push('High engagement above average');
     if (post.type?.toLowerCase() === 'video') hints.push('Video content drives 2x more engagement');
@@ -82,7 +89,7 @@ function generateWhyItWorked(post: Post, isTop: boolean): string {
     if (!post.message || post.message.length < 20) hints.push('Short/missing caption limits context');
   }
 
-  return hints.length > 0 ? hints[0] : (isTop ? 'Consistent with audience preferences' : 'Try different formats or timing');
+  return hints.length > 0 ? hints[0] : 'Not enough data to infer why';
 }
 
 function PostRow({ post, rank, isTop }: { post: Post; rank: number; isTop: boolean }) {

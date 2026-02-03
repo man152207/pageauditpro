@@ -261,8 +261,8 @@ export function DashboardLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-5 lg:p-8 bg-muted/30">
-          <div className="mx-auto max-w-7xl page-enter">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-muted/30 overflow-x-hidden">
+          <div className="mx-auto max-w-[1400px] 2xl:max-w-[1560px] page-enter">
             <Outlet />
           </div>
         </main>

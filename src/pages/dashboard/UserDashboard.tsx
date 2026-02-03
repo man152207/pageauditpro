@@ -55,14 +55,14 @@ export default function UserDashboard() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-1">
             Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}! 👋
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-base">
             Here's an overview of your page audits and performance.
           </p>
         </div>
@@ -75,10 +75,10 @@ export default function UserDashboard() {
       </div>
 
       {/* Stats Grid with Sparklines */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="animate-fade-in-up">
           <div className="stat-card group transition-all duration-300">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-medium text-muted-foreground">Total Audits</p>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
                 <BarChart3 className="h-4 w-4" />
@@ -86,10 +86,10 @@ export default function UserDashboard() {
             </div>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold tracking-tight group-hover:text-primary transition-colors">
+                <p className="text-3xl sm:text-4xl font-extrabold tracking-tight group-hover:text-primary transition-colors">
                   {isLoading ? '—' : stats?.totalAudits || 0}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">All time audits</p>
+                <p className="text-sm text-muted-foreground mt-0.5">All time audits</p>
               </div>
               <Sparkline 
                 data={[12, 15, 18, 14, 22, 25, stats?.totalAudits || 28]} 
@@ -103,7 +103,7 @@ export default function UserDashboard() {
 
         <div className="animate-fade-in-up stagger-1">
           <div className="stat-card group transition-all duration-300">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-medium text-muted-foreground">Average Score</p>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent transition-all duration-200 group-hover:bg-accent group-hover:text-accent-foreground group-hover:scale-110">
                 <TrendingUp className="h-4 w-4" />
@@ -111,10 +111,10 @@ export default function UserDashboard() {
             </div>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold tracking-tight group-hover:text-accent transition-colors">
+                <p className="text-3xl sm:text-4xl font-extrabold tracking-tight group-hover:text-accent transition-colors">
                   {isLoading ? '—' : stats?.avgScore ? `${stats.avgScore}` : '—'}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">Across all audits</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Across all audits</p>
               </div>
               <Sparkline 
                 data={[65, 68, 72, 70, 75, 78, stats?.avgScore || 80]} 
@@ -128,21 +128,21 @@ export default function UserDashboard() {
 
         <div className="animate-fade-in-up stagger-2">
           <div className="stat-card group transition-all duration-300">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-medium text-muted-foreground">Audits Remaining</p>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10 text-success transition-all duration-200 group-hover:bg-success group-hover:text-success-foreground group-hover:scale-110">
                 <Zap className="h-4 w-4" />
               </div>
             </div>
             <div>
-              <p className="text-3xl font-bold tracking-tight group-hover:text-success transition-colors">
+              <p className="text-3xl sm:text-4xl font-extrabold tracking-tight group-hover:text-success transition-colors">
                 {isLoading ? '—' : isPro ? '∞' : usage.auditsRemaining}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {isPro ? 'Unlimited (Pro)' : `This month (${planName})`}
               </p>
               {!isPro && !isLoading && (
-                <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div 
                     className="h-full rounded-full bg-success transition-all duration-500"
                     style={{ width: `${(usage.auditsRemaining / usage.auditsLimit) * 100}%` }}
@@ -155,24 +155,24 @@ export default function UserDashboard() {
 
         <div className="animate-fade-in-up stagger-3">
           <div className="stat-card group transition-all duration-300">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-medium text-muted-foreground">Last Audit</p>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10 text-warning transition-all duration-200 group-hover:bg-warning group-hover:text-warning-foreground group-hover:scale-110">
                 <History className="h-4 w-4" />
               </div>
             </div>
             <div>
-              <p className="text-3xl font-bold tracking-tight group-hover:text-warning transition-colors">
+              <p className="text-2xl sm:text-3xl font-extrabold tracking-tight group-hover:text-warning transition-colors">
                 {isLoading ? '—' : getLastAuditDisplay()}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Keep auditing regularly</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Keep auditing regularly</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         {/* Recent Audits */}
         <div className="rounded-2xl border border-border bg-card shadow-sm animate-fade-in-up stagger-4">
           <div className="flex items-center justify-between p-6 border-b border-border">
