@@ -120,6 +120,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Subscription state
   const [subscription, setSubscription] = useState<SubscriptionState | null>(null);
   const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
+  
+  // Track if initial fetch has been done to prevent duplicate calls
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
 
   const fetchUserData = async (userId: string) => {
     try {
@@ -190,7 +193,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await fetchSubscription(refreshData.session.access_token, retryCount + 1);
         return; // Exit early, the recursive call handles setting subscription
       } else {
-        console.error('Failed to fetch subscription:', await response.text());
+        // Non-401 error - log but don't crash, use cached/default subscription
+        const errorText = await response.text();
+        console.warn('Subscription check failed:', response.status, errorText);
+        
         // Only fall back to default if we have no existing subscription
         if (!subscription) {
           setSubscription(defaultSubscription);
@@ -216,34 +222,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session?.access_token, fetchSubscription]);
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!isMounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer data fetch with setTimeout to prevent deadlock
-        if (session?.user) {
+        // Only fetch on SIGNED_IN or TOKEN_REFRESHED events, not initial
+        // Initial fetch is handled by getSession below
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           setTimeout(() => {
-            fetchUserData(session.user.id);
-            fetchSubscription(session.access_token);
+            if (isMounted) {
+              fetchUserData(session.user.id);
+              fetchSubscription(session.access_token);
+            }
           }, 0);
-        } else {
+        } else if (!session) {
           setProfile(null);
           setRoles([]);
           setSubscription(null);
+          setInitialFetchDone(false);
         }
         
         setIsLoading(false);
       }
     );
 
-    // THEN check for existing session
+    // THEN check for existing session (only once on mount)
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
+      if (session?.user && !initialFetchDone) {
+        setInitialFetchDone(true);
         fetchUserData(session.user.id);
         fetchSubscription(session.access_token);
       }
@@ -251,8 +268,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    return () => authSubscription.unsubscribe();
-  }, [fetchSubscription]);
+    return () => {
+      isMounted = false;
+      authSubscription.unsubscribe();
+    };
+  }, [fetchSubscription, initialFetchDone]);
 
   // Refresh subscription periodically (every 5 minutes)
   useEffect(() => {
