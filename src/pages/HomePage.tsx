@@ -161,22 +161,6 @@ export default function HomePage() {
     { feature: 'History & Comparisons', free: false, pro: true },
   ];
 
-  const footerLinks = {
-    product: [
-      { label: 'Features', href: '/features' },
-      { label: 'Pricing', href: '/pricing' },
-      { label: 'Sample Report', href: '/sample-report' },
-    ],
-    resources: [
-      { label: 'FAQ', href: '/faq' },
-      { label: 'Contact', href: '/contact' },
-    ],
-    company: [
-      { label: 'Privacy Policy', href: '/privacy-policy' },
-      { label: 'Terms of Service', href: '/terms-of-service' },
-      { label: 'Data Deletion', href: '/data-deletion' },
-    ],
-  };
 
   return (
     <div className="flex flex-col overflow-hidden">
@@ -622,72 +606,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ========== FOOTER ========== */}
-      <footer className="border-t border-border bg-card">
-        <div className="container py-16 sm:py-20">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 sm:gap-12">
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-1">
-              <Link to="/" className="flex items-center gap-3 font-bold text-xl mb-5">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                  <BarChart3 className="h-6 w-6" />
-                </div>
-                Pagelyzer
-              </Link>
-              <p className="text-muted-foreground leading-relaxed">
-                Free Facebook Page Audit Tool. Get actionable insights to grow your audience.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-5">Product</h4>
-              <ul className="space-y-3">
-                {footerLinks.product.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-5">Resources</h4>
-              <ul className="space-y-3">
-                {footerLinks.resources.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-5">Legal</h4>
-              <ul className="space-y-3">
-                {footerLinks.company.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-muted-foreground hover:text-foreground transition-colors">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-14 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} Pagelyzer. All rights reserved.</p>
-            <div className="flex items-center gap-6">
-              <Link to="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
-              <Link to="/terms-of-service" className="hover:text-foreground transition-colors">Terms</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

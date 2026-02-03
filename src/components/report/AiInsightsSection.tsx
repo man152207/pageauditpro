@@ -61,19 +61,18 @@ export function AiInsightsSection({
 
   if (!insights) {
     return (
-      <div className="text-center py-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-          <Sparkles className="h-8 w-8 text-primary" />
+      <div className="flex flex-col items-center justify-center py-10 px-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-5">
+          <Sparkles className="h-7 w-7 text-primary" />
         </div>
-        <h4 className="font-semibold mb-2">Generate AI-Powered Insights</h4>
-        <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+        <p className="text-sm text-muted-foreground mb-6 max-w-sm text-center">
           Get personalized recommendations and growth strategies based on your page's performance data.
         </p>
-        <Button onClick={handleGenerate} disabled={isGenerating}>
+        <Button onClick={handleGenerate} disabled={isGenerating} size="lg">
           {isGenerating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Analyzing your page...
+              Analyzing...
             </>
           ) : (
             <>

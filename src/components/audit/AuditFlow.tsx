@@ -8,11 +8,13 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { ConnectedPagesList } from './ConnectedPagesList';
 import { BasicReportPreview } from './BasicReportPreview';
 import { AuditProgress, AuditStep } from './AuditProgress';
+import { DateRangeSelector, DateRangePreset } from './DateRangeSelector';
 import {
   Facebook,
   Loader2,
   Plus,
 } from 'lucide-react';
+import { subDays } from 'date-fns';
 
 interface FBConnection {
   id: string;
@@ -28,6 +30,11 @@ interface AuditResult {
   score: number;
   breakdown: { engagement: number; consistency: number; readiness: number };
   recommendations: any[];
+}
+
+interface DateRange {
+  from: Date;
+  to: Date;
 }
 
 interface AuditFlowProps {
@@ -46,6 +53,13 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
   const [runningAuditId, setRunningAuditId] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [lastAuditResult, setLastAuditResult] = useState<AuditResult | null>(null);
+  
+  // Date range state
+  const [selectedPreset, setSelectedPreset] = useState<DateRangePreset>('30d');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
 
   useEffect(() => {
     if (user) {
@@ -308,7 +322,7 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
         </div>
       )}
       {subscription?.hasFreeAuditGrant && !isPro && (
-        <div className="bg-green-500/10 rounded-lg p-4 text-sm text-green-600 dark:text-green-400">
+        <div className="bg-success/10 rounded-lg p-4 text-sm text-success">
           <p>
             <strong>🎁 Free Audit Grant:</strong> Unlimited audits this month
           </p>
@@ -317,26 +331,40 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
 
       {/* Connected Pages Section */}
       {connections.length > 0 ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Connected Pages</h3>
-            <Button variant="outline" size="sm" onClick={handleConnect} disabled={connecting}>
-              {connecting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              Connect Another Page
-            </Button>
+        <div className="space-y-6">
+          {/* Date Range Selector - Prominent position */}
+          <div className="p-5 rounded-2xl border border-border bg-card">
+            <DateRangeSelector
+              selectedPreset={selectedPreset}
+              dateRange={dateRange}
+              onPresetChange={setSelectedPreset}
+              onDateRangeChange={setDateRange}
+              showBackendNote={true}
+            />
           </div>
 
-          <ConnectedPagesList
-            connections={connections}
-            onRunAudit={handleRunAudit}
-            onDisconnect={handleDisconnect}
-            runningAuditId={runningAuditId}
-            disconnectingId={disconnectingId}
-          />
+          {/* Pages list */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Connected Pages</h3>
+              <Button variant="outline" size="sm" onClick={handleConnect} disabled={connecting}>
+                {connecting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
+                Connect Another Page
+              </Button>
+            </div>
+
+            <ConnectedPagesList
+              connections={connections}
+              onRunAudit={handleRunAudit}
+              onDisconnect={handleDisconnect}
+              runningAuditId={runningAuditId}
+              disconnectingId={disconnectingId}
+            />
+          </div>
         </div>
       ) : (
         /* No connections - Show connect CTA */
