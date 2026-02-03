@@ -139,7 +139,7 @@ serve(async (req) => {
     const userId = claims.claims.sub;
     logStep("User authenticated", { userId });
 
-    const { connection_id } = await req.json();
+    const { connection_id, date_range } = await req.json();
 
     if (!connection_id) {
       return new Response(
@@ -147,6 +147,10 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Parse date range if provided (for UI context - stored in computed_metrics)
+    const requestedRange = date_range || { preset: '30d' };
+    logStep("Date range requested", requestedRange);
 
     // Check subscription status
     const { data: subscription } = await supabase
@@ -256,19 +260,52 @@ serve(async (req) => {
     }
 
     try {
+      // Enhanced posts fetch with permalink_url, full_picture, and attachments
       const postsUrl = `https://graph.facebook.com/v19.0/${pageId}/posts?` +
-        `fields=id,message,created_time,shares,likes.summary(true),comments.summary(true),type&` +
-        `limit=20&` +
+        `fields=id,message,created_time,shares,likes.summary(true),comments.summary(true),type,` +
+        `permalink_url,full_picture,attachments{media_type,media,url,subattachments}&` +
+        `limit=25&` +
         `access_token=${pageToken}`;
       
       const postsRes = await fetch(postsUrl);
       const postsData = await postsRes.json();
       posts = postsData.data || [];
       dataAvailability.posts = !postsData.error;
-      logStep("Posts fetched", { success: !postsData.error, count: posts.length });
+      logStep("Posts fetched with media", { success: !postsData.error, count: posts.length });
     } catch (e) {
       logStep("Posts fetch failed", { error: e });
       dataAvailability.posts = false;
+    }
+
+    // Fetch post-level insights for paid/organic breakdown (best effort)
+    let postInsights: Record<string, any> = {};
+    if (posts.length > 0) {
+      try {
+        // Fetch insights for up to 10 posts (rate limit consideration)
+        const postIds = posts.slice(0, 10).map((p: any) => p.id);
+        for (const postId of postIds) {
+          try {
+            const insightUrl = `https://graph.facebook.com/v19.0/${postId}/insights?` +
+              `metric=post_impressions,post_impressions_organic,post_impressions_paid,post_engaged_users&` +
+              `access_token=${pageToken}`;
+            const insightRes = await fetch(insightUrl);
+            const insightData = await insightRes.json();
+            if (!insightData.error && insightData.data) {
+              postInsights[postId] = {};
+              insightData.data.forEach((metric: any) => {
+                postInsights[postId][metric.name] = metric.values?.[0]?.value || 0;
+              });
+            }
+          } catch (e) {
+            // Individual post insight failure is non-blocking
+          }
+        }
+        dataAvailability.postInsights = Object.keys(postInsights).length > 0;
+        logStep("Post insights fetched", { count: Object.keys(postInsights).length });
+      } catch (e) {
+        logStep("Post insights fetch failed", { error: e });
+        dataAvailability.postInsights = false;
+      }
     }
 
     // Demographics will be fetched later after hasProAccess is calculated
@@ -398,25 +435,89 @@ serve(async (req) => {
 
     // Store detailed metrics for Pro users OR users with free audit grants
     if (hasProAccess) {
+      // Calculate paid vs organic totals
+      let totalPaidImpressions = 0;
+      let totalOrganicImpressions = 0;
+      Object.values(postInsights).forEach((insight: any) => {
+        totalPaidImpressions += insight.post_impressions_paid || 0;
+        totalOrganicImpressions += insight.post_impressions_organic || 0;
+      });
+      const totalImpressions = totalPaidImpressions + totalOrganicImpressions;
+      const paidVsOrganic = totalImpressions > 0 ? {
+        paid: Math.round((totalPaidImpressions / totalImpressions) * 100),
+        organic: Math.round((totalOrganicImpressions / totalImpressions) * 100),
+        totalPaid: totalPaidImpressions,
+        totalOrganic: totalOrganicImpressions,
+      } : null;
+
+      // Calculate post type stats for creative analysis
+      const postTypeStats: Record<string, { total: number; count: number }> = {};
+      posts.forEach((p: any) => {
+        const type = p.type || 'status';
+        if (!postTypeStats[type]) {
+          postTypeStats[type] = { total: 0, count: 0 };
+        }
+        const eng = (p.likes?.summary?.total_count || 0) + 
+                    (p.comments?.summary?.total_count || 0) + 
+                    (p.shares?.count || 0);
+        postTypeStats[type].total += eng;
+        postTypeStats[type].count += 1;
+      });
+      const postTypeAnalysis = Object.entries(postTypeStats).map(([type, stats]) => ({
+        type,
+        avgEngagement: Math.round(stats.total / stats.count),
+        count: stats.count,
+      }));
+
       await supabase.from("audit_metrics").insert({
         audit_id: audit.id,
         raw_metrics: {
           pageInfo,
           insights,
-          posts: posts.map(p => ({
-            id: p.id,
-            type: p.type,
-            created_time: p.created_time,
-            likes: p.likes?.summary?.total_count || 0,
-            comments: p.comments?.summary?.total_count || 0,
-            shares: p.shares?.count || 0,
-          })),
+          posts: posts.map((p: any) => {
+            const pInsight = postInsights[p.id] || {};
+            return {
+              id: p.id,
+              type: p.type,
+              created_time: p.created_time,
+              message: p.message,
+              permalink_url: p.permalink_url,
+              full_picture: p.full_picture,
+              media_type: p.attachments?.data?.[0]?.media_type || p.type,
+              likes: p.likes?.summary?.total_count || 0,
+              comments: p.comments?.summary?.total_count || 0,
+              shares: p.shares?.count || 0,
+              // Post-level insights (if available)
+              impressions: pInsight.post_impressions || null,
+              impressions_organic: pInsight.post_impressions_organic || null,
+              impressions_paid: pInsight.post_impressions_paid || null,
+              engaged_users: pInsight.post_engaged_users || null,
+              is_paid: (pInsight.post_impressions_paid || 0) > 0,
+            };
+          }),
         },
-        computed_metrics: metrics,
+        computed_metrics: {
+          ...metrics,
+          requestedRange,
+          paidVsOrganic,
+          postTypeAnalysis,
+          benchmarks: {
+            postingFrequency: {
+              current: postsPerWeek,
+              target: 4,
+              unit: 'posts/week',
+            },
+            engagementRate: {
+              current: metrics.engagementRate,
+              min: 1,
+              max: 3,
+            },
+          },
+        },
         data_availability: dataAvailability,
         demographics: demographics,
       });
-      logStep("Metrics stored for Pro/Grant user");
+      logStep("Metrics stored for Pro/Grant user with enhanced data");
     }
 
     // Create report record

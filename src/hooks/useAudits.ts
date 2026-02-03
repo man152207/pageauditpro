@@ -152,14 +152,27 @@ export function useAuditStats() {
 }
 
 // Run a new audit
+export interface RunAuditParams {
+  connectionId: string;
+  dateRange?: {
+    preset?: string;
+    from?: string;
+    to?: string;
+  };
+}
+
 export function useRunAudit() {
   const { session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (connectionId: string) => {
+    mutationFn: async (params: RunAuditParams | string) => {
       if (!session) throw new Error('Not authenticated');
+
+      // Support both legacy string (connection_id) and new object format
+      const connectionId = typeof params === 'string' ? params : params.connectionId;
+      const dateRange = typeof params === 'string' ? undefined : params.dateRange;
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/run-audit`,
@@ -169,7 +182,10 @@ export function useRunAudit() {
             Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ connection_id: connectionId }),
+          body: JSON.stringify({ 
+            connection_id: connectionId,
+            date_range: dateRange,
+          }),
         }
       );
 

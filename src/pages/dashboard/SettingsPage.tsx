@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDensity } from '@/contexts/DensityContext';
 import { useEmailPreferences } from '@/hooks/useEmailPreferences';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -28,13 +30,17 @@ import {
   Monitor,
   Save,
   Loader2,
+  LayoutGrid,
+  Minimize2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { preferences, loading, saving, updatePreference } = useEmailPreferences();
+  const { density, setDensity } = useDensity();
 
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [timezone, setTimezone] = useState('UTC');
@@ -154,6 +160,40 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Density Toggle */}
+            <div className="space-y-2">
+              <Label>UI Density</Label>
+              <p className="text-sm text-muted-foreground mb-3">
+                Choose between comfortable spacing or a more compact, data-dense layout.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant={density === 'comfortable' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDensity('comfortable')}
+                  className="flex-1"
+                >
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Comfortable
+                </Button>
+                <Button
+                  variant={density === 'compact' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDensity('compact')}
+                  className="flex-1"
+                >
+                  <Minimize2 className="mr-2 h-4 w-4" />
+                  Compact
+                </Button>
+              </div>
+              {density === 'compact' && (
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+                  <Badge variant="secondary" className="text-xs">Active</Badge>
+                  Compact mode reduces spacing and increases max-width to 1600px.
+                </p>
+              )}
+            </div>
+
             {/* Theme */}
             <div className="space-y-2">
               <Label>Theme</Label>
