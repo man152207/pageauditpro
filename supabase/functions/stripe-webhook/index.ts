@@ -70,13 +70,16 @@ serve(async (req) => {
         }
 
         // Record payment
+        const paymentAmount = (session.amount_total || 0) / 100;
+        const paymentCurrency = session.currency?.toUpperCase() || "USD";
+        
         const { error: paymentError } = await supabaseAdmin
           .from("payments")
           .insert({
             user_id: userId,
             plan_id: planId,
-            amount: (session.amount_total || 0) / 100,
-            currency: session.currency?.toUpperCase() || "USD",
+            amount: paymentAmount,
+            currency: paymentCurrency,
             status: "completed",
             gateway: "stripe",
             gateway_payment_id: session.payment_intent as string || session.id,
@@ -86,6 +89,20 @@ serve(async (req) => {
         if (paymentError) {
           console.error("Error recording payment:", paymentError);
         }
+
+        // Fetch plan name for email
+        const { data: planData } = await supabaseAdmin
+          .from("plans")
+          .select("name")
+          .eq("id", planId)
+          .single();
+        
+        const planName = planData?.name || "Pro";
+
+        // Fetch user email and name
+        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
+        const userEmail = session.customer_email || userData?.user?.email;
+        const userName = userData?.user?.user_metadata?.full_name;
 
         // Create or update subscription
         const isSubscription = session.mode === "subscription";
@@ -113,6 +130,37 @@ serve(async (req) => {
           console.error("Error creating subscription:", subError);
         } else {
           console.log("Subscription created for user:", userId);
+          
+          // Send Pro welcome email
+          if (userEmail) {
+            try {
+              const emailResponse = await fetch(
+                `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-pro-welcome-email`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                  },
+                  body: JSON.stringify({
+                    email: userEmail,
+                    fullName: userName,
+                    planName: planName,
+                    amount: paymentAmount,
+                    currency: paymentCurrency,
+                  }),
+                }
+              );
+              
+              if (emailResponse.ok) {
+                console.log("Pro welcome email sent to:", userEmail);
+              } else {
+                console.error("Failed to send Pro welcome email:", await emailResponse.text());
+              }
+            } catch (emailErr) {
+              console.error("Error sending Pro welcome email:", emailErr);
+            }
+          }
         }
 
         break;
