@@ -223,7 +223,7 @@ Powered by Pagelyzer
   };
 
   return (
-    <div className="report-container">
+    <div className="w-full overflow-x-hidden">
       {/* B1: Sticky Report Header */}
       <div
         className={cn(
@@ -330,9 +330,9 @@ Powered by Pagelyzer
       />
 
       {/* 3-Column Layout: Main + Sidebar */}
-      <div className="flex flex-col lg:flex-row gap-6 mt-6">
+      <div className="flex flex-col lg:flex-row gap-5 mt-5">
         {/* Main Column */}
-        <div className="flex-1 min-w-0 space-y-6">
+        <div className="flex-1 min-w-0 space-y-5">
           {/* Executive Summary */}
           <ExecutiveSummary
             score={report.score_total || 0}

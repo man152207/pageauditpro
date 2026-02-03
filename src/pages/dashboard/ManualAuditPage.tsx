@@ -11,11 +11,11 @@ import {
 
 export default function ManualAuditPage() {
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="w-full">
       <PageHeader
         title="Run Facebook Page Audit"
         description="Connect your Facebook page to analyze engagement, content performance, and get personalized recommendations."
-        className="mb-8"
+        className="mb-6"
         actions={
           <Button variant="outline" asChild>
             <Link to="/sample-report">
@@ -26,7 +26,7 @@ export default function ManualAuditPage() {
         }
       />
 
-      <div className="grid lg:grid-cols-5 gap-6">
+      <div className="grid lg:grid-cols-5 gap-5">
         {/* Main content - Audit Flow */}
         <div className="lg:col-span-3">
           <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
@@ -35,7 +35,7 @@ export default function ManualAuditPage() {
         </div>
 
         {/* Sidebar - Tips & Info */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           {/* Date Range Info (C1/C2) */}
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
             <div className="flex items-center gap-3 mb-4">
