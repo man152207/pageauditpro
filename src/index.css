@@ -217,6 +217,23 @@
 }
 
 @layer components {
+  /* ========== STANDARDIZED DASHBOARD CONTAINER ========== */
+  .dashboard-container {
+    @apply w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .report-container {
+    @apply w-full max-w-[1200px] mx-auto;
+  }
+
+  .report-section {
+    @apply mt-6 sm:mt-8;
+  }
+
+  .report-section-card {
+    @apply p-4 sm:p-5 lg:p-6 rounded-2xl border border-border bg-card;
+  }
+
   /* ========== GENEROUS SECTION SPACING ========== */
   .section {
     @apply py-16 sm:py-20 md:py-24;
