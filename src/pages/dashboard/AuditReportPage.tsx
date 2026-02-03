@@ -247,7 +247,11 @@ Powered by Pagelyzer
                 </span>
                 {computedMetrics.requestedRange?.preset && (
                   <Badge variant="outline" className="text-xs">
-                    {computedMetrics.requestedRange.preset.toUpperCase()}
+                    {computedMetrics.requestedRange.preset === '7d' ? 'Last 7 Days' :
+                     computedMetrics.requestedRange.preset === '30d' ? 'Last 30 Days' :
+                     computedMetrics.requestedRange.preset === '3m' ? 'Last 3 Months' :
+                     computedMetrics.requestedRange.preset === '6m' ? 'Last 6 Months' :
+                     'Custom Range'}
                   </Badge>
                 )}
               </div>

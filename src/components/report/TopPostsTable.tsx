@@ -7,7 +7,8 @@ import {
   TrendingUp,
   Clock,
   Zap,
-  Info
+  Info,
+  ExternalLink,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -27,6 +28,7 @@ interface Post {
   shares?: number;
   reach?: number;
   impressions?: number;
+  permalink_url?: string;
 }
 
 interface TopPostsTableProps {
@@ -83,6 +85,7 @@ export function TopPostsTable({ posts, isLoading, className }: TopPostsTableProp
                 <th className="text-left p-4 font-semibold text-sm">Date</th>
                 <th className="text-right p-4 font-semibold text-sm">Reach</th>
                 <th className="text-right p-4 font-semibold text-sm">Engagement</th>
+                <th className="text-right p-4 font-semibold text-sm">Link</th>
               </tr>
             </thead>
             <tbody>
@@ -97,6 +100,7 @@ export function TopPostsTable({ posts, isLoading, className }: TopPostsTableProp
                   <td className="p-4"><Skeleton className="h-4 w-20" /></td>
                   <td className="p-4 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
                   <td className="p-4 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
+                  <td className="p-4 text-right"><Skeleton className="h-4 w-10 ml-auto" /></td>
                 </tr>
               ))}
             </tbody>
@@ -150,6 +154,7 @@ export function TopPostsTable({ posts, isLoading, className }: TopPostsTableProp
                   </TooltipContent>
                 </Tooltip>
               </th>
+              <th className="text-right p-4 font-semibold text-sm">Link</th>
             </tr>
           </thead>
           <tbody>
@@ -199,6 +204,21 @@ export function TopPostsTable({ posts, isLoading, className }: TopPostsTableProp
                     <span className="text-xs text-muted-foreground block">
                       {post.likes || 0}L • {post.comments || 0}C • {post.shares || 0}S
                     </span>
+                  </td>
+                  <td className="p-4 text-right">
+                    {post.permalink_url ? (
+                      <a 
+                        href={post.permalink_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        View
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </td>
                 </tr>
               );
