@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProBadge } from '@/components/ui/pro-badge';
 import { ReportSection } from '@/components/report/ReportSection';
+import { ReportSidebar } from '@/components/report/ReportSidebar';
 import { HeroScoreSection } from '@/components/report/HeroScoreSection';
 import { ActionCard, ImpactLevel, EffortLevel } from '@/components/report/ActionCard';
 import { EngagementChart, PostTypeChart, BestTimeHeatmap } from '@/components/report/EngagementChart';
@@ -16,7 +17,9 @@ import { DemographicsSection } from '@/components/report/DemographicsSection';
 import { ShareReportDialog } from '@/components/report/ShareReportDialog';
 import { ExecutiveSummary } from '@/components/report/ExecutiveSummary';
 import { ScoreExplanationGrid } from '@/components/report/ScoreExplanations';
-import { TopPostsTable } from '@/components/report/TopPostsTable';
+import { PostsTabView } from '@/components/report/PostsTabView';
+import { CreativePreview } from '@/components/report/CreativePreview';
+import { BenchmarksCard } from '@/components/report/BenchmarksCard';
 import { ChartEmptyState, ChartContainer } from '@/components/report/ChartEmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -44,6 +47,8 @@ import {
   Lock,
   TrendingUp,
   Clock,
+  Image,
+  PieChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -81,7 +86,6 @@ export default function AuditReportPage() {
   if (isLoading) {
     return (
       <div className="space-y-8 animate-pulse">
-        {/* Skeleton header */}
         <div className="flex items-center justify-between">
           <div>
             <Skeleton className="h-8 w-64 mb-2" />
@@ -92,14 +96,8 @@ export default function AuditReportPage() {
             <Skeleton className="h-10 w-32" />
           </div>
         </div>
-        
-        {/* Skeleton executive summary */}
         <Skeleton className="h-48 w-full rounded-2xl" />
-        
-        {/* Skeleton hero score */}
         <Skeleton className="h-72 w-full rounded-2xl" />
-        
-        {/* Skeleton sections */}
         <div className="grid gap-4 sm:grid-cols-2">
           <Skeleton className="h-48 rounded-xl" />
           <Skeleton className="h-48 rounded-xl" />
@@ -127,6 +125,9 @@ export default function AuditReportPage() {
   const hasProAccess = report.has_pro_access;
   const scores = report.score_breakdown || {};
   const recommendations = (report.recommendations || []) as any[];
+  const computedMetrics = report.detailed_metrics || {};
+  const rawMetrics = report.raw_metrics || {};
+  const posts = rawMetrics.posts || [];
 
   // Filter recommendations
   const filteredRecommendations = recommendations.filter((rec: any) => {
@@ -135,11 +136,46 @@ export default function AuditReportPage() {
     return true;
   });
 
+  // Extract next actions from recommendations
+  const nextActions = recommendations
+    .filter((r: any) => r.priority === 'high')
+    .slice(0, 3)
+    .map((r: any) => r.title);
+
+  // Get paid vs organic data if available
+  const paidVsOrganic = computedMetrics.paidVsOrganic || null;
+
+  // Get benchmarks from computed metrics
+  const benchmarks = computedMetrics.benchmarks || {
+    postingFrequency: {
+      current: computedMetrics.postsPerWeek || 0,
+      target: 4,
+      unit: 'posts/week',
+    },
+    engagementRate: {
+      current: computedMetrics.engagementRate || 0,
+      min: 1,
+      max: 3,
+    },
+  };
+
+  // Extract creatives for preview
+  const creatives = posts
+    .filter((p: any) => p.full_picture)
+    .slice(0, 6)
+    .map((p: any) => ({
+      id: p.id,
+      type: p.media_type || p.type || 'photo',
+      thumbnail_url: p.full_picture,
+      engagement: (p.likes || 0) + (p.comments || 0) + (p.shares || 0),
+      permalink_url: p.permalink_url,
+    }));
+
   const handleInsightsGenerated = () => {
     queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
   };
 
-  // Generate mock chart data (in production, this would come from the API)
+  // Generate chart data
   const generateEngagementData = () => {
     const data = [];
     for (let i = 30; i >= 0; i--) {
@@ -154,7 +190,7 @@ export default function AuditReportPage() {
     return data;
   };
 
-  const postTypeData = [
+  const postTypeData = computedMetrics.postTypeAnalysis || [
     { type: 'Photos', engagement: 450, posts: 12 },
     { type: 'Videos', engagement: 820, posts: 5 },
     { type: 'Links', engagement: 180, posts: 8 },
@@ -167,11 +203,7 @@ export default function AuditReportPage() {
     const data: { day: string; hour: number; value: number }[] = [];
     days.forEach(day => {
       hours.forEach(hour => {
-        data.push({
-          day,
-          hour,
-          value: Math.floor(Math.random() * 100),
-        });
+        data.push({ day, hour, value: Math.floor(Math.random() * 100) });
       });
     });
     return data;
@@ -213,7 +245,7 @@ Powered by Pagelyzer
   };
 
   return (
-    <div className="report-container space-y-6 sm:space-y-8">
+    <div className="report-container">
       {/* B1: Sticky Report Header */}
       <div
         className={cn(
@@ -223,7 +255,6 @@ Powered by Pagelyzer
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
-            {/* Page Avatar */}
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1877F2]/10 text-[#1877F2] shrink-0">
               <Facebook className="h-6 w-6" />
             </div>
@@ -234,13 +265,12 @@ Powered by Pagelyzer
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5 shrink-0" />
-                  Audited {format(new Date(report.created_at), 'MMM d, yyyy')}
+                  {format(new Date(report.created_at), 'MMM d, yyyy')}
                 </span>
-                {report.input_summary?.dateRange && (
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 shrink-0" />
-                    {report.input_summary.dateRange}
-                  </span>
+                {computedMetrics.requestedRange?.preset && (
+                  <Badge variant="outline" className="text-xs">
+                    {computedMetrics.requestedRange.preset.toUpperCase()}
+                  </Badge>
                 )}
               </div>
             </div>
@@ -248,7 +278,6 @@ Powered by Pagelyzer
 
           {/* Actions */}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-            {/* Copy Summary - Always available */}
             <Button variant="outline" size="sm" onClick={handleCopySummary} className="gap-2">
               <Copy className="h-4 w-4" />
               <span className="hidden sm:inline">Copy Summary</span>
@@ -314,7 +343,6 @@ Powered by Pagelyzer
         </div>
       </div>
 
-      {/* Share Dialog */}
       <ShareReportDialog
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
@@ -323,328 +351,280 @@ Powered by Pagelyzer
         existingIsPublic={report.report?.is_public}
       />
 
-      {/* B2: Executive Summary Card - Always visible at top */}
-      <ExecutiveSummary
-        score={report.score_total || 0}
-        scoreBreakdown={{
-          engagement: scores.engagement || 0,
-          consistency: scores.consistency || 0,
-          readiness: scores.readiness || 0,
-        }}
-        recommendations={recommendations}
-        aiInsights={report.ai_insights}
-        pageName={report.page_name}
-      />
+      {/* 3-Column Layout: Main + Sidebar */}
+      <div className="flex flex-col lg:flex-row gap-6 mt-6">
+        {/* Main Column */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Executive Summary */}
+          <ExecutiveSummary
+            score={report.score_total || 0}
+            scoreBreakdown={{
+              engagement: scores.engagement || 0,
+              consistency: scores.consistency || 0,
+              readiness: scores.readiness || 0,
+            }}
+            recommendations={recommendations}
+            aiInsights={report.ai_insights}
+            pageName={report.page_name}
+          />
 
-      {/* Hero Score Section */}
-      <HeroScoreSection
-        overallScore={report.score_total || 0}
-        breakdown={{
-          engagement: scores.engagement || 0,
-          consistency: scores.consistency || 0,
-          readiness: scores.readiness || 0,
-          growth: scores.growth || scores.readiness || 0,
-        }}
-        previousScore={undefined}
-      />
+          {/* Hero Score */}
+          <HeroScoreSection
+            overallScore={report.score_total || 0}
+            breakdown={{
+              engagement: scores.engagement || 0,
+              consistency: scores.consistency || 0,
+              readiness: scores.readiness || 0,
+              growth: scores.growth || scores.readiness || 0,
+            }}
+            previousScore={undefined}
+          />
 
-      {/* B3: Score Explanations with "Why this score?" accordions */}
-      <ReportSection
-        title="Score Breakdown"
-        description="Understand how each score is calculated"
-        icon={<BarChart3 className="h-5 w-5" />}
-      >
-        <ScoreExplanationGrid
+          {/* Score Explanations */}
+          <ReportSection
+            title="Score Breakdown"
+            description="Understand how each score is calculated"
+            icon={<BarChart3 className="h-5 w-5" />}
+          >
+            <ScoreExplanationGrid
+              breakdown={{
+                engagement: scores.engagement || 0,
+                consistency: scores.consistency || 0,
+                readiness: scores.readiness || 0,
+              }}
+              detailedMetrics={computedMetrics}
+              inputSummary={report.input_summary}
+            />
+          </ReportSection>
+
+          {/* Action Plan */}
+          <ReportSection
+            title="Action Plan"
+            description={hasProAccess ? 'Personalized recommendations to improve your page' : 'Top recommendations for your page'}
+            icon={<MessageSquare className="h-5 w-5" />}
+          >
+            <ReportFilters
+              category={categoryFilter}
+              priority={priorityFilter}
+              onCategoryChange={setCategoryFilter}
+              onPriorityChange={setPriorityFilter}
+              showProFilters={hasProAccess}
+            />
+            <div className="grid gap-4 sm:grid-cols-2 mt-4">
+              {filteredRecommendations.length > 0 ? (
+                filteredRecommendations.slice(0, hasProAccess ? undefined : 3).map((rec: any, index: number) => (
+                  <ActionCard
+                    key={index}
+                    title={rec.title}
+                    description={rec.description}
+                    impact={mapPriorityToImpact(rec.priority)}
+                    effort={rec.effort || 'medium'}
+                    category={rec.category}
+                    steps={rec.steps || []}
+                    isPro={rec.isPro}
+                  />
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-12 text-muted-foreground">
+                  No recommendations match your filters.
+                </div>
+              )}
+            </div>
+
+            {!hasProAccess && recommendations.length > 3 && (
+              <div className="mt-6 pt-6 border-t border-border text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  +{recommendations.length - 3} more recommendations available with Pro
+                </p>
+                <Button asChild variant="outline">
+                  <Link to="/dashboard/billing">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Unlock All Recommendations
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </ReportSection>
+
+          {/* Performance Charts */}
+          {hasProAccess ? (
+            <ReportSection
+              title="Performance Trends"
+              description="Detailed engagement trends and content analysis"
+              icon={<TrendingUp className="h-5 w-5" />}
+            >
+              <div className="grid gap-6 lg:grid-cols-2">
+                {report.detailed_metrics ? (
+                  <>
+                    <EngagementChart
+                      data={generateEngagementData()}
+                      title="Engagement Over Time"
+                      showComparison={true}
+                    />
+                    <PostTypeChart
+                      data={postTypeData.map((d: any) => ({
+                        type: d.type,
+                        engagement: d.avgEngagement || d.engagement,
+                        posts: d.count || d.posts,
+                      }))}
+                      title="Post Type Performance"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <ChartEmptyState title="Engagement Over Time" chartType="line" />
+                    <ChartEmptyState title="Post Type Performance" chartType="bar" />
+                  </>
+                )}
+              </div>
+              <div className="mt-6">
+                {report.detailed_metrics ? (
+                  <BestTimeHeatmap data={heatmapData} title="Best Time to Post" />
+                ) : (
+                  <ChartEmptyState title="Best Time to Post" chartType="heatmap" />
+                )}
+              </div>
+            </ReportSection>
+          ) : (
+            <LockedSection
+              title="Performance Trends"
+              description="Unlock detailed charts and trend analysis"
+              icon={<TrendingUp className="h-5 w-5" />}
+              placeholderContent={<MetricsPlaceholder />}
+            />
+          )}
+
+          {/* Posts Analysis with Tabs */}
+          {hasProAccess && posts.length > 0 ? (
+            <ReportSection
+              title="Posts: What Worked vs What Didn't"
+              description="Analyze your best and worst performing content"
+              icon={<FileBarChart className="h-5 w-5" />}
+            >
+              <PostsTabView posts={posts} />
+            </ReportSection>
+          ) : hasProAccess ? (
+            <ReportSection
+              title="Posts Analysis"
+              description="Your post performance"
+              icon={<FileBarChart className="h-5 w-5" />}
+            >
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>No posts available for analysis.</p>
+                <p className="text-sm mt-1">Try a longer date range or run another audit later.</p>
+              </div>
+            </ReportSection>
+          ) : (
+            <LockedSection
+              title="Posts Analysis"
+              description="See your best and worst performing posts"
+              icon={<FileBarChart className="h-5 w-5" />}
+              placeholderContent={<PostsPlaceholder />}
+            />
+          )}
+
+          {/* Creative Preview */}
+          {hasProAccess && creatives.length > 0 && (
+            <ReportSection
+              title="Creative Preview"
+              description="Your top performing visual content"
+              icon={<Image className="h-5 w-5" />}
+            >
+              <CreativePreview
+                creatives={creatives}
+                postTypeStats={postTypeData.map((d: any) => ({
+                  type: d.type,
+                  avgEngagement: d.avgEngagement || d.engagement,
+                  count: d.count || d.posts,
+                }))}
+              />
+            </ReportSection>
+          )}
+
+          {/* AI Insights */}
+          {hasProAccess ? (
+            <ReportSection
+              title="AI-Powered Insights"
+              description="Personalized growth strategies powered by AI"
+              icon={<Sparkles className="h-5 w-5" />}
+            >
+              <AiInsightsSection
+                auditId={auditId!}
+                existingInsights={report.ai_insights || null}
+                onInsightsGenerated={handleInsightsGenerated}
+              />
+            </ReportSection>
+          ) : (
+            <LockedSection
+              title="AI-Powered Insights"
+              description="Get personalized growth strategies powered by AI"
+              icon={<Sparkles className="h-5 w-5" />}
+              placeholderContent={<RecommendationsPlaceholder />}
+            />
+          )}
+
+          {/* Demographics */}
+          {hasProAccess ? (
+            <ReportSection
+              title="Audience Demographics"
+              description="Understand who your audience is"
+              icon={<Users className="h-5 w-5" />}
+            >
+              {report.demographics ? (
+                <DemographicsSection demographics={report.demographics} />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    Demographics data can take time to load from Facebook.
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    Please check back later or re-run the audit.
+                  </p>
+                </div>
+              )}
+            </ReportSection>
+          ) : (
+            <LockedSection
+              title="Audience Demographics"
+              description="Understand who your audience is"
+              icon={<Users className="h-5 w-5" />}
+              placeholderContent={<DemographicsPlaceholder />}
+            />
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <ReportSidebar
+          hasProAccess={hasProAccess}
+          overallScore={report.score_total || 0}
           breakdown={{
             engagement: scores.engagement || 0,
             consistency: scores.consistency || 0,
             readiness: scores.readiness || 0,
           }}
-          detailedMetrics={report.detailed_metrics || report.detailed_metrics_preview}
-          inputSummary={report.input_summary}
+          nextActions={nextActions}
+          paidVsOrganic={paidVsOrganic}
+          benchmarks={{
+            postingFrequency: {
+              current: benchmarks.postingFrequency?.current || 0,
+              target: `${benchmarks.postingFrequency?.target || 4}/week`,
+            },
+            engagementRate: {
+              current: benchmarks.engagementRate?.current || 0,
+              range: `${benchmarks.engagementRate?.min || 1}-${benchmarks.engagementRate?.max || 3}%`,
+            },
+          }}
+          className="hidden lg:block"
         />
-      </ReportSection>
-
-      {/* Filters */}
-      <ReportFilters
-        category={categoryFilter}
-        priority={priorityFilter}
-        onCategoryChange={setCategoryFilter}
-        onPriorityChange={setPriorityFilter}
-        showProFilters={hasProAccess}
-      />
-
-      {/* B6: Recommendations as Action Cards */}
-      <ReportSection
-        title="Action Plan"
-        description={hasProAccess ? 'Personalized recommendations to improve your page' : 'Top recommendations for your page'}
-        icon={<MessageSquare className="h-5 w-5" />}
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          {filteredRecommendations.length > 0 ? (
-            filteredRecommendations.slice(0, hasProAccess ? undefined : 3).map((rec: any, index: number) => (
-              <ActionCard
-                key={index}
-                title={rec.title}
-                description={rec.description}
-                impact={mapPriorityToImpact(rec.priority)}
-                effort={rec.effort || 'medium'}
-                category={rec.category}
-                steps={rec.steps || []}
-                isPro={rec.isPro}
-              />
-            ))
-          ) : (
-            <div className="col-span-2 text-center py-12 text-muted-foreground">
-              No recommendations match your filters.
-            </div>
-          )}
-        </div>
-
-        {!hasProAccess && recommendations.length > 3 && (
-          <div className="mt-6 pt-6 border-t border-border text-center">
-            <p className="text-sm text-muted-foreground mb-3">
-              +{recommendations.length - 3} more recommendations available with Pro
-            </p>
-            <Button asChild variant="outline">
-              <Link to="/dashboard/billing">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Unlock All Recommendations
-              </Link>
-            </Button>
-          </div>
-        )}
-      </ReportSection>
-
-      {/* B4: Performance Charts */}
-      {hasProAccess ? (
-        <ReportSection
-          title="Performance Trends"
-          description="Detailed engagement trends and content analysis"
-          icon={<TrendingUp className="h-5 w-5" />}
-        >
-          <div className="grid gap-6 lg:grid-cols-2">
-            {report.detailed_metrics ? (
-              <>
-                <EngagementChart
-                  data={generateEngagementData()}
-                  title="Engagement Over Time"
-                  showComparison={true}
-                />
-                <PostTypeChart
-                  data={postTypeData}
-                  title="Post Type Performance"
-                />
-              </>
-            ) : (
-              <>
-                <ChartEmptyState title="Engagement Over Time" chartType="line" />
-                <ChartEmptyState title="Post Type Performance" chartType="bar" />
-              </>
-            )}
-          </div>
-          <div className="mt-6">
-            {report.detailed_metrics ? (
-              <BestTimeHeatmap
-                data={heatmapData}
-                title="Best Time to Post"
-              />
-            ) : (
-              <ChartEmptyState title="Best Time to Post" chartType="heatmap" />
-            )}
-          </div>
-        </ReportSection>
-      ) : (
-        <LockedSection
-          title="Performance Trends"
-          description="Unlock detailed charts and trend analysis"
-          icon={<TrendingUp className="h-5 w-5" />}
-          placeholderContent={<MetricsPlaceholder />}
-        />
-      )}
-
-      {/* Basic Metrics (visible to all) */}
-      {report.input_summary && (
-        <ReportSection
-          title="Page Overview"
-          description="Basic metrics from your page"
-          icon={<Users className="h-5 w-5" />}
-        >
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="p-4 rounded-xl bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Followers</p>
-              <p className="text-2xl font-bold">
-                {report.input_summary.followers?.toLocaleString() || '—'}
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Posts Analyzed</p>
-              <p className="text-2xl font-bold">
-                {report.input_summary.postsAnalyzed || '—'}
-              </p>
-            </div>
-          </div>
-        </ReportSection>
-      )}
-
-      {/* Detailed Metrics - Show 10% preview for free users */}
-      {hasProAccess && report.detailed_metrics ? (
-        <ReportSection
-          title="Detailed Metrics"
-          description="In-depth engagement analysis"
-          icon={<BarChart3 className="h-5 w-5" />}
-        >
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="p-4 rounded-xl bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Engagement Rate</p>
-              <p className="text-2xl font-bold text-primary">
-                {report.detailed_metrics.engagementRate?.toFixed(2)}%
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Avg. Likes/Post</p>
-              <p className="text-2xl font-bold">
-                {Math.round((report.detailed_metrics.totalLikes || 0) / (report.detailed_metrics.postsCount || 1))}
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Avg. Comments/Post</p>
-              <p className="text-2xl font-bold">
-                {Math.round((report.detailed_metrics.totalComments || 0) / (report.detailed_metrics.postsCount || 1))}
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Posts/Week</p>
-              <p className="text-2xl font-bold">
-                {report.detailed_metrics.postsPerWeek?.toFixed(1)}
-              </p>
-            </div>
-          </div>
-        </ReportSection>
-      ) : report.detailed_metrics_preview ? (
-        <ReportSection
-          title="Detailed Metrics"
-          description="In-depth engagement analysis"
-          icon={<BarChart3 className="h-5 w-5" />}
-        >
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="p-4 rounded-xl bg-muted/50 border-2 border-primary/20">
-              <p className="text-sm text-muted-foreground mb-1">Engagement Rate</p>
-              <p className="text-2xl font-bold text-primary">
-                {report.detailed_metrics_preview.engagementRate?.toFixed(2)}%
-              </p>
-            </div>
-            
-            <div className="col-span-1 sm:col-span-1 lg:col-span-3 relative">
-              <div className="grid gap-4 sm:grid-cols-3 blur-sm pointer-events-none select-none">
-                <div className="p-4 rounded-xl bg-muted/50 border border-border">
-                  <p className="text-sm text-muted-foreground mb-1">Avg. Likes/Post</p>
-                  <p className="text-2xl font-bold">—</p>
-                </div>
-                <div className="p-4 rounded-xl bg-muted/50 border border-border">
-                  <p className="text-sm text-muted-foreground mb-1">Avg. Comments/Post</p>
-                  <p className="text-2xl font-bold">—</p>
-                </div>
-                <div className="p-4 rounded-xl bg-muted/50 border border-border">
-                  <p className="text-sm text-muted-foreground mb-1">Posts/Week</p>
-                  <p className="text-2xl font-bold">—</p>
-                </div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-lg">
-                <Button asChild size="sm">
-                  <Link to="/dashboard/billing">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Unlock All Metrics
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </ReportSection>
-      ) : (
-        <LockedSection
-          title="Detailed Metrics"
-          description="Unlock in-depth engagement analysis"
-          icon={<BarChart3 className="h-5 w-5" />}
-          placeholderContent={<MetricsPlaceholder />}
-        />
-      )}
-
-      {/* B5: Top Posts Table */}
-      {hasProAccess && report.raw_metrics?.posts ? (
-        <ReportSection
-          title="Top Posts Analysis"
-          description="Your best performing content"
-          icon={<FileBarChart className="h-5 w-5" />}
-        >
-          <TopPostsTable posts={report.raw_metrics.posts} />
-        </ReportSection>
-      ) : (
-        <LockedSection
-          title="Top Posts Analysis"
-          description="See your best performing content"
-          icon={<FileBarChart className="h-5 w-5" />}
-          placeholderContent={<PostsPlaceholder />}
-        />
-      )}
-
-      {/* B7: AI Insights - NO REGENERATE */}
-      {hasProAccess ? (
-        <ReportSection
-          title="AI-Powered Insights"
-          description="Personalized growth strategies powered by AI"
-          icon={<Sparkles className="h-5 w-5" />}
-        >
-          <AiInsightsSection
-            auditId={auditId!}
-            existingInsights={report.ai_insights || null}
-            onInsightsGenerated={handleInsightsGenerated}
-          />
-        </ReportSection>
-      ) : (
-        <LockedSection
-          title="AI-Powered Insights"
-          description="Get personalized growth strategies powered by AI"
-          icon={<Sparkles className="h-5 w-5" />}
-          placeholderContent={<RecommendationsPlaceholder />}
-        />
-      )}
-
-      {/* Demographics */}
-      {hasProAccess ? (
-        <ReportSection
-          title="Audience Demographics"
-          description="Understand who your audience is"
-          icon={<Users className="h-5 w-5" />}
-        >
-          {report.demographics ? (
-            <DemographicsSection demographics={report.demographics} />
-          ) : (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground text-sm">
-                Demographics data can take time to load from Facebook.
-              </p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                Please check back later or re-run the audit.
-              </p>
-            </div>
-          )}
-        </ReportSection>
-      ) : (
-        <LockedSection
-          title="Audience Demographics"
-          description="Understand who your audience is"
-          icon={<Users className="h-5 w-5" />}
-          placeholderContent={<DemographicsPlaceholder />}
-        />
-      )}
+      </div>
 
       {/* Upgrade CTA for Free Users */}
       {!hasProAccess && (
-        <div className="rounded-2xl p-8 text-center bg-gradient-to-br from-primary to-primary/80">
+        <div className="rounded-2xl p-8 text-center bg-gradient-to-br from-primary to-primary/80 mt-8">
           <div className="max-w-2xl mx-auto text-primary-foreground">
             <ProBadge size="md" className="mb-4" glow />
             <h2 className="text-2xl font-bold mb-3">

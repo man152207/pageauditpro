@@ -213,7 +213,15 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
     setLastAuditResult(null);
 
     try {
-      const result = await runAudit.mutateAsync(connection.id);
+      // Pass date range to the audit
+      const result = await runAudit.mutateAsync({
+        connectionId: connection.id,
+        dateRange: {
+          preset: selectedPreset,
+          from: dateRange.from.toISOString(),
+          to: dateRange.to.toISOString(),
+        },
+      });
       
       // Store result for inline preview
       setLastAuditResult({
