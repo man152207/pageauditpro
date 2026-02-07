@@ -160,11 +160,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
+      // Proactively refresh token if it's near expiry (within 5 minutes)
+      let tokenToUse = accessToken;
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (currentSession) {
+        const expiresAt = currentSession.expires_at;
+        const now = Math.floor(Date.now() / 1000);
+        const timeUntilExpiry = expiresAt ? expiresAt - now : 0;
+        
+        // If token expires in less than 5 minutes, refresh it first
+        if (timeUntilExpiry < 300) {
+          console.log('Token expiring soon, refreshing proactively...');
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          
+          if (!refreshError && refreshData.session) {
+            tokenToUse = refreshData.session.access_token;
+          }
+        }
+      }
+      
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`,
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${tokenToUse}`,
             'Content-Type': 'application/json',
           },
         }
@@ -174,15 +194,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
         setSubscription(data);
       } else if (response.status === 401 && retryCount < 2) {
-        // Token expired - try to refresh session silently
-        console.log('Token expired, attempting silent refresh...');
+        // Token expired - try to refresh session
+        console.log('Token expired during request, attempting refresh...');
         
-        // Keep existing subscription while refreshing to prevent blank screen
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         
         if (refreshError || !refreshData.session) {
           console.error('Failed to refresh session:', refreshError);
-          // Only fall back to default if we have no existing subscription
+          // Keep existing subscription if available, otherwise use default
           if (!subscription) {
             setSubscription(defaultSubscription);
           }
@@ -191,20 +210,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Retry with new token (recursive call with incremented retry count)
         await fetchSubscription(refreshData.session.access_token, retryCount + 1);
-        return; // Exit early, the recursive call handles setting subscription
+        return;
       } else {
-        // Non-401 error - log but don't crash, use cached/default subscription
+        // Non-401 error - log but don't crash
         const errorText = await response.text();
         console.warn('Subscription check failed:', response.status, errorText);
         
-        // Only fall back to default if we have no existing subscription
         if (!subscription) {
           setSubscription(defaultSubscription);
         }
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);
-      // Only fall back to default if we have no existing subscription
       if (!subscription) {
         setSubscription(defaultSubscription);
       }
