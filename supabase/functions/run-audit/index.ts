@@ -289,7 +289,7 @@ serve(async (req) => {
     let dataAvailability: any = {};
 
     try {
-      const pageInfoUrl = `https://graph.facebook.com/v19.0/${pageId}?` +
+      const pageInfoUrl = `https://graph.facebook.com/v21.0/${pageId}?` +
         `fields=name,followers_count,fan_count,about,category,website,phone&` +
         `access_token=${pageToken}`;
       
@@ -304,8 +304,9 @@ serve(async (req) => {
 
     // Fetch insights WITH DATE RANGE using since/until
     try {
-      const insightsUrl = `https://graph.facebook.com/v19.0/${pageId}/insights?` +
-        `metric=page_impressions,page_engaged_users,page_post_engagements,page_fans&` +
+      // Use non-deprecated metrics (Nov 2025+): page_media_view replaces page_impressions, page_followers replaces page_fans
+      const insightsUrl = `https://graph.facebook.com/v21.0/${pageId}/insights?` +
+        `metric=page_media_view,page_post_engagements,page_followers&` +
         `period=day&since=${dateParams.since}&until=${dateParams.until}&` +
         `access_token=${pageToken}`;
       
@@ -332,7 +333,7 @@ serve(async (req) => {
 
     // Fetch posts WITH DATE RANGE using since/until
     try {
-      const postsUrl = `https://graph.facebook.com/v19.0/${pageId}/posts?` +
+      const postsUrl = `https://graph.facebook.com/v21.0/${pageId}/posts?` +
         `fields=id,message,created_time,shares,likes.summary(true),comments.summary(true),type,` +
         `permalink_url,full_picture,attachments{media_type,media,url,subattachments}&` +
         `since=${dateParams.since}&until=${dateParams.until}&` +
@@ -379,7 +380,7 @@ serve(async (req) => {
         const postIds = posts.slice(0, 25).map((p: any) => p.id);
         for (const postId of postIds) {
           try {
-            const insightUrl = `https://graph.facebook.com/v19.0/${postId}/insights?` +
+            const insightUrl = `https://graph.facebook.com/v21.0/${postId}/insights?` +
               `metric=post_impressions,post_impressions_organic,post_impressions_paid,post_engaged_users,post_clicks&` +
               `access_token=${pageToken}`;
             const insightRes = await fetch(insightUrl);
@@ -416,17 +417,18 @@ serve(async (req) => {
 
     if (hasProAccess) {
       try {
-        const demoUrl = `https://graph.facebook.com/v19.0/${pageId}/insights?` +
-          `metric=page_fans_gender_age,page_fans_city,page_fans_country&` +
+        // page_fans_* deprecated Nov 2025; try follower-based demographics
+        const demoUrl = `https://graph.facebook.com/v21.0/${pageId}/insights?` +
+          `metric=page_followers_gender_age,page_followers_city,page_followers_country&` +
           `period=lifetime&access_token=${pageToken}`;
         
         const demoRes = await fetch(demoUrl);
         const demoData = await demoRes.json();
         
         if (!demoData.error && demoData.data) {
-          const genderAge = demoData.data.find((d: any) => d.name === 'page_fans_gender_age');
-          const cities = demoData.data.find((d: any) => d.name === 'page_fans_city');
-          const countries = demoData.data.find((d: any) => d.name === 'page_fans_country');
+          const genderAge = demoData.data.find((d: any) => d.name === 'page_followers_gender_age');
+          const cities = demoData.data.find((d: any) => d.name === 'page_followers_city');
+          const countries = demoData.data.find((d: any) => d.name === 'page_followers_country');
           
           demographics = {
             genderAge: genderAge?.values?.[0]?.value || null,
@@ -540,10 +542,10 @@ serve(async (req) => {
 
     // Build trend time-series from insights
     const trendData = {
-      impressions: buildTimeSeries(insights, 'page_impressions'),
-      engagedUsers: buildTimeSeries(insights, 'page_engaged_users'),
+      impressions: buildTimeSeries(insights, 'page_media_view'),
+      engagedUsers: buildTimeSeries(insights, 'page_post_engagements'), // reuse post_engagements as engagement proxy
       postEngagements: buildTimeSeries(insights, 'page_post_engagements'),
-      fans: buildTimeSeries(insights, 'page_fans'),
+      fans: buildTimeSeries(insights, 'page_followers'),
     };
     
     const hasTrendData = Object.values(trendData).some(arr => arr.length > 0);
