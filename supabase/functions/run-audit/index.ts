@@ -304,9 +304,9 @@ serve(async (req) => {
 
     // Fetch insights WITH DATE RANGE using since/until
     try {
-      // Use non-deprecated metrics (Nov 2025+): page_media_view replaces page_impressions, page_followers replaces page_fans
+      // Valid metrics per FB docs (Nov 2025+): page_follows replaces page_fans, page_media_view replaces page_impressions
       const insightsUrl = `https://graph.facebook.com/v21.0/${pageId}/insights?` +
-        `metric=page_media_view,page_post_engagements,page_followers&` +
+        `metric=page_media_view,page_post_engagements,page_follows&` +
         `period=day&since=${dateParams.since}&until=${dateParams.until}&` +
         `access_token=${pageToken}`;
       
@@ -417,18 +417,18 @@ serve(async (req) => {
 
     if (hasProAccess) {
       try {
-        // page_fans_* deprecated Nov 2025; try follower-based demographics
+        // page_fans_* deprecated Nov 2025; use page_follows_* alternatives
         const demoUrl = `https://graph.facebook.com/v21.0/${pageId}/insights?` +
-          `metric=page_followers_gender_age,page_followers_city,page_followers_country&` +
+          `metric=page_follows_gender_age,page_follows_city,page_follows_country&` +
           `period=lifetime&access_token=${pageToken}`;
         
         const demoRes = await fetch(demoUrl);
         const demoData = await demoRes.json();
         
         if (!demoData.error && demoData.data) {
-          const genderAge = demoData.data.find((d: any) => d.name === 'page_followers_gender_age');
-          const cities = demoData.data.find((d: any) => d.name === 'page_followers_city');
-          const countries = demoData.data.find((d: any) => d.name === 'page_followers_country');
+          const genderAge = demoData.data.find((d: any) => d.name === 'page_follows_gender_age');
+          const cities = demoData.data.find((d: any) => d.name === 'page_follows_city');
+          const countries = demoData.data.find((d: any) => d.name === 'page_follows_country');
           
           demographics = {
             genderAge: genderAge?.values?.[0]?.value || null,
@@ -543,9 +543,9 @@ serve(async (req) => {
     // Build trend time-series from insights
     const trendData = {
       impressions: buildTimeSeries(insights, 'page_media_view'),
-      engagedUsers: buildTimeSeries(insights, 'page_post_engagements'), // reuse post_engagements as engagement proxy
+      engagedUsers: buildTimeSeries(insights, 'page_post_engagements'),
       postEngagements: buildTimeSeries(insights, 'page_post_engagements'),
-      fans: buildTimeSeries(insights, 'page_followers'),
+      fans: buildTimeSeries(insights, 'page_follows'),
     };
     
     const hasTrendData = Object.values(trendData).some(arr => arr.length > 0);
