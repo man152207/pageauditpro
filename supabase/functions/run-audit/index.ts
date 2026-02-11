@@ -11,10 +11,15 @@ const logStep = (step: string, details?: any) => {
   console.log(`[RUN-AUDIT] ${step}${detailsStr}`);
 };
 
-// Convert preset to since/until dates
+// Convert any date string (ISO or date-only) to Unix timestamp (seconds)
+function toUnixTimestamp(dateStr: string): number {
+  return Math.floor(new Date(dateStr).getTime() / 1000);
+}
+
+// Convert preset to since/until as Unix timestamps
 function getDateRangeFromPreset(preset: string): { since: string; until: string } {
   const now = new Date();
-  const until = now.toISOString().split('T')[0];
+  const untilTs = Math.floor(now.getTime() / 1000);
   let since: Date;
 
   switch (preset) {
@@ -38,8 +43,8 @@ function getDateRangeFromPreset(preset: string): { since: string; until: string 
   }
 
   return {
-    since: since.toISOString().split('T')[0],
-    until,
+    since: String(Math.floor(since.getTime() / 1000)),
+    until: String(untilTs),
   };
 }
 
@@ -194,10 +199,13 @@ serve(async (req) => {
     let dateParams: { since: string; until: string };
     
     if (requestedRange.from && requestedRange.to) {
-      // Custom date range
-      dateParams = { since: requestedRange.from, until: requestedRange.to };
+      // Custom date range - convert ISO to Unix timestamps
+      dateParams = { 
+        since: String(toUnixTimestamp(requestedRange.from)), 
+        until: String(toUnixTimestamp(requestedRange.to)) 
+      };
     } else {
-      // Preset conversion
+      // Preset conversion (already returns Unix timestamps)
       dateParams = getDateRangeFromPreset(requestedRange.preset || '30d');
     }
     
@@ -303,8 +311,14 @@ serve(async (req) => {
       
       const insightsRes = await fetch(insightsUrl);
       const insightsData = await insightsRes.json();
-      insights = insightsData.data || [];
-      dataAvailability.insights = !insightsData.error && insights.length > 0;
+      if (insightsData.error) {
+        logStep("Insights API error", insightsData.error);
+        dataAvailability.insights = false;
+        dataAvailability.insightsError = insightsData.error.message || 'Unknown error';
+      } else {
+        insights = insightsData.data || [];
+        dataAvailability.insights = insights.length > 0;
+      }
       logStep("Insights fetched with date range", { 
         success: !insightsData.error, 
         count: insights.length,
@@ -327,8 +341,21 @@ serve(async (req) => {
       
       const postsRes = await fetch(postsUrl);
       const postsData = await postsRes.json();
-      posts = postsData.data || [];
-      dataAvailability.posts = !postsData.error;
+      if (postsData.error) {
+        logStep("Posts API error", postsData.error);
+        dataAvailability.posts = false;
+        // Check for permission errors (code 10 or 200 = permission not granted)
+        const errCode = postsData.error.code;
+        if (errCode === 10 || errCode === 200) {
+          dataAvailability.postsError = 'permission_not_granted';
+          dataAvailability.postsErrorMessage = 'pages_read_user_content permission not approved by Meta';
+        } else {
+          dataAvailability.postsError = postsData.error.message || 'Unknown error';
+        }
+      } else {
+        posts = postsData.data || [];
+        dataAvailability.posts = true;
+      }
       logStep("Posts fetched with date range", { 
         success: !postsData.error, 
         count: posts.length,
@@ -408,6 +435,10 @@ serve(async (req) => {
           };
           dataAvailability.demographics = true;
         } else {
+          if (demoData.error) {
+            logStep("Demographics API error", demoData.error);
+            dataAvailability.demographicsError = demoData.error.message || 'Unknown error';
+          }
           dataAvailability.demographics = false;
         }
         logStep("Demographics fetched", { success: !!demographics });
