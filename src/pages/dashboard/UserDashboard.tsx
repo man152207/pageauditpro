@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRecentAudits, useAuditStats } from '@/hooks/useAudits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSparklineData } from '@/hooks/useHistoricalScores';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/ui/stat-card';
 import { ScoreCard } from '@/components/ui/score-card';
@@ -14,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Sparkline } from '@/components/ui/sparkline';
 import {
   BarChart3,
+  Facebook,
   FileBarChart,
   History,
   Plus,
@@ -27,20 +30,37 @@ import {
   Calendar,
   Crown,
   Check,
+  CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function UserDashboard() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const { isPro, usage, planName } = useSubscription();
   
   // Real data hooks
   const { data: recentAudits = [], isLoading: auditsLoading } = useRecentAudits(5);
   const { data: stats, isLoading: statsLoading } = useAuditStats();
   
-  // Real sparkline data (replaces hardcoded sample arrays)
+  // Real sparkline data
   const { data: sparklineScores, hasData: hasSparklineData } = useSparklineData(7);
+
+  // Connected pages
+  const [connectedPages, setConnectedPages] = useState<Array<{ id: string; page_name: string; page_id: string; connected_at: string }>>([]);
+  
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('fb_connections')
+      .select('id, page_name, page_id, connected_at')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('connected_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setConnectedPages(data);
+      });
+  }, [user]);
 
   const isLoading = auditsLoading || statsLoading;
 
@@ -184,6 +204,46 @@ export default function UserDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Connected Pages Section */}
+      {connectedPages.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card shadow-sm animate-fade-in-up">
+          <div className="flex items-center justify-between p-5 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#1877F2]/10 text-[#1877F2]">
+                <Facebook className="h-4 w-4" />
+              </div>
+              <h2 className="font-semibold">Connected Pages</h2>
+            </div>
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground gap-1">
+              <Link to="/dashboard/audit">
+                Run Audit
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+          <div className="p-4 flex flex-wrap gap-3">
+            {connectedPages.map((page) => (
+              <Link
+                key={page.id}
+                to="/dashboard/audit"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/60 hover:border-primary/20 transition-all duration-200 group"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1877F2] text-white shrink-0">
+                  <Facebook className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm group-hover:text-primary transition-colors">{page.page_name}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-success" />
+                    Connected
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid gap-5 lg:grid-cols-2">
