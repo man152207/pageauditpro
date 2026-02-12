@@ -22,6 +22,38 @@ function errorResponse(code: string, message: string, fixSteps: string[], status
   );
 }
 
+// Helper to save Facebook pages as connections during login
+async function savePages(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  pages: Array<{ id: string; name: string; access_token: string }>,
+  tokenExpiresIn?: number
+) {
+  for (const page of pages) {
+    try {
+      await supabaseAdmin
+        .from("fb_connections")
+        .upsert({
+          user_id: userId,
+          page_id: page.id,
+          page_name: page.name,
+          access_token_encrypted: page.access_token,
+          scopes: ["pages_show_list", "pages_read_engagement", "pages_read_user_content", "read_insights"],
+          is_active: true,
+          connected_at: new Date().toISOString(),
+          token_expires_at: tokenExpiresIn
+            ? new Date(Date.now() + tokenExpiresIn * 1000).toISOString()
+            : null,
+        }, {
+          onConflict: "user_id,page_id",
+        });
+      console.log(`[FB-AUTH-LOGIN] Saved page connection: ${page.name} (${page.id}) for user ${userId}`);
+    } catch (e) {
+      console.error(`[FB-AUTH-LOGIN] Failed to save page ${page.id}:`, e);
+    }
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -209,8 +241,27 @@ serve(async (req) => {
 
       const accessToken = tokenData.access_token;
 
+      // Get long-lived token for page connections
+      let longLivedToken = accessToken;
+      let tokenExpiresIn = 3600;
+      try {
+        const longLivedUrl = `https://graph.facebook.com/v21.0/oauth/access_token?` +
+          `grant_type=fb_exchange_token&` +
+          `client_id=${FB_APP_ID}&` +
+          `client_secret=${FB_APP_SECRET}&` +
+          `fb_exchange_token=${accessToken}`;
+        const llRes = await fetch(longLivedUrl);
+        const llData = await llRes.json();
+        if (llData.access_token) {
+          longLivedToken = llData.access_token;
+          tokenExpiresIn = llData.expires_in || 5184000;
+        }
+      } catch (e) {
+        console.warn("[FB-AUTH-LOGIN] Long-lived token exchange failed, using short-lived:", e);
+      }
+
       // Get user info from Facebook
-      const userInfoUrl = `https://graph.facebook.com/v19.0/me?fields=id,name,email,picture.width(200).height(200)&access_token=${accessToken}`;
+      const userInfoUrl = `https://graph.facebook.com/v21.0/me?fields=id,name,email,picture.width(200).height(200)&access_token=${longLivedToken}`;
       const userInfoResponse = await fetch(userInfoUrl);
       const userData = await userInfoResponse.json();
 
@@ -238,9 +289,28 @@ serve(async (req) => {
         );
       }
 
+      // Also fetch user's Facebook pages so we can auto-save them during login
+      let pages: Array<{ id: string; name: string; access_token: string; category?: string }> = [];
+      try {
+        const pagesUrl = `https://graph.facebook.com/v21.0/me/accounts?access_token=${longLivedToken}`;
+        const pagesRes = await fetch(pagesUrl);
+        const pagesData = await pagesRes.json();
+        if (!pagesData.error && pagesData.data) {
+          pages = pagesData.data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            access_token: p.access_token,
+            category: p.category,
+          }));
+        }
+        console.log(`[FB-AUTH-LOGIN] Fetched ${pages.length} pages during login`);
+      } catch (e) {
+        console.warn("[FB-AUTH-LOGIN] Failed to fetch pages during login:", e);
+      }
+
       console.log(`[FB-AUTH-LOGIN] User authenticated: ${fbEmail}, name: ${fbName}`);
 
-      // Return user data to frontend (frontend will call complete-login)
+      // Return user data + pages to frontend (frontend will call complete-login)
       return new Response(
         JSON.stringify({
           success: true,
@@ -248,8 +318,10 @@ serve(async (req) => {
             facebookId: fbUserId,
             email: fbEmail,
             name: fbName || '',
-            picture: fbPicture || ''
-          }
+            picture: fbPicture || '',
+          },
+          pages,
+          tokenExpiresIn,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -285,6 +357,8 @@ serve(async (req) => {
     // Action: Complete login (called from frontend after popup callback)
     if (action === "complete-login") {
       const { email, name, picture, facebookId } = bodyData;
+      const pages = (bodyData as any).pages as Array<{ id: string; name: string; access_token: string }> | undefined;
+      const tokenExpiresIn = (bodyData as any).tokenExpiresIn as number | undefined;
 
       if (!email) {
         return errorResponse(
@@ -299,7 +373,10 @@ serve(async (req) => {
       const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
       const existingUser = existingUsers?.users?.find((u) => u.email === email);
 
+      let userId: string | undefined;
+
       if (existingUser) {
+        userId = existingUser.id;
         // User exists - generate magic link token for login
         const { data: signInData, error: signInError } = await supabaseAdmin.auth.admin.generateLink({
           type: 'magiclink',
@@ -327,6 +404,11 @@ serve(async (req) => {
             .eq("user_id", existingUser.id);
         }
 
+        // Save pages to fb_connections
+        if (pages && pages.length > 0 && userId) {
+          await savePages(supabaseAdmin, userId, pages, tokenExpiresIn);
+        }
+
         return new Response(
           JSON.stringify({
             success: true,
@@ -338,12 +420,12 @@ serve(async (req) => {
         );
       } else {
         // New user - create account
-        const tempPassword = crypto.randomUUID(); // Temporary password
+        const tempPassword = crypto.randomUUID();
         
         const { data: newUser, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
           email: email,
           password: tempPassword,
-          email_confirm: true, // Auto-confirm email for Facebook users
+          email_confirm: true,
           user_metadata: {
             full_name: name,
             avatar_url: picture,
@@ -362,8 +444,10 @@ serve(async (req) => {
           );
         }
 
+        userId = newUser?.user?.id;
+
         // Update profile with avatar
-        if (newUser?.user?.id && picture) {
+        if (userId && picture) {
           await supabaseAdmin
             .from("profiles")
             .update({ 
@@ -371,7 +455,12 @@ serve(async (req) => {
               full_name: name,
               updated_at: new Date().toISOString()
             })
-            .eq("user_id", newUser.user.id);
+            .eq("user_id", userId);
+        }
+
+        // Save pages to fb_connections
+        if (pages && pages.length > 0 && userId) {
+          await savePages(supabaseAdmin, userId, pages, tokenExpiresIn);
         }
 
         // Generate sign in link
@@ -388,7 +477,7 @@ serve(async (req) => {
           JSON.stringify({
             success: true,
             isNewUser: true,
-            userId: newUser?.user?.id,
+            userId,
             properties: signInData?.properties,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
