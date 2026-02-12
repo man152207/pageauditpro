@@ -181,10 +181,14 @@ export default function AuthPage() {
           window.removeEventListener('message', handleMessage);
           popup?.close();
 
-           // Complete login with the received user data
-           // NOTE: edge function requires an explicit action, otherwise it returns INVALID_ACTION (non-2xx)
+           // Complete login with the received user data + pages (auto-save pages during login)
            const { data: loginResult, error: loginError } = await supabase.functions.invoke('facebook-auth-login', {
-             body: { action: 'complete-login', ...event.data.userData },
+             body: { 
+               action: 'complete-login', 
+               ...event.data.userData,
+               pages: event.data.pages || [],
+               tokenExpiresIn: event.data.tokenExpiresIn,
+             },
            });
 
           if (loginError || !loginResult?.success) {

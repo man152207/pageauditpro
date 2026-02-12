@@ -417,7 +417,9 @@ serve(async (req) => {
 
     if (hasProAccess) {
       try {
-        // page_fans_* deprecated Nov 2025; use page_follows_* alternatives
+        // Demographics metrics (page_fans_gender_age, page_follows_gender_age etc.) 
+        // were deprecated by Meta in March 2024 with no replacement.
+        // We attempt the call but gracefully handle the expected failure.
         const demoUrl = `https://graph.facebook.com/v21.0/${pageId}/insights?` +
           `metric=page_follows_gender_age,page_follows_city,page_follows_country&` +
           `period=lifetime&access_token=${pageToken}`;
@@ -437,16 +439,18 @@ serve(async (req) => {
           };
           dataAvailability.demographics = true;
         } else {
-          if (demoData.error) {
-            logStep("Demographics API error", demoData.error);
-            dataAvailability.demographicsError = demoData.error.message || 'Unknown error';
-          }
+          // Expected: these metrics are deprecated since March 2024
+          logStep("Demographics unavailable (deprecated metrics)", { 
+            error: demoData.error?.message || 'Unknown' 
+          });
           dataAvailability.demographics = false;
+          dataAvailability.demographicsError = 'Demographics metrics deprecated by Meta (March 2024). No replacement available.';
         }
         logStep("Demographics fetched", { success: !!demographics });
       } catch (e) {
         logStep("Demographics fetch failed", { error: e });
         dataAvailability.demographics = false;
+        dataAvailability.demographicsError = 'Demographics metrics are no longer available from Facebook API.';
       }
     }
 

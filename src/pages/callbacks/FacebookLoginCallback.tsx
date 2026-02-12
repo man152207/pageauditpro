@@ -93,13 +93,15 @@ export default function FacebookLoginCallback() {
           return;
         }
 
-        // Success - send user data to opener
+        // Success - send user data + pages to opener
         setStatus('success');
         
         if (window.opener) {
           window.opener.postMessage({
             type: 'fb-login-success',
             userData: data.userData,
+            pages: data.pages || [],
+            tokenExpiresIn: data.tokenExpiresIn,
           }, '*');
           setTimeout(() => window.close(), 500);
         }

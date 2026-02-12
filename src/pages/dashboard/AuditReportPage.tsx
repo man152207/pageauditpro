@@ -362,9 +362,8 @@ Powered by Pagelyzer
         existingIsPublic={report.report?.is_public}
       />
 
-      {/* Data Status Alert - when data is missing */}
-      {report.data_availability && 
-       (!report.data_availability.insights || !report.data_availability.posts) && (
+      {/* Data Status Alert - only show when insights are missing (critical data) */}
+      {report.data_availability && !report.data_availability.insights && (
         <Alert className="mt-4 border-warning/50 bg-warning/5">
           <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertTitle className="text-warning">Limited Data Available</AlertTitle>
@@ -378,6 +377,18 @@ Powered by Pagelyzer
             <p className="text-xs">
               <strong>Try:</strong> Disconnecting and reconnecting your Facebook page with all permissions, or selecting a different date range.
             </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Info alert for missing posts data (non-critical) */}
+      {report.data_availability && report.data_availability.insights && !report.data_availability.posts && (
+        <Alert className="mt-4 border-primary/30 bg-primary/5">
+          <AlertTriangle className="h-4 w-4 text-primary" />
+          <AlertTitle className="text-primary text-sm">Post Analysis Unavailable</AlertTitle>
+          <AlertDescription className="text-xs text-muted-foreground">
+            Post-level analysis requires the <strong>pages_read_user_content</strong> permission. 
+            Insights, engagement trends, and follower data are available and displayed below.
           </AlertDescription>
         </Alert>
       )}
