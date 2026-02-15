@@ -63,6 +63,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import {
+  generateDemoPosts,
+  generateDemoPostTypeStats,
+  generateDemoHeatmapData,
+  generateDemoCreatives,
+} from '@/lib/demoData';
 
 export default function AuditReportPage() {
   const { auditId } = useParams<{ auditId: string }>();
@@ -77,6 +85,7 @@ export default function AuditReportPage() {
   const [priorityFilter, setPriorityFilter] = useState<ReportPriority>('all');
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
 
   // Track scroll for sticky header
   useEffect(() => {
@@ -201,6 +210,20 @@ export default function AuditReportPage() {
   const postsForDisplay = postsAnalysis?.top?.length > 0 || postsAnalysis?.needsWork?.length > 0 
     ? [...(postsAnalysis.top || []), ...(postsAnalysis.needsWork || [])]
     : posts;
+
+  // === DEMO MODE DATA ===
+  const demoPosts = demoMode ? generateDemoPosts() : [];
+  const demoPostTypeStats = demoMode ? generateDemoPostTypeStats() : [];
+  const demoHeatmap = demoMode ? generateDemoHeatmapData() : [];
+  const demoCreativesList = demoMode ? generateDemoCreatives() : [];
+
+  // Use demo data when demo mode is ON and real data is empty
+  const effectivePosts = postsForDisplay.length > 0 ? postsForDisplay : (demoMode ? demoPosts : []);
+  const effectivePostTypeData = hasRealPostTypeData ? postTypeData : (demoMode ? demoPostTypeStats : null);
+  const effectiveHasPostTypeData = hasRealPostTypeData || demoMode;
+  const effectiveHeatmapData = hasRealHeatmapData ? heatmapData : (demoMode ? demoHeatmap : null);
+  const effectiveHasHeatmapData = hasRealHeatmapData || demoMode;
+  const effectiveCreatives = creatives.length > 0 ? creatives : (demoMode ? demoCreativesList : []);
 
   const mapPriorityToImpact = (priority: string): ImpactLevel => {
     switch (priority) {
@@ -362,6 +385,31 @@ Powered by Pagelyzer
         existingIsPublic={report.report?.is_public}
       />
 
+      {/* Demo Mode Toggle */}
+      <div className="mt-4 flex items-center justify-between rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Info className="h-4 w-4 text-primary" />
+          <Label htmlFor="demo-mode" className="text-sm font-medium cursor-pointer">
+            Demo Mode
+          </Label>
+          <span className="text-xs text-muted-foreground">
+            Show sample post data for Meta App Review screencast
+          </span>
+        </div>
+        <Switch id="demo-mode" checked={demoMode} onCheckedChange={setDemoMode} />
+      </div>
+
+      {/* Demo Mode Banner */}
+      {demoMode && (
+        <Alert className="mt-3 border-warning/50 bg-warning/10">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertTitle className="text-warning text-sm">Demo Mode Active</AlertTitle>
+          <AlertDescription className="text-xs text-muted-foreground">
+            Post-related sections below are showing <strong>sample data</strong> to demonstrate how <code>pages_read_user_content</code> powers these features. This is for Meta App Review purposes only.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Data Status Alert - only show when insights are missing (critical data) */}
       {report.data_availability && !report.data_availability.insights && (
         <Alert className="mt-4 border-warning/50 bg-warning/5">
@@ -495,6 +543,12 @@ Powered by Pagelyzer
               description="Detailed engagement trends and content analysis"
               icon={<TrendingUp className="h-5 w-5" />}
             >
+              {demoMode && (
+                <div className="mb-3 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-primary flex items-center gap-2">
+                  <Info className="h-3.5 w-3.5 shrink-0" />
+                  <span>Post engagement data from <code className="font-mono bg-primary/10 px-1 rounded">pages_read_user_content</code> helps identify top-performing content types</span>
+                </div>
+              )}
               <div className="grid gap-4 lg:grid-cols-2">
                 {hasRealEngagementData ? (
                   <EngagementChart
@@ -506,9 +560,9 @@ Powered by Pagelyzer
                   <ChartEmptyState title="Engagement Over Time" chartType="line" />
                 )}
                 
-                {hasRealPostTypeData ? (
+                {effectiveHasPostTypeData ? (
                   <PostTypeChart
-                    data={postTypeData.map((d: any) => ({
+                    data={effectivePostTypeData.map((d: any) => ({
                       type: d.type,
                       engagement: d.avgEngagement || d.engagement || 0,
                       posts: d.count || d.posts || 0,
@@ -520,8 +574,14 @@ Powered by Pagelyzer
                 )}
               </div>
               <div className="mt-4">
-                {hasRealHeatmapData ? (
-                  <BestTimeHeatmap data={heatmapData} title="Best Time to Post" />
+                {demoMode && (
+                  <div className="mb-3 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-primary flex items-center gap-2">
+                    <Info className="h-3.5 w-3.5 shrink-0" />
+                    <span>Timing analysis from <code className="font-mono bg-primary/10 px-1 rounded">pages_read_user_content</code> helps optimize posting schedule</span>
+                  </div>
+                )}
+                {effectiveHasHeatmapData ? (
+                  <BestTimeHeatmap data={effectiveHeatmapData} title="Best Time to Post" />
                 ) : (
                   <ChartEmptyState title="Best Time to Post" chartType="heatmap" />
                 )}
@@ -537,13 +597,19 @@ Powered by Pagelyzer
           )}
 
           {/* Posts Analysis with Tabs */}
-          {hasProAccess && postsForDisplay.length > 0 ? (
+          {hasProAccess && effectivePosts.length > 0 ? (
             <ReportSection
               title="Posts: What Worked vs What Didn't"
-              description={`Analyzing ${postsForDisplay.length} posts from selected period`}
+              description={`Analyzing ${effectivePosts.length} posts from selected period`}
               icon={<FileBarChart className="h-5 w-5" />}
             >
-              <PostsTabView posts={postsForDisplay} />
+              {demoMode && (
+                <div className="mb-3 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-primary flex items-center gap-2">
+                  <Info className="h-3.5 w-3.5 shrink-0" />
+                  <span>This section uses <code className="font-mono bg-primary/10 px-1 rounded">pages_read_user_content</code> to fetch published posts and analyze engagement patterns</span>
+                </div>
+              )}
+              <PostsTabView posts={effectivePosts} />
             </ReportSection>
           ) : hasProAccess ? (
             <ReportSection
@@ -567,15 +633,15 @@ Powered by Pagelyzer
           )}
 
           {/* Creative Preview */}
-          {hasProAccess && creatives.length > 0 && (
+          {hasProAccess && effectiveCreatives.length > 0 && (
             <ReportSection
               title="Creative Preview"
               description="Your top performing visual content"
               icon={<Image className="h-5 w-5" />}
             >
               <CreativePreview
-                creatives={creatives}
-                postTypeStats={hasRealPostTypeData ? postTypeData.map((d: any) => ({
+                creatives={effectiveCreatives}
+                postTypeStats={effectiveHasPostTypeData ? effectivePostTypeData.map((d: any) => ({
                   type: d.type,
                   avgEngagement: d.avgEngagement || d.engagement || 0,
                   count: d.count || d.posts || 0,
