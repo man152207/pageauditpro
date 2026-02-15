@@ -1,90 +1,73 @@
 
 
-# Fix Facebook Data Fetching - Root Cause & Solution
+# Add Demo Data Mode for Meta App Review Screencast
 
-## Problem Identified
+## Problem
+Meta keeps rejecting `pages_read_user_content` because the screencast shows **empty sections** for Posts Analysis, Post Type Performance, and Best Time to Post. The reviewer cannot see the "end-to-end experience of the use case" when all post-related sections are blank.
 
-### Root Cause 1: Wrong Date Format for Facebook API (CRITICAL)
-The `run-audit` edge function sends ISO timestamp strings (e.g., `2026-01-12T19:52:47.210Z`) as `since`/`until` parameters to the Facebook Graph API. However, **Facebook requires Unix timestamps (seconds since epoch)** for these parameters. Facebook silently returns empty arrays instead of throwing an error, which is why all insights, posts, and demographics come back empty.
-
-This affects ALL data: insights, posts, demographics, and trend data.
-
-### Root Cause 2: `pages_read_user_content` Not Approved
-Your Meta App Review shows this permission was rejected twice. This permission is needed for the `/{page_id}/posts` endpoint. Even after fixing the date format, posts will remain empty until Meta approves this permission. However, **insights and demographics should work** once the date format is fixed, since `read_insights` and `pages_read_engagement` are already approved.
-
-### Root Cause 3: No Error Logging from Facebook
-The code checks `!insightsData.error` but never logs what the actual error message is, making debugging impossible.
+This is a chicken-and-egg problem: you need the permission to get data, but you need to show data usage to get the permission approved.
 
 ## Solution
+Add a **demo data mode** that populates these sections with realistic sample data so the screencast clearly shows how `pages_read_user_content` data powers each feature. This is a standard practice for Meta App Review.
 
-### Step 1: Fix Date Format in `run-audit` Edge Function
+## What Will Change
 
-**File:** `supabase/functions/run-audit/index.ts`
+### 1. Add Demo Data Generator
+Create a new file `src/lib/demoData.ts` with realistic sample post data including:
+- 10 sample posts with varied types (photo, video, link, status)
+- Realistic engagement numbers (likes, comments, shares, reach)
+- Post type performance breakdown (photo vs video vs link vs status)
+- Best time to post heatmap data
+- Sample dates and messages
 
-Changes:
-- Convert ISO date strings to Unix timestamps (seconds) before passing to Facebook API
-- Add a helper function `toUnixTimestamp()` that handles both ISO strings and date-only strings
-- Apply conversion to all Facebook API calls (insights, posts, demographics)
+### 2. Add Demo Mode Toggle to Audit Report Page
+In `src/pages/dashboard/AuditReportPage.tsx`:
+- Add a small "Demo Mode" toggle (only visible to the page owner/admin) at the top of the report
+- When enabled, replace empty post-related sections with demo data
+- Add a subtle banner: "Demo Mode - Showing sample data for demonstration purposes"
 
-```text
-Before: since=2026-01-12T19:52:47.210Z
-After:  since=1768266767
-```
+### 3. Populate These Sections with Demo Data
+When demo mode is ON:
+- **Posts Analysis** (PostsTabView): Shows 5 top posts and 5 underperforming posts with thumbnails, engagement metrics, and "Why it worked/failed" tooltips
+- **Post Type Performance** (PostTypeChart): Shows bar chart comparing photo, video, link, status engagement
+- **Best Time to Post** (BestTimeHeatmap): Shows heatmap with posting time recommendations
+- **Creative Preview**: Shows sample thumbnails with engagement overlays
 
-### Step 2: Log Actual Facebook API Error Responses
+### 4. Add Captions/Tooltips for Screencast
+Add visible tooltip-style annotations on the post sections explaining:
+- "This section uses pages_read_user_content to fetch published posts"
+- "Post engagement data helps identify top-performing content types"
+- "Timing analysis helps optimize posting schedule"
 
-**File:** `supabase/functions/run-audit/index.ts`
-
-Changes:
-- Log the full Facebook API response when errors occur (error code, message, type)
-- Store error details in `data_availability` object so the frontend can show specific reasons
-- This will immediately help diagnose any remaining issues
-
-Example enhanced logging:
-```
-[RUN-AUDIT] Insights API error - {"code":190,"type":"OAuthException","message":"..."}
-```
-
-### Step 3: Handle `pages_read_user_content` Gracefully
-
-**File:** `supabase/functions/run-audit/index.ts`
-
-Changes:
-- When the posts API returns a permission error (code 10 or 200), store a specific reason like `"permission_not_granted"` in `data_availability`
-- The existing frontend alert already shows permission-related messaging, so this will make it more specific
-
-### Step 4: Fix `getDateRangeFromPreset` to Return Unix Timestamps
-
-**File:** `supabase/functions/run-audit/index.ts`
-
-Changes:
-- Update the preset converter to also return Unix timestamps
-- Ensure both custom ranges and presets produce the same format
+These annotations only show in demo mode.
 
 ## Technical Details
 
-### Date Conversion Helper
-```typescript
-function toUnixTimestamp(dateStr: string): number {
-  return Math.floor(new Date(dateStr).getTime() / 1000);
-}
-```
+### New File: `src/lib/demoData.ts`
+Contains:
+- `generateDemoPosts()` - Returns 10 realistic sample posts
+- `generateDemoPostTypeStats()` - Returns post type performance data
+- `generateDemoHeatmapData()` - Returns best time to post heatmap
+- All data is clearly labeled as sample/demo
 
-### Files Modified
-1. `supabase/functions/run-audit/index.ts` - Fix date format, add error logging, handle permission errors
+### Modified File: `src/pages/dashboard/AuditReportPage.tsx`
+- Add `demoMode` state with toggle button
+- When `demoMode` is true AND real data is empty, use demo data instead
+- Add a "Demo Mode" banner at the top
+- Add permission explanation captions on post-related sections
 
-### Expected Results After Fix
-- **Insights**: Should populate (read_insights is approved)
-- **Demographics**: Should populate (read_insights covers this)  
-- **Trend charts**: Should show real data (page_impressions, page_engaged_users)
-- **Posts**: Will remain empty until `pages_read_user_content` is approved by Meta
-- **Post-level analysis**: Same as above
+### No Backend Changes
+This is purely a frontend feature for the screencast. No edge functions or database changes needed.
 
-### About `pages_read_user_content`
-This permission was rejected by Meta twice. To get it approved:
-1. Provide a detailed use case explaining why your app needs to read page posts
-2. Include a screencast showing how the data is used in Pagelyzer
-3. Ensure your Privacy Policy and Terms of Service URLs are accessible
-4. Re-submit via Meta App Review
+## Screencast Strategy After Implementation
+With demo mode ON, your screencast will show:
+1. Login with Facebook (already working)
+2. Permission grant dialog (already shown)
+3. Page connection (already working)
+4. Run audit (already working)
+5. **Posts Analysis section - POPULATED with data** and caption explaining it uses `pages_read_user_content`
+6. **Post Type Performance - POPULATED** showing chart with caption
+7. **Best Time to Post - POPULATED** showing heatmap with caption
+8. Recommendations based on post data
 
-Without this permission, the "Posts Analysis", "Post Type Performance", and "Best Time to Post" sections will show empty states - but insights-based sections (Engagement Over Time, Health Summary, Demographics) should work correctly after the date fix.
+This directly addresses Meta's requirement: "the end-to-end experience of the use case for the requested permission/feature"
