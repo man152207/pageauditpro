@@ -40,15 +40,19 @@ serve(async (req) => {
 
   let event: Stripe.Event;
 
+  if (!webhookSecret || webhookSecret === "••••••••") {
+    console.error("Stripe webhook secret not configured - rejecting request");
+    return new Response("Webhook Error: Webhook signing secret not configured. Configure it in Super Admin Settings.", { status: 500 });
+  }
+
+  if (!signature) {
+    console.error("Missing stripe-signature header");
+    return new Response("Webhook Error: Missing stripe-signature header", { status: 400 });
+  }
+
   try {
-    if (webhookSecret && webhookSecret !== "••••••••" && signature) {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      console.log("Webhook signature verified successfully");
-    } else {
-      // For development without webhook secret
-      event = JSON.parse(body) as Stripe.Event;
-      console.log("Warning: Webhook signature verification skipped - configure webhook secret for production");
-    }
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    console.log("Webhook signature verified successfully");
   } catch (err: unknown) {
     console.error("Webhook signature verification failed:", err);
     const errMessage = err instanceof Error ? err.message : "Unknown error";

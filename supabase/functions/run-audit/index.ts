@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { decryptToken } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -279,7 +280,7 @@ serve(async (req) => {
 
     logStep("Connection found", { pageId: connection.page_id, pageName: connection.page_name });
 
-    const pageToken = connection.access_token_encrypted;
+    const pageToken = await decryptToken(connection.access_token_encrypted);
     const pageId = connection.page_id;
 
     // Fetch page info from Facebook

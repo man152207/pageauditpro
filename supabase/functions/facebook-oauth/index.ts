@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { encryptToken, decryptToken } from "../_shared/token-encryption.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -304,7 +305,7 @@ serve(async (req) => {
           user_id: userId,
           page_id,
           page_name,
-          access_token_encrypted: access_token, // In production, encrypt this!
+          access_token_encrypted: await encryptToken(access_token),
           scopes: ["pages_show_list", "pages_read_engagement", "pages_read_user_content", "read_insights"],
           is_active: true,
           connected_at: new Date().toISOString(),
@@ -382,7 +383,7 @@ serve(async (req) => {
         );
       }
 
-      const pageToken = connection.access_token_encrypted;
+      const pageToken = await decryptToken(connection.access_token_encrypted);
       const pageId = connection.page_id;
 
       // Fetch page info
