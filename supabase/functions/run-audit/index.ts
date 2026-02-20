@@ -335,7 +335,7 @@ serve(async (req) => {
     try {
       const postsUrl = `https://graph.facebook.com/v21.0/${pageId}/posts?` +
         `fields=id,message,created_time,shares,likes.summary(true),comments.summary(true),type,` +
-        `permalink_url,full_picture,attachments{media_type,media,url,subattachments}&` +
+        `permalink_url,full_picture&` +
         `since=${dateParams.since}&until=${dateParams.until}&` +
         `limit=100&` +
         `access_token=${pageToken}`;
@@ -605,7 +605,7 @@ serve(async (req) => {
         message: p.message,
         permalink_url: p.permalink_url,
         full_picture: p.full_picture,
-        media_type: p.attachments?.data?.[0]?.media_type || p.type,
+        media_type: p.type || 'status',
         likes: p.likes?.summary?.total_count || 0,
         comments: p.comments?.summary?.total_count || 0,
         shares: p.shares?.count || 0,
@@ -644,6 +644,26 @@ serve(async (req) => {
       count: stats.count,
     }));
 
+    // Best Time to Post heatmap computation
+    const heatmapSlots: Record<string, { totalEngagement: number; count: number }> = {};
+    posts.forEach((p: any) => {
+      const d = new Date(p.created_time);
+      const day = d.getUTCDay(); // 0=Sun, 6=Sat
+      const hour = d.getUTCHours();
+      const key = `${day}-${hour}`;
+      const eng = (p.likes?.summary?.total_count || 0) +
+                  (p.comments?.summary?.total_count || 0) +
+                  (p.shares?.count || 0);
+      if (!heatmapSlots[key]) heatmapSlots[key] = { totalEngagement: 0, count: 0 };
+      heatmapSlots[key].totalEngagement += eng;
+      heatmapSlots[key].count += 1;
+    });
+    const bestTimeToPost = Object.entries(heatmapSlots).map(([key, slot]) => {
+      const [day, hour] = key.split('-').map(Number);
+      return { day, hour, value: Math.round(slot.totalEngagement / slot.count) };
+    });
+    logStep("Best time to post computed", { slots: bestTimeToPost.length });
+
     // Store detailed metrics for Pro users
     if (hasProAccess) {
       await supabase.from("audit_metrics").insert({
@@ -661,6 +681,7 @@ serve(async (req) => {
           },
           paidVsOrganic,
           postTypeAnalysis,
+          bestTimeToPost,
           trendData,
           postsAnalysis: {
             top: topPosts,
