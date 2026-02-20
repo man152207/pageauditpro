@@ -1,73 +1,44 @@
 
+# Demo Mode Cleanup + Real Data Activation
 
-# Add Demo Data Mode for Meta App Review Screencast
-
-## Problem
-Meta keeps rejecting `pages_read_user_content` because the screencast shows **empty sections** for Posts Analysis, Post Type Performance, and Best Time to Post. The reviewer cannot see the "end-to-end experience of the use case" when all post-related sections are blank.
-
-This is a chicken-and-egg problem: you need the permission to get data, but you need to show data usage to get the permission approved.
-
-## Solution
-Add a **demo data mode** that populates these sections with realistic sample data so the screencast clearly shows how `pages_read_user_content` data powers each feature. This is a standard practice for Meta App Review.
+## Background
+All Meta permissions (`pages_read_user_content`, `pages_show_list`, `read_insights`, `pages_read_engagement`) are now **approved**. The demo mode toggle and sample data were only needed for the Meta App Review screencast. Now it's time to clean up and let real data flow through.
 
 ## What Will Change
 
-### 1. Add Demo Data Generator
-Create a new file `src/lib/demoData.ts` with realistic sample post data including:
-- 10 sample posts with varied types (photo, video, link, status)
-- Realistic engagement numbers (likes, comments, shares, reach)
-- Post type performance breakdown (photo vs video vs link vs status)
-- Best time to post heatmap data
-- Sample dates and messages
+### 1. Remove Demo Mode from Audit Report Page
+**File: `src/pages/dashboard/AuditReportPage.tsx`**
+- Remove `demoMode` state and the toggle UI (the dashed border section with Switch)
+- Remove the "Demo Mode Active" warning banner
+- Remove all `demoMode` conditional captions/annotations in Performance Trends, Posts Analysis, and Creative Preview sections
+- Remove all `effective*` variables (effectivePosts, effectivePostTypeData, etc.) -- use real data directly
+- Remove imports of `generateDemoPosts`, `generateDemoPostTypeStats`, `generateDemoHeatmapData`, `generateDemoCreatives`
+- Remove imports of `Switch` and `Label` (if unused elsewhere)
 
-### 2. Add Demo Mode Toggle to Audit Report Page
-In `src/pages/dashboard/AuditReportPage.tsx`:
-- Add a small "Demo Mode" toggle (only visible to the page owner/admin) at the top of the report
-- When enabled, replace empty post-related sections with demo data
-- Add a subtle banner: "Demo Mode - Showing sample data for demonstration purposes"
+### 2. Delete Demo Data File
+**File: `src/lib/demoData.ts`** -- Delete entirely. No longer needed.
 
-### 3. Populate These Sections with Demo Data
-When demo mode is ON:
-- **Posts Analysis** (PostsTabView): Shows 5 top posts and 5 underperforming posts with thumbnails, engagement metrics, and "Why it worked/failed" tooltips
-- **Post Type Performance** (PostTypeChart): Shows bar chart comparing photo, video, link, status engagement
-- **Best Time to Post** (BestTimeHeatmap): Shows heatmap with posting time recommendations
-- **Creative Preview**: Shows sample thumbnails with engagement overlays
+### 3. Simplify Data Flow in Report Page
+After removing demo mode, the data variables become simpler:
+- `postsForDisplay` used directly instead of `effectivePosts`
+- `hasRealPostTypeData` / `postTypeData` used directly instead of `effectiveHasPostTypeData` / `effectivePostTypeData`
+- `hasRealHeatmapData` / `heatmapData` used directly instead of `effectiveHasHeatmapData` / `effectiveHeatmapData`
+- `creatives` used directly instead of `effectiveCreatives`
 
-### 4. Add Captions/Tooltips for Screencast
-Add visible tooltip-style annotations on the post sections explaining:
-- "This section uses pages_read_user_content to fetch published posts"
-- "Post engagement data helps identify top-performing content types"
-- "Timing analysis helps optimize posting schedule"
+### 4. Update "Post Analysis Unavailable" Alert
+**File: `src/pages/dashboard/AuditReportPage.tsx`** (lines 432-442)
+- The alert that says "Post-level analysis requires `pages_read_user_content` permission" is now outdated since the permission is approved
+- Update the message to say something like: "No posts found in the selected date range. Try a longer date range or check that the page has published content."
 
-These annotations only show in demo mode.
+## What Stays the Same
+- The `run-audit` edge function already fetches real posts from `/{page_id}/posts` -- no changes needed
+- `PostsTabView`, `PostTypeChart`, `BestTimeHeatmap`, `CreativePreview` components work with real data already -- no changes needed
+- All other report sections (Executive Summary, Score Breakdown, AI Insights, Demographics) are unchanged
 
-## Technical Details
+## Summary of Changes
+| Action | File |
+|--------|------|
+| Clean up demo mode code | `src/pages/dashboard/AuditReportPage.tsx` |
+| Delete file | `src/lib/demoData.ts` |
 
-### New File: `src/lib/demoData.ts`
-Contains:
-- `generateDemoPosts()` - Returns 10 realistic sample posts
-- `generateDemoPostTypeStats()` - Returns post type performance data
-- `generateDemoHeatmapData()` - Returns best time to post heatmap
-- All data is clearly labeled as sample/demo
-
-### Modified File: `src/pages/dashboard/AuditReportPage.tsx`
-- Add `demoMode` state with toggle button
-- When `demoMode` is true AND real data is empty, use demo data instead
-- Add a "Demo Mode" banner at the top
-- Add permission explanation captions on post-related sections
-
-### No Backend Changes
-This is purely a frontend feature for the screencast. No edge functions or database changes needed.
-
-## Screencast Strategy After Implementation
-With demo mode ON, your screencast will show:
-1. Login with Facebook (already working)
-2. Permission grant dialog (already shown)
-3. Page connection (already working)
-4. Run audit (already working)
-5. **Posts Analysis section - POPULATED with data** and caption explaining it uses `pages_read_user_content`
-6. **Post Type Performance - POPULATED** showing chart with caption
-7. **Best Time to Post - POPULATED** showing heatmap with caption
-8. Recommendations based on post data
-
-This directly addresses Meta's requirement: "the end-to-end experience of the use case for the requested permission/feature"
+No backend changes. No database changes. Purely frontend cleanup.
