@@ -34,8 +34,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Check if caller is admin/super_admin
+    const { data: callerRoles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    const callerRoleSet = new Set((callerRoles || []).map((r: { role: string }) => r.role));
+    const isCallerAdmin = callerRoleSet.has("super_admin") || callerRoleSet.has("admin");
+    const isCallerSuperAdmin = callerRoleSet.has("super_admin");
+
     const body = await req.json();
-    const { action } = body;
+    const { action, target_user_id } = body;
+
+    // Determine effective user: admins can act on behalf of another user
+    let effectiveUserId = user.id;
+    if (target_user_id && target_user_id !== user.id) {
+      if (!isCallerAdmin) {
+        return new Response(JSON.stringify({ error: "Only admins can manage other users' posts" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      effectiveUserId = target_user_id;
+    }
 
     if (action === "create" || action === "update") {
       const { id, content, fb_connection_id, scheduled_at, status, media_urls, platform } = body;
@@ -62,47 +83,41 @@ Deno.serve(async (req) => {
       }
 
       if (action === "create") {
-        // Check if super_admin (always Pro)
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("role", "super_admin")
-          .maybeSingle();
-        const isSuperAdmin = !!roleData;
-
-        // Check usage limits for non-pro users
-        const { data: sub } = await supabase
-          .from("subscriptions")
-          .select("*, plans(*)")
-          .eq("user_id", user.id)
-          .eq("status", "active")
-          .maybeSingle();
-
-        const isPro = isSuperAdmin || !!sub?.plans;
+        // Check usage limits for non-pro users (check effective user's subscription)
+        const isPro = isCallerSuperAdmin || isCallerAdmin;
         if (!isPro) {
-          const startOfMonth = new Date();
-          startOfMonth.setDate(1);
-          startOfMonth.setHours(0, 0, 0, 0);
+          const { data: sub } = await supabase
+            .from("subscriptions")
+            .select("*, plans(*)")
+            .eq("user_id", effectiveUserId)
+            .eq("status", "active")
+            .maybeSingle();
 
-          const { count } = await supabase
-            .from("scheduled_posts")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", user.id)
-            .gte("created_at", startOfMonth.toISOString());
+          const hasProSub = !!sub?.plans;
+          if (!hasProSub) {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
 
-          if ((count || 0) >= 3) {
-            return new Response(JSON.stringify({ error: "Free plan limit: 3 scheduled posts per month. Upgrade to Pro for unlimited." }), {
-              status: 403,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
+            const { count } = await supabase
+              .from("scheduled_posts")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", effectiveUserId)
+              .gte("created_at", startOfMonth.toISOString());
+
+            if ((count || 0) >= 3) {
+              return new Response(JSON.stringify({ error: "Free plan limit: 3 scheduled posts per month. Upgrade to Pro for unlimited." }), {
+                status: 403,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
           }
         }
 
         const { data, error } = await supabase
           .from("scheduled_posts")
           .insert({
-            user_id: user.id,
+            user_id: effectiveUserId,
             content: content || "",
             fb_connection_id: fb_connection_id || null,
             scheduled_at: scheduled_at || null,
@@ -135,13 +150,12 @@ Deno.serve(async (req) => {
         if (media_urls !== undefined) updateData.media_urls = media_urls;
         if (platform !== undefined) updateData.platform = platform;
 
-        const { data, error } = await supabase
-          .from("scheduled_posts")
-          .update(updateData)
-          .eq("id", id)
-          .eq("user_id", user.id)
-          .select()
-          .single();
+        // Admin can update any user's post; regular user only own
+        let query = supabase.from("scheduled_posts").update(updateData).eq("id", id);
+        if (!isCallerAdmin) {
+          query = query.eq("user_id", user.id);
+        }
+        const { data, error } = await query.select().single();
 
         if (error) throw error;
 
@@ -160,11 +174,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { error } = await supabase
-        .from("scheduled_posts")
-        .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
+      let query = supabase.from("scheduled_posts").delete().eq("id", id);
+      if (!isCallerAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+      const { error } = await query;
 
       if (error) throw error;
 
