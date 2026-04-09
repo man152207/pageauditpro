@@ -1,46 +1,45 @@
 
 
-# Fix: Edge Function CORS + Calendar Badge Warning
+# Fix: Facebook Post Publishing Permission Error
 
-## Root Cause
-The `schedule-post` edge function's CORS `Access-Control-Allow-Headers` only allows `authorization, x-client-info, apikey, content-type`, but the Supabase JS client v2.93+ sends additional headers like `x-supabase-client-platform`. The browser's preflight (OPTIONS) request gets rejected, causing "Failed to fetch".
+## Problem
+Your "Hello Namaste" post failed because the Facebook Page token for OptimizeHive lacks the `pages_manage_posts` permission. The Facebook API requires both `pages_read_engagement` AND `pages_manage_posts` to publish posts to a page.
 
-The same issue exists in `publish-scheduled-posts`.
+Currently, the OAuth flow only requests these scopes:
+- `pages_show_list`
+- `pages_read_engagement`
+- `pages_read_user_content`
+- `read_insights`
+
+Missing: **`pages_manage_posts`** — without this, Facebook rejects any attempt to post.
 
 ## Fix
 
-### 1. Update CORS headers in both edge functions
+### 1. Add `pages_manage_posts` scope to OAuth flows
 
-**`supabase/functions/schedule-post/index.ts`** and **`supabase/functions/publish-scheduled-posts/index.ts`**:
+**`supabase/functions/facebook-oauth/index.ts`** (line 93-98):
+Add `pages_manage_posts` to the scopes array.
 
-Replace:
-```typescript
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-```
+**`supabase/functions/facebook-auth-login/index.ts`** (line 154-160):
+Add `pages_manage_posts` to the scopes array.
 
-With:
-```typescript
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-```
+Both files also store scopes in the `fb_connections` record — update those arrays too.
 
-### 2. Fix CalendarGrid Badge ref warning
+### 2. Update stored scopes reference
 
-**`src/components/planner/CalendarGrid.tsx`**: The `PopoverTrigger asChild` passes a ref to `Badge`, which doesn't support `forwardRef`. Change the trigger from `Badge` to a native `<button>` element (already done correctly — the trigger is a `<button>`). The warning is actually from the `Badge` inside `PopoverContent`, not the trigger. No fix needed for functionality, but we can suppress it.
+In both `save-connection` and `savePages` sections, update the `scopes` array to include `pages_manage_posts`.
 
-### 3. Deploy edge functions
+### 3. Deploy both edge functions
 
-Deploy both updated functions to resolve the CORS issue.
+### 4. User action required
+After deployment, you will need to **reconnect your Facebook pages** so the new permission is granted. Existing tokens don't have the `pages_manage_posts` permission.
+
+**Note:** If your Facebook App is still in Development mode, `pages_manage_posts` works only for App Admins/Testers. For production users, you'll need to submit this permission for App Review in the Facebook Developer Console.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `supabase/functions/schedule-post/index.ts` | Update CORS headers |
-| `supabase/functions/publish-scheduled-posts/index.ts` | Update CORS headers |
+| `supabase/functions/facebook-oauth/index.ts` | Add `pages_manage_posts` to scopes |
+| `supabase/functions/facebook-auth-login/index.ts` | Add `pages_manage_posts` to scopes |
 
