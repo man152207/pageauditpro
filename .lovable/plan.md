@@ -1,129 +1,100 @@
 
 
-# Pagelyzer मा Metricool-जस्ता Features थप्ने Plan
+# Plan: Super Admin Pro Access + Content Planner Fixes + Image Upload
 
-User ले चाहेका सबै features: **Post Scheduling + Content Planner Calendar**, **Competitor Analysis**, **Multi-Platform Support**, र **Unified Inbox**।
+## Issues Identified
 
-यी features ठूला छन्, तर एक-एक गरेर implement गर्न सकिन्छ। तल प्रत्येक feature को plan छ।
-
----
-
-## Phase 1: Content Planner + Post Scheduling (Calendar View)
-
-Users ले calendar मा posts plan गर्न सक्ने, schedule गर्न सक्ने, र auto-publish हुने।
-
-### Database Changes
-- New table: `scheduled_posts` (id, user_id, fb_connection_id, content, media_urls, scheduled_at, status [draft/scheduled/published/failed], published_at, platform, created_at)
-- New table: `content_calendar` (id, user_id, title, color, date, post_id nullable — for planning without actual post)
-
-### Backend (Edge Functions)
-- `schedule-post/index.ts` — saves post to DB, validates time
-- `publish-scheduled-posts/index.ts` — cron function that checks `scheduled_at <= now()` and calls Facebook Graph API `POST /{page-id}/feed` to publish
-- Cron job: every minute check for due posts
-
-### Frontend
-- New page: `/dashboard/planner` — full calendar view (monthly/weekly)
-- Drag-and-drop post cards on calendar
-- Post composer dialog: text, image upload, schedule time picker
-- Status indicators: draft (grey), scheduled (blue), published (green), failed (red)
-- Quick view on hover showing post preview
-
-### Pro Feature
-- Free: 3 scheduled posts/month
-- Pro: Unlimited scheduling
+1. **Super Admin has no Pro access** — `isPro` in AuthContext only checks subscriptions/free grants, not roles
+2. **Content Planner slow** — every action (list, create, update, delete) calls an edge function instead of direct DB queries; the edge function boots ~25ms but network round-trip adds latency
+3. **No image upload in Post Composer** — the composer has no image picker/upload UI
+4. **PostComposer state not reset** — `useState` initializers only run on mount; reopening with different post/date keeps stale state
+5. **Console warning** — missing `aria-describedby` on DialogContent in PostComposer
 
 ---
 
-## Phase 2: Competitor Analysis
+## Changes
 
-Users ले competitors को public pages सँग compare गर्न सक्ने।
+### 1. Super Admin = Pro everywhere (frontend + backend)
 
-### Database Changes
-- New table: `competitor_pages` (id, user_id, page_id, page_name, page_url, added_at)
-- New table: `competitor_snapshots` (id, competitor_page_id, followers, posts_count, engagement_estimate, captured_at)
+**`src/contexts/AuthContext.tsx`** (line 344):
+```typescript
+const isPro = isSuperAdmin 
+  || (subscription?.subscribed === true && subscription?.plan?.billing_type !== 'free') 
+  || subscription?.hasFreeAuditGrant === true;
+```
 
-### Backend
-- `track-competitor/index.ts` — Facebook Graph API बाट public page data fetch (followers, post count)
-- Periodic snapshot via cron (weekly)
+**`supabase/functions/schedule-post/index.ts`** — add super_admin role check before usage limit:
+```typescript
+// After getting user, check if super_admin
+const { data: roleData } = await supabase
+  .from("user_roles")
+  .select("role")
+  .eq("user_id", user.id)
+  .eq("role", "super_admin")
+  .maybeSingle();
 
-### Frontend
-- New page: `/dashboard/competitors`
-- Add competitor by Facebook page URL/name
-- Side-by-side comparison cards: your page vs competitor
-- Charts: follower growth comparison, posting frequency comparison
-- Table view with sortable metrics
+const isSuperAdmin = !!roleData;
+const isPro = isSuperAdmin || !!sub?.plans;
+```
 
-### Pro Feature
-- Free: 1 competitor
-- Pro: Up to 10 competitors with historical tracking
+**`supabase/functions/check-subscription/index.ts`** — same pattern: check `user_roles` for super_admin, treat as Pro.
 
----
+### 2. Speed up Content Planner — use direct DB queries for list
 
-## Phase 3: Multi-Platform Support (Instagram, TikTok, LinkedIn)
+**`src/hooks/useScheduledPosts.ts`** — replace the "list" action edge function call with a direct Supabase query:
+```typescript
+queryFn: async () => {
+  const { data, error } = await supabase
+    .from("scheduled_posts")
+    .select("*, fb_connections(page_name)")
+    .eq("user_id", user!.id)
+    .order("scheduled_at", { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return (data || []) as ScheduledPost[];
+},
+```
 
-### Database Changes
-- New table: `social_connections` (id, user_id, platform [facebook/instagram/tiktok/linkedin], platform_user_id, access_token_encrypted, account_name, created_at)
-- Modify `audits` table: add `platform` column
+This eliminates the edge function cold-start and auth overhead for reads. Create/update/delete still go through the edge function for validation.
 
-### Backend
-- `instagram-oauth/index.ts` — Instagram Business API connection (via Facebook Graph API)
-- `run-audit/index.ts` — extend to handle different platforms
-- Platform-specific metric fetchers
+### 3. Add image upload to Post Composer
 
-### Frontend
-- Updated connection page: multi-platform selector
-- Platform badges on audit reports
-- Unified dashboard showing all platforms
-- Platform filter on analytics page
+**Create Supabase Storage bucket** — migration to create `post-media` bucket with RLS.
 
-### Implementation Note
-- Instagram easiest (same Facebook Graph API)
-- TikTok र LinkedIn require separate API registrations
-- Phase 3 can be split: Instagram first, then others
+**`src/components/planner/PostComposer.tsx`**:
+- Add image upload section with file input + preview thumbnails
+- Upload files to `post-media/{user_id}/{filename}` bucket
+- Store public URLs in `media_urls` array
+- Show image previews with remove buttons
+- Pass `media_urls` to the submit handler
 
----
+### 4. Fix PostComposer stale state
 
-## Phase 4: Unified Inbox
+Reset form state when `open` changes or `editPost` changes using `useEffect`:
+```typescript
+useEffect(() => {
+  if (open) {
+    setContent(editPost?.content || "");
+    setConnectionId(editPost?.fb_connection_id || "");
+    setScheduledDate(/* compute from editPost or initialDate */);
+    setMediaUrls(editPost?.media_urls || []);
+  }
+}, [open, editPost?.id]);
+```
 
-सबै platforms का comments र messages एकै ठाउँमा।
+### 5. Fix console warning
 
-### Database Changes
-- New table: `inbox_messages` (id, user_id, platform, sender_name, sender_avatar, message_text, message_type [comment/dm/mention], post_id, is_read, replied_at, created_at)
-- New table: `inbox_replies` (id, message_id, reply_text, sent_at)
-
-### Backend
-- `sync-inbox/index.ts` — Facebook/Instagram comments र messages fetch
-- `send-reply/index.ts` — reply via Graph API
-- Facebook Webhook (`facebook-webhook`) extend to receive real-time notifications
-
-### Frontend
-- New page: `/dashboard/inbox`
-- Left panel: message list with filters (all/unread/platform)
-- Right panel: conversation thread with reply composer
-- Real-time updates via Supabase Realtime
-- Badge count on sidebar nav
-
-### Pro Feature
-- Free: View only (no reply)
-- Pro: Reply + auto-response templates
-
----
-
-## Recommended Build Order
-
-| Order | Feature | Effort | Value |
-|-------|---------|--------|-------|
-| 1 | Content Planner + Scheduling | ~3-4 sessions | High — users can act on audit recommendations |
-| 2 | Competitor Analysis | ~2-3 sessions | High — unique differentiator |
-| 3 | Instagram Support | ~2 sessions | Medium — same API, easy win |
-| 4 | Unified Inbox | ~3-4 sessions | Medium — complex but sticky |
+Add `DialogDescription` to PostComposer's DialogContent.
 
 ---
 
-## Technical Notes
-- All new tables will have RLS policies matching the existing pattern (user_id = auth.uid())
-- Tokens encrypted using existing `token-encryption.ts` shared module
-- New features gated behind Pro subscription using existing `useSubscription` hook
-- Calendar UI built with existing calendar component + custom grid
-- All edge functions follow existing CORS + auth patterns
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `src/contexts/AuthContext.tsx` | Add `isSuperAdmin` to `isPro` check |
+| `supabase/functions/check-subscription/index.ts` | Add super_admin role bypass |
+| `supabase/functions/schedule-post/index.ts` | Add super_admin role bypass for limits |
+| `src/hooks/useScheduledPosts.ts` | Direct DB query for listing posts |
+| `src/components/planner/PostComposer.tsx` | Image upload UI, state reset fix, DialogDescription |
+| New migration | Create `post-media` storage bucket |
 
