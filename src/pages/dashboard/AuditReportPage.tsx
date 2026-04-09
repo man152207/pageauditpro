@@ -69,12 +69,29 @@ export default function AuditReportPage() {
   const { data: report, isLoading, error } = useAudit(auditId);
   const { isPro, planName } = useSubscription();
   const { exportToPdf, isExporting } = usePdfExport();
+  const runAudit = useRunAudit();
 
   const [categoryFilter, setCategoryFilter] = useState<ReportCategory>('all');
   const [priorityFilter, setPriorityFilter] = useState<ReportPriority>('all');
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  
+  const [isRerunning, setIsRerunning] = useState(false);
+
+  const handleRerun = async () => {
+    if (!report?.fb_connection_id) return;
+    setIsRerunning(true);
+    try {
+      const result = await runAudit.mutateAsync({
+        connectionId: report.fb_connection_id,
+      });
+      navigate(`/dashboard/report/${result.audit_id}`);
+    } catch (e) {
+      // Error handled by the hook's onError
+    } finally {
+      setIsRerunning(false);
+    }
+  };
+
 
   // Track scroll for sticky header
   useEffect(() => {
