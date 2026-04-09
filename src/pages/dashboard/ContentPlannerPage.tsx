@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, List, CalendarDays, Loader2 } from "lucide-react";
+import { Plus, List, CalendarDays, Loader2, Users } from "lucide-react";
 import { CalendarGrid } from "@/components/planner/CalendarGrid";
 import { PostComposer } from "@/components/planner/PostComposer";
 import { PostCard } from "@/components/planner/PostCard";
@@ -9,19 +9,32 @@ import { useScheduledPosts, type ScheduledPost } from "@/hooks/useScheduledPosts
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface FBConnection {
   id: string;
   page_name: string;
+  user_id?: string;
+}
+
+interface UserOption {
+  id: string;
+  email: string | null;
+  full_name: string | null;
 }
 
 export default function ContentPlannerPage() {
-  const { user } = useAuth();
-  const { posts, isLoading, createPost, updatePost, deletePost } = useScheduledPosts();
+  const { user, isAdmin, isSuperAdmin } = useAuth();
+  const canManageOthers = isAdmin || isSuperAdmin;
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const { posts, isLoading, createPost, updatePost, deletePost } = useScheduledPosts(
+    canManageOthers ? selectedUserId : undefined
+  );
   const { isPro } = useSubscription();
   const [connections, setConnections] = useState<FBConnection[]>([]);
   const [composerOpen, setComposerOpen] = useState(false);
@@ -29,17 +42,33 @@ export default function ContentPlannerPage() {
   const [editPost, setEditPost] = useState<ScheduledPost | null>(null);
   const [view, setView] = useState<"calendar" | "list">("calendar");
 
+  // Fetch users list for admins
   useEffect(() => {
-    if (!user) return;
+    if (!canManageOthers) return;
+    supabase
+      .from("profiles")
+      .select("user_id, email, full_name")
+      .eq("is_active", true)
+      .order("full_name")
+      .then(({ data }) => {
+        if (data) setUsers(data.map((p) => ({ id: p.user_id, email: p.email, full_name: p.full_name })));
+      });
+  }, [canManageOthers]);
+
+  // Fetch FB connections based on selected user (or own)
+  useEffect(() => {
+    const uid = canManageOthers && selectedUserId ? selectedUserId : user?.id;
+    if (!uid) return;
     supabase
       .from("fb_connections")
       .select("id, page_name")
-      .eq("user_id", user.id)
+      .eq("user_id", uid)
       .eq("is_active", true)
       .then(({ data }) => {
         if (data) setConnections(data);
+        else setConnections([]);
       });
-  }, [user]);
+  }, [user, selectedUserId, canManageOthers]);
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
@@ -72,6 +101,10 @@ export default function ContentPlannerPage() {
     }
   };
 
+  const handleDeletePost = (id: string) => {
+    deletePost.mutate(id);
+  };
+
   const stats = {
     total: posts.length,
     drafts: posts.filter((p) => p.status === "draft").length,
@@ -100,7 +133,32 @@ export default function ContentPlannerPage() {
         </Button>
       </div>
 
-      {!isPro && (
+      {/* Admin: User selector */}
+      {canManageOthers && (
+        <Card>
+          <CardContent className="pt-4 pb-3 px-4">
+            <div className="flex items-center gap-3">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-sm font-medium whitespace-nowrap">Manage posts for:</Label>
+              <Select value={selectedUserId || "__self__"} onValueChange={(v) => setSelectedUserId(v === "__self__" ? undefined : v)}>
+                <SelectTrigger className="max-w-xs">
+                  <SelectValue placeholder="Select user" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__self__">My Posts</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name || u.email || u.id.slice(0, 8)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isPro && !canManageOthers && (
         <Alert>
           <AlertDescription>
             Free plan: {3 - stats.total > 0 ? 3 - stats.total : 0} posts remaining this month.
@@ -143,6 +201,7 @@ export default function ContentPlannerPage() {
             posts={posts}
             onDateClick={handleDateClick}
             onPostClick={handlePostClick}
+            onDeletePost={handleDeletePost}
           />
         </TabsContent>
 

@@ -20,23 +20,26 @@ export interface ScheduledPost {
   fb_connections?: { page_name: string } | null;
 }
 
-export function useScheduledPosts() {
-  const { user } = useAuth();
+export function useScheduledPosts(targetUserId?: string) {
+  const { user, isAdmin, isSuperAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const canManageOthers = isAdmin || isSuperAdmin;
+  const effectiveUserId = canManageOthers && targetUserId ? targetUserId : user?.id;
+
   const postsQuery = useQuery({
-    queryKey: ["scheduled-posts", user?.id],
+    queryKey: ["scheduled-posts", effectiveUserId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("scheduled_posts")
         .select("*, fb_connections(page_name)")
-        .eq("user_id", user!.id)
+        .eq("user_id", effectiveUserId!)
         .order("scheduled_at", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return (data || []) as ScheduledPost[];
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   const createPost = useMutation({
@@ -49,10 +52,14 @@ export function useScheduledPosts() {
       platform?: string;
     }) => {
       const { data, error } = await supabase.functions.invoke("schedule-post", {
-        body: { action: "create", ...post },
+        body: {
+          action: "create",
+          ...post,
+          ...(canManageOthers && targetUserId ? { target_user_id: targetUserId } : {}),
+        },
       });
-      if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (error) throw error;
       return data.post as ScheduledPost;
     },
     onSuccess: () => {
@@ -67,10 +74,14 @@ export function useScheduledPosts() {
   const updatePost = useMutation({
     mutationFn: async (post: { id: string; [key: string]: unknown }) => {
       const { data, error } = await supabase.functions.invoke("schedule-post", {
-        body: { action: "update", ...post },
+        body: {
+          action: "update",
+          ...post,
+          ...(canManageOthers && targetUserId ? { target_user_id: targetUserId } : {}),
+        },
       });
-      if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (error) throw error;
       return data.post as ScheduledPost;
     },
     onSuccess: () => {
@@ -87,8 +98,8 @@ export function useScheduledPosts() {
       const { data, error } = await supabase.functions.invoke("schedule-post", {
         body: { action: "delete", id },
       });
-      if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scheduled-posts"] });
