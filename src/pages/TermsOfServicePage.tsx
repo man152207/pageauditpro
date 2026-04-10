@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { SEOHead } from '@/components/seo/SEOHead';
 
 export default function TermsOfServicePage() {
   return (
     <div className="py-20">
+      <SEOHead />
       <div className="container max-w-4xl">
         <Button variant="ghost" asChild className="mb-8">
           <Link to="/">

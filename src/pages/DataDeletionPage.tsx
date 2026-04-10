@@ -1,9 +1,11 @@
 import { Mail } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { SEOHead } from '@/components/seo/SEOHead';
 
 export default function DataDeletionPage() {
   return (
     <div className="container max-w-3xl py-16 lg:py-24">
+      <SEOHead />
       <div className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
