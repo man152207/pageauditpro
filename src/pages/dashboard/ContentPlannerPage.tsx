@@ -32,7 +32,7 @@ interface UserOption {
 }
 
 export default function ContentPlannerPage() {
-  const { user, isAdmin, isSuperAdmin, orgId } = useAuth();
+  const { user, isAdmin, isSuperAdmin, profile } = useAuth();
   const canManageOthers = isAdmin || isSuperAdmin;
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(() => {
     if (typeof window !== 'undefined') {
