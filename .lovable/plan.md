@@ -1,57 +1,45 @@
 
-Diagnosis
 
-- तपाईंले देखाएको PayPal app "Live PayPal account" हो, त्यसैले `Sandbox Mode (Testing)` OFF हुनुपर्छ.
-- अहिलेको UI मा `Test Connection` ले screen मा देखिएको unsaved value होइन, database मा save भएको value test गर्छ. त्यसैले switch OFF गरेपछि `Save` नगरी `Test Connection` थिच्दा पुरानै mode/secret प्रयोग हुन सक्छ.
-- कोडमा अर्को important bug पनि छ: global settings `scope_id = null` सहित `upsert` भइरहेको छ, तर `(scope, scope_id, key)` uniqueness ले `NULL` rows लाई reliably conflict मान्दैन. यसले एउटै PayPal key/mode का duplicate rows बन्न सक्छ, र edge function ले random/old value पढ्न सक्छ. यही कारणले `INVALID_CREDENTIALS` बारम्बार आउन सक्छ.
+# Fix Stripe Integration — Wrong Key Type in Database
 
-Immediate fix to try right now
+## Problem
+The `stripe_secret_key` setting in the database contains a **webhook signing secret** (`whsec_...`) instead of the actual **Stripe Secret Key** (`sk_live_...`). This causes all checkout attempts to fail with `StripeAuthenticationError`.
 
-1. PayPal section मा `Sandbox Mode (Testing)` OFF गर्नुहोस्.
-2. त्यही Live app बाट आएको `Client ID` र `Secret Key` दुबै paste गर्नुहोस्.
-3. `Save` क्लिक गर्नुहोस्.
-4. त्यसपछि मात्रै `Test Connection` क्लिक गर्नुहोस्.
+The user's provided key `mk_1QkVZPLvZyJzjm3L2aCBq88j` is also not a valid Stripe key format.
 
-Implementation plan
+## What the User Needs to Do
+1. Go to [Stripe Dashboard → API Keys](https://dashboard.stripe.com/apikeys)
+2. Copy the **Secret key** (starts with `sk_live_...`)
+3. Paste it in **Super Admin → Settings → Integrations → Stripe Secret Key**
+4. Save, then Test Connection
 
-1. Fix the PayPal settings UX
-- `src/components/settings/IntegrationSettings.tsx`
-- PayPal setting change भएपछि `dirty` state track गर्ने
-- dirty हुँदा `Test Connection` disable गर्ने वा `Save first` message देखाउने
-- helper text थप्ने: `Live credentials = Sandbox OFF`, `Sandbox credentials = Sandbox ON`
+## Code Fix (to prevent this mistake in future)
+Add **key format validation** in the IntegrationSettings UI and the create-checkout edge function:
 
-2. Fix global settings persistence at the database level
-- New migration for `public.settings`
-- existing duplicate global setting rows cleanup गर्ने (latest row मात्र राख्ने)
-- current nullable uniqueness replace गरेर global settings को uniqueness reliable बनाउने
-- best fix: `scope, scope_id, key` मा `NULLS NOT DISTINCT` unique constraint/index use गर्ने, जसले `scope_id = null` भएको global settings मा real upsert काम गराउँछ
+### 1. `src/components/settings/IntegrationSettings.tsx`
+- Add validation before saving Stripe Secret Key: must start with `sk_test_` or `sk_live_`
+- Show inline error if user pastes a `pk_`, `whsec_`, `rk_`, or `mk_` key
+- Add helper text: "Secret key starts with sk_live_ or sk_test_"
 
-3. Make reads deterministic even if old duplicates exist
-- `src/pages/super-admin/settings/IntegrationsSettings.tsx`
-- `supabase/functions/paypal-checkout/index.ts`
-- settings fetch गर्दा latest `updated_at` row per key मात्र use गर्ने fallback logic राख्ने
-- यसले stale `paypal_sandbox_mode` वा old `paypal_client_secret` accidentally read हुने सम्भावना हटाउँछ
+### 2. `supabase/functions/create-checkout/index.ts`
+- Add a pre-flight check on the fetched `stripeSecretKey`: if it doesn't start with `sk_`, return a clear error before initializing Stripe
+- Include the key prefix in the error message so the admin knows what's wrong
 
-4. Improve PayPal debugging output
-- `supabase/functions/paypal-checkout/index.ts`
-- PayPal token request fail हुँदा upstream HTTP status/log capture गर्ने
-- error response मा current mode (`live`/`sandbox`) include गर्ने
-- generic `INVALID_CREDENTIALS` मात्र नदिई clearer message दिने, जस्तै saved mode mismatch वा stale saved settings
+### 3. Database cleanup
+- Update the `stripe_secret_key` row in settings with the correct `sk_live_...` value once the user provides it
 
-5. Verify full live flow
-- Integrations page मा `Save` → `Test Connection`
-- Billing page बाट actual PayPal checkout start गरेर approval URL आउँछ कि verify गर्ने
-- PayPal callback redirect सही आउँछ कि test गर्ने
-- साथै function मा hardcoded `https://pagelyzer.io` return domain तपाईंको real live domain सँग मिल्छ कि verify गर्ने; credentials fix भएपछि यो next issue बन्न सक्छ
+## Technical Details
 
-Files involved
+**Validation function** (reusable for both frontend and edge function):
+```text
+if key starts with "pk_"  → "This is a PUBLISHABLE key. Use the SECRET key (sk_...)"
+if key starts with "whsec_" → "This is a webhook secret. Use the SECRET key (sk_...)"  
+if key starts with "rk_"  → "This is a RESTRICTED key. Use the full Secret key"
+if not starts with "sk_test_" or "sk_live_" → "Invalid format"
+if length < 20 → "Key appears too short"
+```
 
-- `src/components/settings/IntegrationSettings.tsx`
-- `src/pages/super-admin/settings/IntegrationsSettings.tsx`
-- `supabase/functions/paypal-checkout/index.ts`
-- new migration for `public.settings`
+**Files to modify:**
+- `src/components/settings/IntegrationSettings.tsx` — add save-time validation
+- `supabase/functions/create-checkout/index.ts` — add runtime key format check
 
-Technical note
-
-- त्यसैले छोटो answer: हो, तपाईं live credential use गर्दै हुनुहुन्छ भने `Sandbox Mode` OFF गर्नुपर्छ.
-- तर code-level हिसाबले toggle मात्रै change गर्नु काफी नहुन सक्छ, किनकि current global settings upsert/read logic ले पुरानो saved mode/secret पढिरहेको हुन सक्छ.
