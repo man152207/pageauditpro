@@ -14,7 +14,9 @@ import {
   BarChart3,
   CalendarDays,
   FileBarChart,
+  FileText,
   GitCompare,
+  Globe,
   History,
   LayoutDashboard,
   LogOut,
@@ -64,6 +66,8 @@ const superAdminNavItems: NavItem[] = [
   { href: '/super-admin', label: 'System', icon: LayoutDashboard, roles: ['super_admin'] },
   { href: '/super-admin/users', label: 'Users', icon: Users, roles: ['super_admin'] },
   { href: '/super-admin/plans', label: 'Plans', icon: CreditCard, roles: ['super_admin'] },
+  { href: '/super-admin/settings/page-seo', label: 'SEO Manager', icon: Globe, roles: ['super_admin'] },
+  { href: '/super-admin/blog', label: 'Blog Manager', icon: FileText, roles: ['super_admin'] },
   { href: '/super-admin/settings/general', label: 'Settings', icon: Settings, roles: ['super_admin'] },
 ];
 
