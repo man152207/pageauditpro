@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { SEOHead, usePageSeoContent } from '@/components/seo/SEOHead';
+import { SeeMoreText } from '@/components/ui/see-more-text';
 import { Button } from '@/components/ui/button';
 import { ProBadge } from '@/components/ui/pro-badge';
 import {
@@ -85,9 +87,11 @@ export default function FeaturesPage() {
     },
   ];
 
+  const { seoContent } = usePageSeoContent('/features');
+
   return (
     <div className="py-16 sm:py-20 lg:py-24">
-      <div className="container">
+      <SEOHead />
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-16 animate-fade-in">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-5">
@@ -182,6 +186,11 @@ export default function FeaturesPage() {
             </Button>
           </div>
         </div>
+        {seoContent && (
+          <div className="mt-12 max-w-2xl mx-auto text-center">
+            <SeeMoreText text={seoContent} />
+          </div>
+        )}
       </div>
     </div>
   );
