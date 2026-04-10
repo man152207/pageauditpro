@@ -116,6 +116,17 @@ interface IntegrationSettingsProps {
 export function IntegrationSettings({ settings, updateSetting, saveSettings, saving }: IntegrationSettingsProps) {
   const { toast } = useToast();
   const [testing, setTesting] = useState<Record<string, boolean>>({});
+  const [dirty, setDirty] = useState<Record<string, boolean>>({});
+
+  const trackDirty = (section: string, key: string, value: string) => {
+    updateSetting(key, value);
+    setDirty((prev) => ({ ...prev, [section]: true }));
+  };
+
+  const saveAndClearDirty = async (section: string, settingsToSave: Array<{ key: string; value: string; is_sensitive: boolean }>) => {
+    await saveSettings(settingsToSave);
+    setDirty((prev) => ({ ...prev, [section]: false }));
+  };
 
   const testConnection = async (type: string) => {
     setTesting((prev) => ({ ...prev, [type]: true }));
