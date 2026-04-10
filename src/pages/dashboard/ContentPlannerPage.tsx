@@ -227,7 +227,7 @@ export default function ContentPlannerPage() {
                           <CommandItem
                             value="my-posts"
                             onSelect={() => {
-                              setSelectedUserId(undefined);
+                              handleSelectUser(undefined);
                               setUserSearchOpen(false);
                             }}
                           >
@@ -239,7 +239,7 @@ export default function ContentPlannerPage() {
                               key={u.id}
                               value={`${u.full_name || ""} ${u.email || ""}`}
                               onSelect={() => {
-                                setSelectedUserId(u.id);
+                                handleSelectUser(u.id);
                                 setUserSearchOpen(false);
                               }}
                             >
