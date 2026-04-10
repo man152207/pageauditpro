@@ -32,9 +32,14 @@ interface UserOption {
 }
 
 export default function ContentPlannerPage() {
-  const { user, isAdmin, isSuperAdmin } = useAuth();
+  const { user, isAdmin, isSuperAdmin, orgId } = useAuth();
   const canManageOthers = isAdmin || isSuperAdmin;
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('planner_selected_user') || undefined;
+    }
+    return undefined;
+  });
   const [users, setUsers] = useState<UserOption[]>([]);
   const [userSearchOpen, setUserSearchOpen] = useState(false);
   const [autoPublish, setAutoPublish] = useState(true);
