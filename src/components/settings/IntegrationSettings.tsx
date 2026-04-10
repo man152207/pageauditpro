@@ -29,9 +29,10 @@ interface IntegrationCardProps {
   saving: boolean;
   onTest?: () => void;
   testing?: boolean;
+  dirty?: boolean;
 }
 
-function IntegrationCard({ title, icon, isConfigured, children, onSave, saving, onTest, testing }: IntegrationCardProps) {
+function IntegrationCard({ title, icon, isConfigured, children, onSave, saving, onTest, testing, dirty }: IntegrationCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -44,17 +45,18 @@ function IntegrationCard({ title, icon, isConfigured, children, onSave, saving, 
         </Badge>
       </div>
       {children}
-      <div className="flex gap-2 pt-2">
+      <div className="flex items-center gap-2 pt-2">
         <Button onClick={onSave} disabled={saving} size="sm">
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Save
         </Button>
         {onTest && (
-          <Button onClick={onTest} disabled={testing} size="sm" variant="outline">
+          <Button onClick={onTest} disabled={testing || dirty} size="sm" variant="outline" title={dirty ? 'Save your changes first' : undefined}>
             {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Test Connection
           </Button>
         )}
+        {dirty && <span className="text-xs text-warning">Save changes before testing</span>}
       </div>
     </div>
   );
