@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { SEOHead, usePageSeoContent } from '@/components/seo/SEOHead';
+import { SeeMoreText } from '@/components/ui/see-more-text';
 import { Button } from '@/components/ui/button';
 import { ProBadge } from '@/components/ui/pro-badge';
 import {
@@ -82,8 +84,11 @@ export default function SampleReportPage() {
 
   const scoreInfo = getScoreLabel(overallScore);
 
+  const { seoContent } = usePageSeoContent('/sample-report');
+
   return (
     <div className="py-10 sm:py-14 lg:py-16">
+      <SEOHead />
       <div className="container max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-10 animate-fade-in">
@@ -246,6 +251,11 @@ export default function SampleReportPage() {
             </Button>
           </div>
         </div>
+        {seoContent && (
+          <div className="mt-8 max-w-xl mx-auto text-center">
+            <SeeMoreText text={seoContent} />
+          </div>
+        )}
       </div>
     </div>
   );

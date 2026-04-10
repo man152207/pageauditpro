@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { SEOHead, usePageSeoContent } from '@/components/seo/SEOHead';
+import { SeeMoreText } from '@/components/ui/see-more-text';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -138,8 +140,11 @@ export default function PricingPage() {
     );
   }
 
+  const { seoContent } = usePageSeoContent('/pricing');
+
   return (
     <div className="py-16 sm:py-20 lg:py-24">
+      <SEOHead />
       <div className="container">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-16 animate-fade-in">
@@ -288,6 +293,11 @@ export default function PricingPage() {
             </Button>
           </div>
         </div>
+        {seoContent && (
+          <div className="mt-12 max-w-2xl mx-auto text-center">
+            <SeeMoreText text={seoContent} />
+          </div>
+        )}
       </div>
     </div>
   );

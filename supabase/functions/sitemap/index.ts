@@ -6,19 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Static pages with their priorities and change frequencies
-const staticPages = [
-  { path: "/", priority: "1.0", changefreq: "daily" },
-  { path: "/features", priority: "0.8", changefreq: "weekly" },
-  { path: "/pricing", priority: "0.9", changefreq: "weekly" },
-  { path: "/sample-report", priority: "0.7", changefreq: "weekly" },
-  { path: "/faq", priority: "0.6", changefreq: "monthly" },
-  { path: "/contact", priority: "0.5", changefreq: "monthly" },
-  { path: "/privacy-policy", priority: "0.4", changefreq: "yearly" },
-  { path: "/terms-of-service", priority: "0.4", changefreq: "yearly" },
-  { path: "/data-deletion", priority: "0.3", changefreq: "yearly" },
-];
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,7 +17,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Try to get canonical_url from settings, fallback to default
+    // Get canonical URL from settings
     const { data: settingData } = await supabaseAdmin
       .from("settings")
       .select("value_encrypted")
@@ -41,36 +28,81 @@ serve(async (req) => {
     const baseUrl = settingData?.value_encrypted || "https://pagelyzer.io";
     const currentDate = new Date().toISOString().split("T")[0];
 
-    // Fetch public reports for dynamic URLs
+    // Fetch all page_seo routes for dynamic static pages
+    const { data: pageSeoRoutes } = await supabaseAdmin
+      .from("page_seo")
+      .select("route, updated_at");
+
+    // Fetch published blog posts
+    const { data: blogPosts } = await supabaseAdmin
+      .from("blog_posts")
+      .select("slug, published_at, updated_at")
+      .eq("published", true);
+
+    // Fetch public reports
     const { data: publicReports } = await supabaseAdmin
       .from("reports")
       .select("share_slug, created_at")
       .eq("is_public", true)
       .not("share_slug", "is", null);
 
-    // Build sitemap XML
+    // Priority map for known routes
+    const priorityMap: Record<string, { priority: string; changefreq: string }> = {
+      "/": { priority: "1.0", changefreq: "daily" },
+      "/features": { priority: "0.8", changefreq: "weekly" },
+      "/pricing": { priority: "0.9", changefreq: "weekly" },
+      "/sample-report": { priority: "0.7", changefreq: "weekly" },
+      "/faq": { priority: "0.6", changefreq: "monthly" },
+      "/contact": { priority: "0.5", changefreq: "monthly" },
+      "/blog": { priority: "0.8", changefreq: "daily" },
+      "/privacy-policy": { priority: "0.4", changefreq: "yearly" },
+      "/terms-of-service": { priority: "0.4", changefreq: "yearly" },
+      "/data-deletion": { priority: "0.3", changefreq: "yearly" },
+    };
+
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 `;
 
-    // Add static pages
-    for (const page of staticPages) {
-      sitemap += `  <url>
-    <loc>${baseUrl}${page.path}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
+    // Add page_seo routes
+    if (pageSeoRoutes) {
+      for (const page of pageSeoRoutes) {
+        const config = priorityMap[page.route] || { priority: "0.5", changefreq: "monthly" };
+        const lastmod = page.updated_at
+          ? new Date(page.updated_at).toISOString().split("T")[0]
+          : currentDate;
+        sitemap += `  <url>
+    <loc>${baseUrl}${page.route}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>${config.changefreq}</changefreq>
+    <priority>${config.priority}</priority>
   </url>
 `;
+      }
     }
 
-    // Add public reports as dynamic pages
+    // Add blog posts
+    if (blogPosts && blogPosts.length > 0) {
+      for (const post of blogPosts) {
+        const lastmod = post.updated_at
+          ? new Date(post.updated_at).toISOString().split("T")[0]
+          : currentDate;
+        sitemap += `  <url>
+    <loc>${baseUrl}/blog/${post.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+`;
+      }
+    }
+
+    // Add public reports
     if (publicReports && publicReports.length > 0) {
       for (const report of publicReports) {
         const lastmod = report.created_at
           ? new Date(report.created_at).toISOString().split("T")[0]
           : currentDate;
-        
         sitemap += `  <url>
     <loc>${baseUrl}/report/${report.share_slug}</loc>
     <lastmod>${lastmod}</lastmod>
@@ -83,19 +115,19 @@ serve(async (req) => {
 
     sitemap += `</urlset>`;
 
-    console.log(`Sitemap generated with ${staticPages.length + (publicReports?.length || 0)} URLs`);
+    const totalUrls = (pageSeoRoutes?.length || 0) + (blogPosts?.length || 0) + (publicReports?.length || 0);
+    console.log(`Sitemap generated with ${totalUrls} URLs`);
 
     return new Response(sitemap, {
       status: 200,
       headers: {
         ...corsHeaders,
         "Content-Type": "application/xml",
-        "Cache-Control": "public, max-age=3600", // Cache for 1 hour
+        "Cache-Control": "public, max-age=3600",
       },
     });
   } catch (error: unknown) {
     console.error("Error generating sitemap:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return new Response(
       `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -105,13 +137,7 @@ serve(async (req) => {
     <priority>1.0</priority>
   </url>
 </urlset>`,
-      { 
-        status: 200, 
-        headers: { 
-          ...corsHeaders, 
-          "Content-Type": "application/xml" 
-        } 
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/xml" } }
     );
   }
 });

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { SEOHead, usePageSeoContent } from '@/components/seo/SEOHead';
+import { SeeMoreText } from '@/components/ui/see-more-text';
 import { Button } from '@/components/ui/button';
 import { ProBadge } from '@/components/ui/pro-badge';
 import {
@@ -162,8 +164,11 @@ export default function HomePage() {
   ];
 
 
+  const { seoContent } = usePageSeoContent('/');
+
   return (
     <div className="flex flex-col overflow-hidden">
+      <SEOHead />
       {/* ========== YOAST-STYLE HERO ========== */}
       <section className="relative py-20 sm:py-28 md:py-32 hero-pattern-premium overflow-hidden">
         {/* Floating orbs */}
@@ -606,6 +611,14 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* SEO Content */}
+      {seoContent && (
+        <section className="section-tight bg-muted/30">
+          <div className="container max-w-3xl text-center">
+            <SeeMoreText text={seoContent} />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

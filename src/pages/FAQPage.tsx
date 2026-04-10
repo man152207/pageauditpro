@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SEOHead, usePageSeoContent } from '@/components/seo/SEOHead';
+import { SeeMoreText } from '@/components/ui/see-more-text';
 import { Button } from '@/components/ui/button';
 import { ProBadge } from '@/components/ui/pro-badge';
 import {
@@ -88,6 +90,7 @@ const faqData: FAQItem[] = [
 const categories = ['All', 'General', 'Pricing', 'Features', 'Security'];
 
 export default function FAQPage() {
+  const { seoContent } = usePageSeoContent('/faq');
   const [activeCategory, setActiveCategory] = useState('All');
   const [openItems, setOpenItems] = useState<number[]>([0]);
 
@@ -105,6 +108,7 @@ export default function FAQPage() {
 
   return (
     <div className="py-16 sm:py-20 lg:py-24">
+      <SEOHead />
       <div className="container max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16 animate-fade-in">
@@ -118,6 +122,11 @@ export default function FAQPage() {
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Find answers to common questions about Pagelyzer, pricing, features, and more.
           </p>
+          {seoContent && (
+            <div className="mt-4 max-w-xl mx-auto">
+              <SeeMoreText text={seoContent} />
+            </div>
+          )}
         </div>
 
         {/* Category Filter */}

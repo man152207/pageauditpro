@@ -198,6 +198,60 @@ export type Database = {
           },
         ]
       }
+      blog_posts: {
+        Row: {
+          author: string | null
+          content: string
+          cover_image: string | null
+          created_at: string | null
+          excerpt: string | null
+          id: string
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
+          published: boolean | null
+          published_at: string | null
+          slug: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author?: string | null
+          content: string
+          cover_image?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
+          published?: boolean | null
+          published_at?: string | null
+          slug: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author?: string | null
+          content?: string
+          cover_image?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
+          published?: boolean | null
+          published_at?: string | null
+          slug?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       content_calendar: {
         Row: {
           color: string | null
@@ -343,6 +397,45 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      page_seo: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          keywords: string | null
+          og_image: string | null
+          route: string
+          schema_type: string | null
+          seo_content: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string | null
+          og_image?: string | null
+          route: string
+          schema_type?: string | null
+          seo_content?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string | null
+          og_image?: string | null
+          route?: string
+          schema_type?: string | null
+          seo_content?: string | null
+          title?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

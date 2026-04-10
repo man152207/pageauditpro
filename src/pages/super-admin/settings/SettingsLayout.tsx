@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
-import { Settings, Key, Webhook, Globe, Shield, Gift } from 'lucide-react';
+import { Settings, Key, Webhook, Globe, Shield, Gift, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Facebook icon as inline SVG
@@ -18,6 +18,7 @@ const settingsTabs = [
   { id: 'seo', label: 'SEO', icon: Globe, path: '/super-admin/settings/seo' },
   { id: 'security', label: 'Security', icon: Shield, path: '/super-admin/settings/security' },
   { id: 'promotions', label: 'Promotions', icon: Gift, path: '/super-admin/settings/promotions' },
+  { id: 'page-seo', label: 'Page SEO', icon: FileText, path: '/super-admin/settings/page-seo' },
 ];
 
 export default function SettingsLayout() {

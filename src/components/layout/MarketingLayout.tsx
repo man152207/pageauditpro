@@ -13,6 +13,7 @@ export function MarketingLayout() {
     { href: '/features', label: 'Features' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/sample-report', label: 'Sample Report' },
+    { href: '/blog', label: 'Blog' },
     { href: '/faq', label: 'FAQ' },
   ];
 

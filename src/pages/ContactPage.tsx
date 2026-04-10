@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Mail, MessageSquare, MapPin, Phone, ArrowRight } from 'lucide-react';
+import { SEOHead, usePageSeoContent } from '@/components/seo/SEOHead';
+import { SeeMoreText } from '@/components/ui/see-more-text';
 
 export default function ContactPage() {
+  const { seoContent } = usePageSeoContent('/contact');
   return (
     <div className="py-12 sm:py-16">
+      <SEOHead />
       <div className="container max-w-3xl">
         {/* Header */}
         <div className="text-center mb-10">
@@ -62,6 +66,11 @@ export default function ContactPage() {
             </Link>
           </Button>
         </div>
+        {seoContent && (
+          <div className="mt-8 text-center">
+            <SeeMoreText text={seoContent} />
+          </div>
+        )}
       </div>
     </div>
   );
