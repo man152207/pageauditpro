@@ -8,6 +8,7 @@ import {
   TrendingUp,
   ExternalLink,
   Sparkles,
+  Info,
 } from 'lucide-react';
 import {
   Tooltip,

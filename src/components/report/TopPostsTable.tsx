@@ -207,15 +207,25 @@ export function TopPostsTable({ posts, isLoading, className }: TopPostsTableProp
                   </td>
                   <td className="p-4 text-right">
                     {post.permalink_url ? (
-                      <a 
-                        href={post.permalink_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        View
-                      </a>
+                      <div className="inline-flex items-center gap-1.5">
+                        <a 
+                          href={post.permalink_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View
+                        </a>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-[200px]">
+                            <p className="text-xs">Facebook links may be blocked in preview mode. They work normally on the live site.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
