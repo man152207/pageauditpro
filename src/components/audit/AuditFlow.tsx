@@ -28,8 +28,11 @@ interface AuditResult {
   auditId: string;
   pageName: string;
   score: number;
-  breakdown: { engagement: number; consistency: number; readiness: number };
+  breakdown: { engagement: number; consistency: number; readiness: number; growth?: number };
   recommendations: any[];
+  createdAt?: string;
+  inputData?: any;
+  metrics?: any;
 }
 
 interface DateRange {
@@ -232,23 +235,35 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
           engagement: result.scores?.engagement || 0,
           consistency: result.scores?.consistency || 0,
           readiness: result.scores?.readiness || 0,
+          growth: result.scores?.growth,
         },
-        recommendations: [], // We'll fetch these from the audit
+        recommendations: [],
+        createdAt: new Date().toISOString(),
+        inputData: result.input_data || result.inputData,
+        metrics: result.metrics,
       });
 
-      // Fetch recommendations from the created audit
-      const { data: audit } = await supabase
-        .from('audits')
-        .select('recommendations')
-        .eq('id', result.audit_id)
-        .single();
+      // Fetch recommendations and metrics from the created audit
+      const [auditRes, metricsRes] = await Promise.all([
+        supabase
+          .from('audits')
+          .select('recommendations, input_data, created_at, score_breakdown')
+          .eq('id', result.audit_id)
+          .single(),
+        supabase
+          .from('audit_metrics')
+          .select('computed_metrics, raw_metrics')
+          .eq('audit_id', result.audit_id)
+          .single(),
+      ]);
 
-      if (audit?.recommendations) {
-        setLastAuditResult(prev => prev ? {
-          ...prev,
-          recommendations: audit.recommendations as any[],
-        } : null);
-      }
+      setLastAuditResult(prev => prev ? {
+        ...prev,
+        recommendations: (auditRes.data?.recommendations as any[]) || [],
+        createdAt: auditRes.data?.created_at || prev.createdAt,
+        inputData: prev.inputData || auditRes.data?.input_data,
+        metrics: metricsRes.data?.computed_metrics || metricsRes.data?.raw_metrics || prev.metrics,
+      } : null);
 
       onComplete?.(result.audit_id);
     } catch (error) {
@@ -416,6 +431,9 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
             score={lastAuditResult.score}
             breakdown={lastAuditResult.breakdown}
             recommendations={lastAuditResult.recommendations}
+            createdAt={lastAuditResult.createdAt}
+            inputData={lastAuditResult.inputData}
+            metrics={lastAuditResult.metrics}
           />
         </div>
       )}
