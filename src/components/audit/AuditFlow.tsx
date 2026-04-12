@@ -28,8 +28,11 @@ interface AuditResult {
   auditId: string;
   pageName: string;
   score: number;
-  breakdown: { engagement: number; consistency: number; readiness: number };
+  breakdown: { engagement: number; consistency: number; readiness: number; growth?: number };
   recommendations: any[];
+  createdAt?: string;
+  inputData?: any;
+  metrics?: any;
 }
 
 interface DateRange {
