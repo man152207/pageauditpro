@@ -291,19 +291,21 @@ export function PostsTabView({ posts, isLoading, className }: PostsTabViewProps)
           Top Posts
           <Badge variant="secondary" className="ml-2 text-xs">{topPosts.length}</Badge>
         </Button>
-        <Button
-          variant={activeTab === 'needs-work' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('needs-work')}
-          className={cn(
-            'rounded-lg transition-all',
-            activeTab === 'needs-work' && 'shadow-sm'
-          )}
-        >
-          <TrendingDown className="mr-2 h-4 w-4" />
-          Needs Work
-          <Badge variant="secondary" className="ml-2 text-xs">{bottomPosts.length}</Badge>
-        </Button>
+        {bottomPosts.length > 0 && (
+          <Button
+            variant={activeTab === 'needs-work' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('needs-work')}
+            className={cn(
+              'rounded-lg transition-all',
+              activeTab === 'needs-work' && 'shadow-sm'
+            )}
+          >
+            <TrendingDown className="mr-2 h-4 w-4" />
+            Needs Work
+            <Badge variant="secondary" className="ml-2 text-xs">{bottomPosts.length}</Badge>
+          </Button>
+        )}
       </div>
 
       {/* Post List */}
