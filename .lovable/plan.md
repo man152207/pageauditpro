@@ -1,47 +1,51 @@
 
 
-# Fix: Real Facebook Data Not Showing in Audit Reports
+# Root Cause: Facebook Token is Expired/Invalid
 
-## Root Causes Found
+## What I Found
 
-1. **Metrics not stored for free users**: `run-audit` only stores to `audit_metrics` table when `hasProAccess` is true (line 668). Free users get NO metrics row at all — so the report page has nothing to display.
+The edge function logs show **every single Facebook API call fails** with:
+```
+OAuthException code 190: "Any of the pages_read_engagement... permission(s) 
+must be granted before impersonating a user's page."
+```
 
-2. **Field name mismatches in BasicReportPreview**: `extractKeyMetrics()` looks for `inputData.engagement_rate` but `run-audit` stores `engagementRate`. Same for `posts_count` vs `postsAnalyzed`.
+This means the **page access token stored in the database is invalid/expired**. Here's why:
 
-3. **`input_data` is too sparse**: Only stores `followers, postsPerWeek, totalLikes, totalComments, totalShares, postsAnalyzed, dateRange`. Missing `engagementRate`, `avgEngagementPerPost`, etc.
+1. The page was connected on **Apr 9** — 3 days ago
+2. `token_expires_at` is **NULL** (we never track expiry)
+3. During OAuth, if the long-lived token exchange fails silently, short-lived page tokens (~1-2 hours) get stored instead of permanent ones
+4. The frontend **never passes `expires_in`** to `save-connection`, so expiry is never recorded
 
-4. **Report page shows empty for free users**: `get-audit-report` returns `detailed_metrics: null` for free users — only a tiny `metricsPreview` with just `engagementRate`. All charts, posts, breakdown rely on `detailed_metrics`.
+The result: the stored token expired hours after connection, and every audit since then returns empty data — 0 followers (defaults to 1000), 0 engagement, 0 posts.
 
-## Plan
+## Immediate Fix: Reconnect + Token Handling
 
-### 1. Update `supabase/functions/run-audit/index.ts`
-- **Always store `audit_metrics`** (not just for Pro) — store basic computed metrics for all users
-- Enrich `input_data` with ALL calculated values: `engagementRate`, `avgEngagementPerPost`, `totalEngagements`
-- Pro users still get the full `raw_metrics` with posts; free users get `raw_metrics: null`
+### 1. Fix token expiry tracking in `facebook-oauth` (save-connection)
+- When saving a page connection, also exchange the page token for a long-lived page token using `oauth/access_token?grant_type=fb_exchange_token`
+- Store the actual `expires_in` value from Facebook's response
 
-### 2. Update `supabase/functions/get-audit-report/index.ts`
-- For FREE users: return basic `detailed_metrics` (followers, engagement rate, posts count, score breakdown) from `audit_metrics.computed_metrics`
-- Keep Pro-only data gated (posts analysis, demographics, AI insights, trend data, heatmap)
-- This way free users see real numbers, not empty dashes
+### 2. Fix frontend to pass `expires_in` in `AuditFlow.tsx`
+- When calling `save-connection`, include `expires_in` from the OAuth response
 
-### 3. Fix `src/components/audit/BasicReportPreview.tsx`
-- Fix `extractKeyMetrics()` field mapping to match actual `input_data` keys:
-  - `followers` ✓ (already correct)
-  - `engagementRate` (not `engagement_rate`)
-  - `postsAnalyzed` (not `posts_count` or `total_posts`)
-  - Add `postsPerWeek` as a metric
+### 3. Add token validation before audit in `run-audit`
+- Before making API calls, do a quick `GET /{pageId}?fields=name&access_token=...` validation
+- If token is expired, return a clear error: "Your Facebook connection has expired. Please reconnect."
 
-### 4. Update `src/components/audit/AuditFlow.tsx`
-- After audit completes, pass the `input_data` and `metrics` from the run-audit response correctly
-- The response includes `scores` but not `input_data` — fetch it from the created audit row
+### 4. Add "Reconnect" button in the UI
+- In the connected pages list, show a warning when token might be expired
+- Add a "Reconnect" action that re-initiates OAuth to get fresh tokens
 
-### 5. Redeploy both edge functions
-- `run-audit` — always store metrics
-- `get-audit-report` — return basic metrics for free users
+### 5. Fix the `run-audit` fallback data
+- Currently when page info fails, `followers` defaults to `1000` (fake!) — should be `0` or `null`
+- When ALL API calls fail, return a clear error instead of a fake report with made-up scores
 
 ## Files to Modify
-- `supabase/functions/run-audit/index.ts` — store metrics for ALL users
-- `supabase/functions/get-audit-report/index.ts` — return basic metrics for free users
-- `src/components/audit/BasicReportPreview.tsx` — fix field name mapping
-- `src/components/audit/AuditFlow.tsx` — ensure data flows correctly after audit
+- `supabase/functions/facebook-oauth/index.ts` — exchange page token for long-lived version in save-connection
+- `supabase/functions/run-audit/index.ts` — add token validation, fix fake defaults
+- `src/components/audit/AuditFlow.tsx` — pass expires_in, add reconnect flow
+- `src/components/audit/ConnectedPagesList.tsx` — show token status warning + reconnect button
+
+## Immediate Action Required
+The user should **disconnect and reconnect** their Facebook page right now to get a fresh token. After reconnecting, re-run the audit to get real data.
 
