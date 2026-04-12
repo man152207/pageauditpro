@@ -109,21 +109,22 @@ export function ScoreExplanationCard({
 
 interface ScoreExplanationGridProps {
   breakdown: {
-    engagement?: number;
-    consistency?: number;
-    readiness?: number;
+    engagement?: number | null;
+    consistency?: number | null;
+    readiness?: number | null;
   };
   detailedMetrics?: {
-    engagementRate?: number;
+    engagementRate?: number | null;
     totalLikes?: number;
     totalComments?: number;
     totalShares?: number;
     postsCount?: number;
-    postsPerWeek?: number;
-    followers?: number;
+    postsPerWeek?: number | null;
+    followers?: number | null;
+    readinessChecklist?: Record<string, boolean> | null;
   } | null;
   inputSummary?: {
-    followers?: number;
+    followers?: number | null;
     postsAnalyzed?: number;
   } | null;
 }
@@ -136,51 +137,75 @@ export function ScoreExplanationGrid({
   detailedMetrics,
   inputSummary,
 }: ScoreExplanationGridProps) {
-  const { engagement = 0, consistency = 0, readiness = 0 } = breakdown;
+  const { engagement, consistency, readiness } = breakdown;
   const followers = detailedMetrics?.followers || inputSummary?.followers;
   const postsCount = detailedMetrics?.postsCount || inputSummary?.postsAnalyzed;
+  const checklist = detailedMetrics?.readinessChecklist;
+
+  const checklistLabels: Record<string, string> = {
+    profile_photo: 'Profile photo',
+    cover_photo: 'Cover photo',
+    page_description: 'Page description',
+    contact_info: 'Contact info',
+    website: 'Website',
+    category: 'Category',
+    address: 'Address',
+  };
+
+  const readinessItems = checklist
+    ? Object.entries(checklist).map(([key, val]) => ({
+        label: checklistLabels[key] || key,
+        value: val ? '✓' : '✗',
+      }))
+    : [
+        { label: 'Profile photo', value: '—' },
+        { label: 'Cover photo', value: '—' },
+        { label: 'Page description', value: '—' },
+        { label: 'Contact info', value: '—' },
+        { label: 'Website', value: '—' },
+      ];
 
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <ScoreExplanationCard
-        title="Engagement"
-        score={engagement}
-        icon={ThumbsUp}
-        explanationTitle="Inputs used for this score:"
-        explanationItems={[
-          { label: 'Reactions', value: detailedMetrics?.totalLikes?.toLocaleString() },
-          { label: 'Comments', value: detailedMetrics?.totalComments?.toLocaleString() },
-          { label: 'Shares', value: detailedMetrics?.totalShares?.toLocaleString() },
-          { label: 'Followers', value: followers?.toLocaleString() },
-          { label: 'Engagement Rate', value: detailedMetrics?.engagementRate ? `${detailedMetrics.engagementRate.toFixed(2)}%` : undefined },
-        ].filter(item => item.value !== undefined)}
-      />
+      {engagement != null && (
+        <ScoreExplanationCard
+          title="Engagement"
+          score={engagement}
+          icon={ThumbsUp}
+          explanationTitle="Inputs used for this score:"
+          explanationItems={[
+            { label: 'Reactions', value: detailedMetrics?.totalLikes?.toLocaleString() },
+            { label: 'Comments', value: detailedMetrics?.totalComments?.toLocaleString() },
+            { label: 'Shares', value: detailedMetrics?.totalShares?.toLocaleString() },
+            { label: 'Followers', value: followers?.toLocaleString() },
+            { label: 'Engagement Rate', value: detailedMetrics?.engagementRate != null ? `${detailedMetrics.engagementRate.toFixed(2)}%` : undefined },
+          ].filter(item => item.value !== undefined)}
+        />
+      )}
       
-      <ScoreExplanationCard
-        title="Consistency"
-        score={consistency}
-        icon={BarChart3}
-        explanationTitle="Inputs used for this score:"
-        explanationItems={[
-          { label: 'Posts analyzed', value: postsCount?.toString() },
-          { label: 'Posts per week', value: detailedMetrics?.postsPerWeek?.toFixed(1) },
-          { label: 'Posting gap', value: 'Calculated from dates', available: !!postsCount },
-        ].filter(item => item.value !== undefined || item.available !== false)}
-      />
+      {consistency != null && (
+        <ScoreExplanationCard
+          title="Consistency"
+          score={consistency}
+          icon={BarChart3}
+          explanationTitle="Inputs used for this score:"
+          explanationItems={[
+            { label: 'Posts analyzed', value: postsCount?.toString() },
+            { label: 'Posts per week', value: detailedMetrics?.postsPerWeek != null ? detailedMetrics.postsPerWeek.toFixed(1) : undefined },
+            { label: 'Posting gap', value: 'Calculated from dates', available: !!postsCount },
+          ].filter(item => item.value !== undefined || item.available !== false)}
+        />
+      )}
       
-      <ScoreExplanationCard
-        title="Readiness"
-        score={readiness}
-        icon={Zap}
-        explanationTitle="Best practice checklist:"
-        explanationItems={[
-          { label: 'Profile photo', value: readiness >= 50 ? '✓' : '—' },
-          { label: 'Cover photo', value: readiness >= 40 ? '✓' : '—' },
-          { label: 'Page description', value: readiness >= 60 ? '✓' : '—' },
-          { label: 'Contact info', value: readiness >= 70 ? '✓' : '—' },
-          { label: 'CTA button', value: readiness >= 80 ? '✓' : '—' },
-        ]}
-      />
+      {readiness != null && (
+        <ScoreExplanationCard
+          title="Readiness"
+          score={readiness}
+          icon={Zap}
+          explanationTitle="Best practice checklist:"
+          explanationItems={readinessItems}
+        />
+      )}
     </div>
   );
 }
