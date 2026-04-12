@@ -431,6 +431,9 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
             score={lastAuditResult.score}
             breakdown={lastAuditResult.breakdown}
             recommendations={lastAuditResult.recommendations}
+            createdAt={lastAuditResult.createdAt}
+            inputData={lastAuditResult.inputData}
+            metrics={lastAuditResult.metrics}
           />
         </div>
       )}
