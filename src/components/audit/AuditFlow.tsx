@@ -267,8 +267,16 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
       } : null);
 
       onComplete?.(result.audit_id);
-    } catch (error) {
-      // Error already handled by useRunAudit hook
+    } catch (error: any) {
+      if (error?.code === 'token_expired') {
+        // Refresh connections to show expired status
+        await fetchConnections();
+        toast({
+          title: 'Connection Expired',
+          description: 'Your Facebook token has expired. Please reconnect your page.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setRunningAuditId(null);
     }
