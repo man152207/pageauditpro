@@ -22,6 +22,7 @@ interface FBConnection {
   page_name: string;
   is_active: boolean;
   connected_at: string;
+  token_expires_at?: string | null;
 }
 
 interface AuditResult {
@@ -93,7 +94,7 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
     try {
       const { data, error } = await supabase
         .from('fb_connections')
-        .select('*')
+        .select('id, page_id, page_name, is_active, connected_at, token_expires_at')
         .eq('user_id', user?.id)
         .eq('is_active', true)
         .order('connected_at', { ascending: false });
@@ -266,8 +267,16 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
       } : null);
 
       onComplete?.(result.audit_id);
-    } catch (error) {
-      // Error already handled by useRunAudit hook
+    } catch (error: any) {
+      if (error?.code === 'token_expired') {
+        // Refresh connections to show expired status
+        await fetchConnections();
+        toast({
+          title: 'Connection Expired',
+          description: 'Your Facebook token has expired. Please reconnect your page.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setRunningAuditId(null);
     }
@@ -320,6 +329,7 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
             connections={connections}
             onRunAudit={handleRunAudit}
             onDisconnect={handleDisconnect}
+            onReconnect={handleConnect}
             runningAuditId={runningAuditId}
             disconnectingId={disconnectingId}
           />
@@ -384,6 +394,7 @@ export function AuditFlow({ onComplete }: AuditFlowProps) {
               connections={connections}
               onRunAudit={handleRunAudit}
               onDisconnect={handleDisconnect}
+              onReconnect={handleConnect}
               runningAuditId={runningAuditId}
               disconnectingId={disconnectingId}
             />
