@@ -65,7 +65,6 @@ const getPriorityIcon = (priority: string) => {
 function extractKeyMetrics(inputData: any, metrics: any): KeyMetric[] {
   const result: KeyMetric[] = [];
   
-  // Field names match run-audit: followers, engagementRate, postsAnalyzed, postsPerWeek
   const followers = inputData?.followers || metrics?.followers;
   if (followers) {
     result.push({
@@ -92,21 +91,30 @@ function extractKeyMetrics(inputData: any, metrics: any): KeyMetric[] {
   }
 
   const posts = inputData?.postsAnalyzed || metrics?.postsCount;
-  if (posts) {
+  if (posts != null) {
     result.push({
       label: 'Posts Analyzed',
       value: String(posts),
     });
   }
 
-  // Pad to 4 if we have less
+  // Show insight-based engagement total as fallback
+  const insightEng = inputData?.insightTotalEngagements || metrics?.insightTotalEngagements;
+  if (!engRate && insightEng && insightEng > 0) {
+    result.push({
+      label: 'Range Engagements (Insights)',
+      value: Number(insightEng).toLocaleString(),
+    });
+  }
+
+  // Pad to 4 with "Unavailable" placeholders
+  const fillers = [
+    { label: 'Total Followers', value: 'Unavailable' },
+    { label: 'Engagement Rate', value: 'Unavailable' },
+    { label: 'Posts Analyzed', value: 'Unavailable' },
+    { label: 'Avg. Engagement/Post', value: 'Unavailable' },
+  ];
   while (result.length < 4) {
-    const fillers = [
-      { label: 'Total Followers', value: '—' },
-      { label: 'Engagement Rate', value: '—' },
-      { label: 'Avg. Engagement/Post', value: '—' },
-      { label: 'Posts Analyzed', value: '—' },
-    ];
     const next = fillers.find(f => !result.some(r => r.label === f.label));
     if (next) result.push(next);
     else break;
