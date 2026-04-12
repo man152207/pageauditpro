@@ -24,6 +24,7 @@ import {
   Leaf,
   ImageIcon,
   PlayCircle,
+  Info,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
