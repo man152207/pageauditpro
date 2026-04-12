@@ -1,127 +1,48 @@
 
-# Fix why active Facebook pages still show 0 / missing metrics
 
-## What I confirmed from the live app
-For the latest real reports I checked (`MPG Solution` and `Nayaniti`), the backend is not returning “fake positive” data anymore, but it is still failing in two critical places and then collapsing the report to zero:
+# Fix Report Issues: Videos, Demographics, Heatmap, Score Display
 
-1. `insights: true` is coming back with real trend data
-   - `page_follows`
-   - `page_media_view`
-   - `page_post_engagements`
+## Issues Found
 
-2. But `pageInfo: false` and `posts: false`
-   - followers become `null`
-   - posts analyzed become `0`
-   - readiness becomes `0`
-   - engagement/consistency become `null`
-   - overall score becomes `0`
+1. **Videos shown as "photo"**: The backend infers post type as `full_picture ? 'photo' : 'status'` (line 456/588 of run-audit). But many posts are actually reels/videos — their `permalink_url` contains `/reel/` or `/videos/`. The type detection is wrong.
 
-3. The live stored error for posts is:
-```text
-(#12) deprecate_post_aggregated_fields_for_attachement is deprecated for versions v3.3 and higher
-```
-So the current posts query itself is broken.
+2. **Best Time to Post shows nothing**: Data mismatch. Backend stores `day` as numbers (0=Sun, 1=Mon...) but `BestTimeHeatmap` component compares `d.day === 'Mon'` (string). They never match, so all cells are 0.
 
-4. One saved report also shows the page info request failing with a permission/field error:
-```text
-(#10) This endpoint requires the 'pages_read_engagement' permission or the 'Page Public Content Access' feature
-```
+3. **Demographics stuck on "loading"**: Demographics is `null` in DB because Facebook returned error `(#100) The value must be a valid insights metric` for `page_follows_gender_age/city/country`. The UI shows a loading spinner when `demographics` is null — should show "Unavailable" with the actual reason instead.
 
-## Root cause
-This is now a partial-data handling bug, not just a token bug:
+4. **Score verification**: Scores ARE real. Data shows `followersSource: page_info`, `engagementSource: posts`, all 3 score components used. The scores (Engagement 10, Consistency 85, Readiness 71, Overall 52) are genuinely computed.
 
-- the audit still fetches trend insights successfully
-- the post fetch is using a brittle/deprecated Graph API field mix
-- the page info fetch is too fragile and can fail entirely
-- the scoring pipeline depends mainly on `pageInfo + posts`, so when those 2 fail, the whole report falls to zero even though real insights exist
+5. **"Why this score?" dropdown**: User wants the explanation items always visible, not hidden behind a collapsible accordion.
 
-That is why an active page can still look dead inside the report.
+6. **Permalink URLs blocked**: Facebook reel/post URLs may be blocked by browser or content policy — this is likely a Facebook CDN/embed restriction, not something we can fix server-side.
 
-## Implementation plan
+## Implementation
 
-### 1. Rebuild the Facebook fetch layer in `run-audit`
-- replace the broken `/{page_id}/posts` field set with a safe supported fetch strategy
-- fetch posts in 2 stages:
-  - base post list with safe fields only
-  - per-post engagement fields using supported follow-up requests
-- keep full pagination for the entire selected date range
-- split page info into smaller safe requests instead of one oversized all-fields request
-- store exact fetch errors:
-  - `pageInfoError`
-  - `postsError`
-  - `postsFetchMode`
-  - `followersSource`
+### 1. Fix video type detection in `run-audit` (backend)
+- In `run-audit/index.ts`, change type inference logic at lines 456 and 588:
+  - Check `permalink_url` for `/reel/` or `/videos/` → type = `video`
+  - Otherwise if `full_picture` exists → type = `photo`
+  - Otherwise → type = `status`
 
-### 2. Use real insight fallback when post/page-info fetch fails
-If Facebook gives real insights but not full post/page info:
-- use the latest `page_follows` point as current followers fallback
-- use `page_post_engagements` totals for range engagement fallback
-- keep post-level sections unavailable unless real posts are fetched
-- never show `0` just because a fetch failed
-- never invent numbers
+### 2. Fix Best Time to Post heatmap (frontend)
+- In `BestTimeHeatmap` (`EngagementChart.tsx`), change `getHeatValue` to match by day index instead of day name string:
+  - Map day names to their numeric index (Mon=1, Tue=2, ..., Sun=0)
+  - Compare `d.day === dayIndex` instead of `d.day === dayName`
 
-### 3. Make scoring honest with partial data
-- engagement score:
-  - use post-level calculations when posts are available
-  - otherwise use insight-derived engagement if that is the only real source available
-- consistency score:
-  - only calculate when real post count/timestamps exist
-  - otherwise mark unavailable
-- readiness score:
-  - only calculate when page info is actually fetched
-  - otherwise mark unavailable, not `0`
-- overall score:
-  - calculate only from categories backed by real data
-  - exclude unavailable categories instead of dragging total to zero
+### 3. Fix Demographics display (frontend + backend)
+- **Backend** (`run-audit`): Try alternate demographic metrics — `page_fans_gender_age`, `page_fans_city`, `page_fans_country` (the `page_follows_*` variants may not be valid for all pages). If both fail, store the error reason.
+- **Frontend** (`AuditReportPage.tsx`): When `demographics` is null, check `data_availability.demographicsError` and show "Demographics unavailable" with the reason, instead of an infinite loading spinner.
 
-### 4. Return transparent report metadata from `get-audit-report`
-Add/report:
-- metric source labels (`page_info`, `insights_fallback`, `posts`)
-- exact failure reasons for page info / posts
-- which score categories were excluded
-- whether followers came from page info or insights fallback
+### 4. Remove "Why this score?" dropdown — always show details
+- In `ScoreExplanations.tsx`: Remove the `Collapsible` wrapper. Render the explanation items directly below the score, always visible.
 
-### 5. Fix the report UI so it explains reality clearly
-Update:
-- `AuditReportPage.tsx`
-- `HeroScoreSection.tsx`
-- `ScoreExplanations.tsx`
-- `BasicReportPreview.tsx`
+### 5. Redeploy edge function
+- Deploy updated `run-audit`
 
-Behavior:
-- show real followers if available from insights fallback
-- show range engagement totals from insights when post fetch fails
-- show `Unavailable` for post-level metrics that were not retrievable
-- replace the generic warning with exact reasons:
-  - broken post fetch
-  - permission restriction
-  - no posts in selected range
-- stop showing a misleading overall `0` when only some categories failed
+## Files to modify
+- `supabase/functions/run-audit/index.ts` — fix video type inference + demographics metric names
+- `src/components/report/EngagementChart.tsx` — fix heatmap day matching
+- `src/components/report/ScoreExplanations.tsx` — remove collapsible, always show details
+- `src/pages/dashboard/AuditReportPage.tsx` — fix demographics null state to show "unavailable"
+- `supabase/functions/get-audit-report/index.ts` — pass `data_availability` to frontend
 
-### 6. Verification on your real pages
-After implementation, re-run on:
-- MPG Solution
-- Nayaniti
-
-Verify:
-- followers are populated from a real source
-- selected duration is respected
-- posts are counted if Facebook allows retrieval
-- if posts still cannot be fetched, the report clearly says why and still shows real insight-based metrics
-- overall score is based only on retrievable real inputs
-
-## Files to update
-- `supabase/functions/run-audit/index.ts`
-- `supabase/functions/get-audit-report/index.ts`
-- `src/pages/dashboard/AuditReportPage.tsx`
-- `src/components/report/HeroScoreSection.tsx`
-- `src/components/report/ScoreExplanations.tsx`
-- `src/components/audit/BasicReportPreview.tsx`
-
-## Expected result
-After this fix, active pages will no longer look dead just because one Graph API request failed:
-- real followers should show
-- real range engagement should show
-- post metrics should show when retrievable
-- unavailable data should be labeled honestly
-- overall score should stop collapsing to fake-looking zero
