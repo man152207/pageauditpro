@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ScoreBreakdown {
-  engagement?: number;
-  consistency?: number;
-  readiness?: number;
-  growth?: number;
+  engagement?: number | null;
+  consistency?: number | null;
+  readiness?: number | null;
+  growth?: number | null;
 }
 
 interface HeroScoreSectionProps {
@@ -82,12 +82,28 @@ function ScoreRing({ score, size = 140, strokeWidth = 10 }: { score: number; siz
 
 interface BreakdownCardProps {
   title: string;
-  score: number;
+  score: number | null;
   icon: React.ElementType;
 }
 
 // Compact breakdown card with reduced padding
 function BreakdownCard({ title, score, icon: Icon }: BreakdownCardProps) {
+  if (score === null || score === undefined) {
+    return (
+      <div className="interactive-card p-3 group opacity-60">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <Icon className="h-4 w-4" />
+          </div>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-0.5">{title}</p>
+          <p className="text-sm text-muted-foreground">Unavailable</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="interactive-card p-3 group">
       <div className="flex items-start justify-between mb-2">
@@ -200,24 +216,26 @@ export function HeroScoreSection({
           <div className="grid grid-cols-2 gap-3">
             <BreakdownCard
               title="Engagement"
-              score={breakdown.engagement || 0}
+              score={breakdown.engagement ?? null}
               icon={ThumbsUp}
             />
             <BreakdownCard
               title="Consistency"
-              score={breakdown.consistency || 0}
+              score={breakdown.consistency ?? null}
               icon={BarChart3}
             />
             <BreakdownCard
               title="Readiness"
-              score={breakdown.readiness || 0}
+              score={breakdown.readiness ?? null}
               icon={Zap}
             />
-            <BreakdownCard
-              title="Growth"
-              score={breakdown.growth || breakdown.readiness || 0}
-              icon={Users}
-            />
+            {breakdown.growth != null && (
+              <BreakdownCard
+                title="Growth"
+                score={breakdown.growth}
+                icon={Users}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -22,6 +22,7 @@ import { PostsTabView } from '@/components/report/PostsTabView';
 import { CreativePreview } from '@/components/report/CreativePreview';
 import { BenchmarksCard } from '@/components/report/BenchmarksCard';
 import { ChartEmptyState, ChartContainer } from '@/components/report/ChartEmptyState';
+import { StatCard } from '@/components/ui/stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   LockedSection,
@@ -43,6 +44,7 @@ import {
   RefreshCw,
   Share2,
   Sparkles,
+  ThumbsUp,
   Users,
   Facebook,
   Calendar,
@@ -430,14 +432,48 @@ Powered by Pagelyzer
             pageName={report.page_name}
           />
 
+          {/* Key Metrics */}
+          <ReportSection
+            title="Key Metrics"
+            description="Real data from your Facebook page"
+            icon={<BarChart3 className="h-5 w-5" />}
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <StatCard
+                title="Total Followers"
+                value={computedMetrics.followers != null ? computedMetrics.followers.toLocaleString() : '—'}
+                icon={Users}
+              />
+              <StatCard
+                title="Posts Analyzed"
+                value={computedMetrics.postsCount != null ? computedMetrics.postsCount.toLocaleString() : '—'}
+                icon={FileBarChart}
+              />
+              <StatCard
+                title="Engagement Rate"
+                value={computedMetrics.engagementRate != null ? `${computedMetrics.engagementRate.toFixed(2)}%` : '—'}
+                icon={TrendingUp}
+              />
+              <StatCard
+                title="Avg. Engagement/Post"
+                value={computedMetrics.avgEngagementPerPost != null ? computedMetrics.avgEngagementPerPost.toLocaleString() : '—'}
+                icon={ThumbsUp}
+              />
+              <StatCard
+                title="Total Engagements"
+                value={computedMetrics.totalEngagements != null ? computedMetrics.totalEngagements.toLocaleString() : '—'}
+                icon={MessageSquare}
+              />
+            </div>
+          </ReportSection>
+
           {/* Hero Score */}
           <HeroScoreSection
             overallScore={report.score_total || 0}
             breakdown={{
-              engagement: scores.engagement || 0,
-              consistency: scores.consistency || 0,
-              readiness: scores.readiness || 0,
-              growth: scores.growth || scores.readiness || 0,
+              engagement: scores.engagement,
+              consistency: scores.consistency,
+              readiness: scores.readiness,
             }}
             previousScore={undefined}
           />
@@ -455,7 +491,7 @@ Powered by Pagelyzer
                 readiness: scores.readiness || 0,
               }}
               detailedMetrics={computedMetrics}
-              inputSummary={report.input_summary}
+              inputSummary={report.input_data}
             />
           </ReportSection>
 
